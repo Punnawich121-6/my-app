@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcode-select -p)",
+      "Read(//Applications/**)",
+      "Bash(xcrun --version)",
+      "Bash(flutter devices *)",
+      "Bash(mdfind \"kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'\")"
+    ]
+  }
+}
