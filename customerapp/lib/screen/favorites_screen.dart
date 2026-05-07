@@ -5,14 +5,14 @@ import 'store_screen.dart';
 
 // In-memory favorites store (session-only)
 class FavoritesManager {
-  static final Set<int> _ids = {};
-  static bool isFav(int id) => _ids.contains(id);
-  static void toggle(int id) => _ids.contains(id) ? _ids.remove(id) : _ids.add(id);
-  static List<int> get ids => _ids.toList();
+  static final Set<String> _ids = {};
+  static bool isFav(String id) => _ids.contains(id);
+  static void toggle(String id) => _ids.contains(id) ? _ids.remove(id) : _ids.add(id);
+  static List<String> get ids => _ids.toList();
 }
 
 class FavoritesScreen extends StatefulWidget {
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   const FavoritesScreen({super.key, required this.customerId, required this.customerName, required this.customerPhone});
@@ -32,7 +32,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final all = await CustomerService.getStores();
     if (!mounted) return;
     setState(() {
-      _favStores = all.where((s) => FavoritesManager.isFav((s['id'] as num).toInt())).toList();
+      _favStores = all.where((s) => FavoritesManager.isFav(s['id'].toString())).toList();
       _loading = false;
     });
   }
@@ -122,7 +122,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                FavoritesManager.toggle((store['id'] as num).toInt());
+                                FavoritesManager.toggle(store['id'].toString());
                                 setState(() => _favStores.remove(store));
                               },
                               child: const Padding(

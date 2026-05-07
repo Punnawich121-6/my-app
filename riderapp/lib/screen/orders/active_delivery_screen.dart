@@ -5,7 +5,7 @@ import '../../services/rider_service.dart';
 import '../navigation_screen.dart';
 
 class ActiveDeliveryScreen extends StatefulWidget {
-  final int riderId;
+  final String riderId;
   final Map<String, dynamic>? order;
   final bool isLoading;
   final VoidCallback onDeliveryComplete;

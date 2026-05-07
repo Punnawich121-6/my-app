@@ -1,0 +1,70 @@
+{
+  "project_info": {
+    "project_number": "80169359044",
+    "project_id": "fitmai-1cc0d",
+    "storage_bucket": "fitmai-1cc0d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:80169359044:android:105fd930dd5c09a7435b91",
+        "android_client_info": {
+          "package_name": "com.example.my_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "80169359044-2ep30jbe52c8sde664b633vqbsp2m96u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_app",
+            "certificate_hash": "14926d1f8f32efb2a7f5aa1f0371de09e84503cd"
+          }
+        },
+        {
+          "client_id": "80169359044-2i00tj5muihiamiq7us9ijo29g18936q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_app",
+            "certificate_hash": "517537f4a49b58c1284596033c1281b7c8a0202b"
+          }
+        },
+        {
+          "client_id": "80169359044-m8ajb742f0gg6kqin4ohi0bkdndgp6sr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_app",
+            "certificate_hash": "2ab7b957e8a9fadf4ce90a681a024a8c9b18e472"
+          }
+        },
+        {
+          "client_id": "80169359044-12m8udn023jb8l4jg5369soshuqpuhgm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8hBtm3H35tCNPqqe4O9VBvD1O95VLeqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "80169359044-12m8udn023jb8l4jg5369soshuqpuhgm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "80169359044-jj9ggmuflcpmfijltu4lgcdpcc8ue4qv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

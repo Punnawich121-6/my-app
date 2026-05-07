@@ -33,7 +33,7 @@ class CustomerService {
     } catch (_) { return []; }
   }
 
-  static Future<Map<String, dynamic>?> getMenu(int storeId) async {
+  static Future<Map<String, dynamic>?> getMenu(dynamic storeId) async {
     try {
       final res = await http.get(Uri.parse('http://localhost:3000/api/menu/$storeId'));
       return jsonDecode(res.body);
@@ -41,10 +41,10 @@ class CustomerService {
   }
 
   static Future<Map<String, dynamic>?> placeOrder({
-    required int? customerId,
+    required String? customerId,
     required String customerName,
     required String customerPhone,
-    required int storeId,
+    required dynamic storeId,
     required List<Map<String, dynamic>> items,
     required String address,
     String note = '',
@@ -65,7 +65,7 @@ class CustomerService {
     } catch (_) { return null; }
   }
 
-  static Future<List<Map<String, dynamic>>> getOrders(int customerId) async {
+  static Future<List<Map<String, dynamic>>> getOrders(String customerId) async {
     try {
       final res = await http.get(Uri.parse('$_base/orders/$customerId'));
       final data = jsonDecode(res.body) as List;
@@ -73,14 +73,14 @@ class CustomerService {
     } catch (_) { return []; }
   }
 
-  static Future<Map<String, dynamic>?> getOrderDetail(int orderId) async {
+  static Future<Map<String, dynamic>?> getOrderDetail(String orderId) async {
     try {
       final res = await http.get(Uri.parse('$_base/orders/detail/$orderId'));
       return jsonDecode(res.body);
     } catch (_) { return null; }
   }
 
-  static Future<bool> updateProfile(int customerId, String name) async {
+  static Future<bool> updateProfile(String customerId, String name) async {
     try {
       final res = await http.put(
         Uri.parse('$_base/profile/$customerId'),

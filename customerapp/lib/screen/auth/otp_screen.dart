@@ -10,7 +10,8 @@ import 'register_screen.dart';
 class OtpScreen extends StatefulWidget {
   final String phone;
   final String verificationId;
-  const OtpScreen({super.key, required this.phone, required this.verificationId});
+  final ConfirmationResult? confirmationResult;
+  const OtpScreen({super.key, required this.phone, required this.verificationId, this.confirmationResult});
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
@@ -65,8 +66,12 @@ class _OtpScreenState extends State<OtpScreen> {
     if (_verifying) return;
     setState(() => _verifying = true);
     try {
-      final credential = PhoneAuthProvider.credential(verificationId: _verificationId, smsCode: _otp);
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (widget.confirmationResult != null) {
+        await widget.confirmationResult!.confirm(_otp);
+      } else {
+        final credential = PhoneAuthProvider.credential(verificationId: _verificationId, smsCode: _otp);
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
       if (!mounted) return;
       final user = await CustomerService.getByPhone(widget.phone);
       if (!mounted) return;
@@ -74,7 +79,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)));
       } else {
         Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (_) => HomeScreen(customerId: (user['id'] as num).toInt(), customerName: user['name'] ?? '', customerPhone: widget.phone)),
+          MaterialPageRoute(builder: (_) => HomeScreen(customerId: user['id'].toString(), customerName: user['name'] ?? '', customerPhone: widget.phone)),
           (r) => false,
         );
       }

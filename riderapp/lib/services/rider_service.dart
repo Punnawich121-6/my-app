@@ -28,7 +28,7 @@ class RiderService {
     return null;
   }
 
-  static Future<Map<String, dynamic>?> getProfile(int riderId) async {
+  static Future<Map<String, dynamic>?> getProfile(String riderId) async {
     try {
       final res = await http.get(Uri.parse('$_base/profile/$riderId'));
       if (res.statusCode == 200) return jsonDecode(res.body);
@@ -46,7 +46,7 @@ class RiderService {
     return [];
   }
 
-  static Future<Map<String, dynamic>?> getActiveDelivery(int riderId) async {
+  static Future<Map<String, dynamic>?> getActiveDelivery(String riderId) async {
     try {
       final res = await http.get(Uri.parse('$_base/orders/active/$riderId'));
       if (res.statusCode == 200) {
@@ -57,7 +57,7 @@ class RiderService {
     return null;
   }
 
-  static Future<bool> acceptOrder(int orderId, int riderId) async {
+  static Future<bool> acceptOrder(String orderId, String riderId) async {
     try {
       final res = await http.post(
         Uri.parse('$_base/orders/$orderId/accept'),
@@ -69,7 +69,7 @@ class RiderService {
     return false;
   }
 
-  static Future<bool> completeDelivery(int orderId, int riderId) async {
+  static Future<bool> completeDelivery(String orderId, String riderId) async {
     try {
       final res = await http.post(
         Uri.parse('$_base/orders/$orderId/complete'),
@@ -81,7 +81,7 @@ class RiderService {
     return false;
   }
 
-  static Future<List<Map<String, dynamic>>> getHistory(int riderId) async {
+  static Future<List<Map<String, dynamic>>> getHistory(String riderId) async {
     try {
       final res = await http.get(Uri.parse('$_base/history/$riderId'));
       if (res.statusCode == 200) {
@@ -91,7 +91,7 @@ class RiderService {
     return [];
   }
 
-  static Future<Map<String, dynamic>?> getEarnings(int riderId) async {
+  static Future<Map<String, dynamic>?> getEarnings(String riderId) async {
     try {
       final res = await http.get(Uri.parse('$_base/earnings/$riderId'));
       if (res.statusCode == 200) return jsonDecode(res.body);

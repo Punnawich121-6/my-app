@@ -1,12 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const crypto = require('crypto');
 
+// ─── GET stores (restaurant table) ───────────────────────────────────────────
 router.get('/stores', async (req, res) => {
   try {
     const [stores] = await db.query(
-      `SELECT id, name, type, address, is_open, image_url, rating, review_count, open_time, close_time
-       FROM stores WHERE status = 'approved' ORDER BY is_open DESC, rating DESC`
+      `SELECT id, name, category AS type, address,
+              CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open,
+              imageUrl AS image_url, COALESCE(rating, 0) AS rating,
+              0 AS review_count
+       FROM restaurant
+       ORDER BY is_open DESC, rating DESC`
     );
     res.json(stores);
   } catch (e) {
@@ -14,10 +20,11 @@ router.get('/stores', async (req, res) => {
   }
 });
 
+// ─── GET customer by phone ────────────────────────────────────────────────────
 router.get('/by-phone/:phone', async (req, res) => {
   try {
     const [[user]] = await db.query(
-      'SELECT * FROM users WHERE phone = ?',
+      'SELECT id, name, phone, address FROM customer WHERE phone = ?',
       [req.params.phone]
     );
     res.json(user || null);
@@ -26,35 +33,43 @@ router.get('/by-phone/:phone', async (req, res) => {
   }
 });
 
+// ─── POST register ────────────────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   const { phone, name } = req.body;
   try {
-    const [[existing]] = await db.query('SELECT id FROM users WHERE phone = ?', [phone]);
-    if (existing) {
-      return res.json({ user_id: existing.id });
-    }
-    const [result] = await db.query(
-      'INSERT INTO users (phone, name, role) VALUES (?, ?, "customer")',
-      [phone, name]
+    const [[existing]] = await db.query(
+      'SELECT id FROM customer WHERE phone = ?', [phone]
     );
-    res.json({ user_id: result.insertId });
+    if (existing) return res.json({ user_id: existing.id });
+
+    const id = crypto.randomUUID();
+    const email = `${phone}@customerapp.local`;
+    await db.query(
+      'INSERT INTO customer (id, name, email, phone) VALUES (?, ?, ?, ?)',
+      [id, name, email, phone]
+    );
+    res.json({ user_id: id });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
+// ─── POST place order ─────────────────────────────────────────────────────────
 router.post('/orders', async (req, res) => {
   const { customer_id, customer_name, customer_phone, store_id, items, address, note } = req.body;
   const deliveryFee = 30;
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const total = subtotal + deliveryFee;
+  const orderNumber = `ORD-${Date.now()}`;
+  const notesField = [address, note].filter(Boolean).join(' | ');
+
   try {
-    const [result] = await db.query(
-      `INSERT INTO orders (store_id, customer_id, customer_name, customer_phone, address, note, status, total_amount, delivery_fee)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [store_id, customer_id || null, customer_name, customer_phone, address, note || '', 'pending', total.toFixed(2), deliveryFee]
+    const orderId = crypto.randomUUID();
+    await db.query(
+      `INSERT INTO \`order\` (id, orderNumber, restaurantId, customerId, status, totalAmount, notes)
+       VALUES (?, ?, ?, ?, 'pending', ?, ?)`,
+      [orderId, orderNumber, store_id, customer_id || null, total.toFixed(2), notesField]
     );
-    const orderId = result.insertId;
     for (const item of items) {
       await db.query(
         'INSERT INTO order_items (order_id, menu_item_id, name, price, quantity) VALUES (?,?,?,?,?)',
@@ -67,31 +82,46 @@ router.post('/orders', async (req, res) => {
   }
 });
 
+// ─── GET order detail ─────────────────────────────────────────────────────────
 router.get('/orders/detail/:orderId', async (req, res) => {
   try {
     const [[order]] = await db.query(
-      `SELECT o.*, s.name as store_name, s.address as store_address
-       FROM orders o LEFT JOIN stores s ON o.store_id = s.id WHERE o.id = ?`,
+      `SELECT o.id, o.orderNumber, o.status, o.totalAmount AS total_amount,
+              o.notes, o.createdAt AS created_at,
+              r.name AS store_name, r.address AS store_address
+       FROM \`order\` o
+       LEFT JOIN restaurant r ON o.restaurantId = r.id
+       WHERE o.id = ?`,
       [req.params.orderId]
     );
     if (!order) return res.status(404).json({ error: 'Not found' });
-    const [items] = await db.query('SELECT * FROM order_items WHERE order_id = ?', [req.params.orderId]);
-    res.json({ ...order, items });
+    const [items] = await db.query(
+      'SELECT * FROM order_items WHERE order_id = ?',
+      [req.params.orderId]
+    );
+    const [address, note] = (order.notes || '').split(' | ');
+    res.json({ ...order, address: address || '', note: note || '', delivery_fee: 30, items });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
+// ─── GET orders by customer ───────────────────────────────────────────────────
 router.get('/orders/:customerId', async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT o.*, s.name as store_name,
-       GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name) SEPARATOR ', ') as items_summary
-       FROM orders o
-       LEFT JOIN stores s ON o.store_id = s.id
+      `SELECT o.id, o.orderNumber, o.status,
+              o.totalAmount AS total_amount,
+              o.createdAt AS created_at,
+              r.name AS store_name,
+              r.imageUrl AS store_image,
+              GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name) SEPARATOR ', ') AS items_summary
+       FROM \`order\` o
+       LEFT JOIN restaurant r ON o.restaurantId = r.id
        LEFT JOIN order_items oi ON o.id = oi.order_id
-       WHERE o.customer_id = ?
-       GROUP BY o.id ORDER BY o.created_at DESC`,
+       WHERE o.customerId = ?
+       GROUP BY o.id
+       ORDER BY o.createdAt DESC`,
       [req.params.customerId]
     );
     res.json(orders);
@@ -100,10 +130,11 @@ router.get('/orders/:customerId', async (req, res) => {
   }
 });
 
+// ─── PUT update profile ───────────────────────────────────────────────────────
 router.put('/profile/:id', async (req, res) => {
   const { name } = req.body;
   try {
-    await db.query('UPDATE users SET name = ? WHERE id = ?', [name, req.params.id]);
+    await db.query('UPDATE customer SET name = ? WHERE id = ?', [name, req.params.id]);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

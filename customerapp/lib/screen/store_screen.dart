@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../main.dart';
 import '../services/customer_service.dart';
+import 'payment_screen.dart';
 
 class StoreScreen extends StatefulWidget {
   final Map<String, dynamic> store;
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   const StoreScreen({super.key, required this.store, required this.customerId, required this.customerName, required this.customerPhone});
@@ -71,16 +72,45 @@ class _StoreScreenState extends State<StoreScreen> {
     final rating = double.tryParse(widget.store['rating']?.toString() ?? '0') ?? 0;
     return Scaffold(
       backgroundColor: CColors.bg,
+      appBar: AppBar(
+        backgroundColor: CColors.bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 38, height: 38,
+                decoration: const BoxDecoration(color: Color(0xFFF5F5F5), shape: BoxShape.circle),
+                child: const Icon(Icons.chevron_left_rounded, color: CColors.text, size: 22),
+              ),
+            ),
+            const Spacer(),
+            Text(widget.store['name'] ?? 'Restaurant',
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: CColors.text)),
+            const Spacer(),
+            Container(
+              width: 38, height: 38,
+              decoration: const BoxDecoration(color: Color(0xFFF5F5F5), shape: BoxShape.circle),
+              child: const Icon(Icons.more_horiz_rounded, color: CColors.text, size: 20),
+            ),
+          ]),
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: CColors.orange))
           : Stack(children: [
               CustomScrollView(
                 slivers: [
-                  // Hero image with back + more buttons
+                  // Hero image
                   SliverToBoxAdapter(
                     child: Stack(children: [
                       Container(
-                        margin: const EdgeInsets.fromLTRB(16, 52, 16, 0),
+                        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         height: 220,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
@@ -90,27 +120,6 @@ class _StoreScreenState extends State<StoreScreen> {
                                     child: const Center(child: Icon(Icons.restaurant_rounded, color: CColors.orange, size: 56))))
                               : Container(color: CColors.orangeLight,
                                   child: const Center(child: Icon(Icons.restaurant_rounded, color: CColors.orange, size: 56))),
-                        ),
-                      ),
-                      Positioned(
-                        top: 60, left: 28,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 38, height: 38,
-                            decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 8, offset: const Offset(0, 2))]),
-                            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 15, color: Color(0xFF1A1A1A)),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 60, right: 28,
-                        child: Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 8, offset: const Offset(0, 2))]),
-                          child: const Icon(Icons.more_horiz_rounded, size: 20, color: Color(0xFF1A1A1A)),
                         ),
                       ),
                     ]),
@@ -362,7 +371,7 @@ class _MenuGridCard extends StatelessWidget {
 class _CartSheet extends StatefulWidget {
   final List<Map<String, dynamic>> items;
   final Map<String, dynamic> store;
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   final Function(int id, int qty) onUpdate;
@@ -375,7 +384,6 @@ class _CartSheet extends StatefulWidget {
 class _CartSheetState extends State<_CartSheet> {
   final _addressCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  bool _placing = false;
   bool _addressError = false;
   late List<Map<String, dynamic>> _items;
 
@@ -387,49 +395,41 @@ class _CartSheetState extends State<_CartSheet> {
 
   int get _subtotal => _items.fold(0, (s, i) => s + (double.tryParse(i['price'].toString()) ?? 0).round() * (i['qty'] as int));
 
-  Future<void> _placeOrder() async {
+  void _goToPayment() {
     if (_addressCtrl.text.trim().isEmpty) {
       setState(() => _addressError = true);
       return;
     }
-    setState(() => _placing = true);
-    final result = await CustomerService.placeOrder(
-      customerId: widget.customerId,
-      customerName: widget.customerName,
-      customerPhone: widget.customerPhone,
-      storeId: widget.store['id'],
-      items: _items.map((i) => {'menu_item_id': i['id'], 'name': i['name'], 'price': i['price'], 'quantity': i['qty']}).toList(),
-      address: _addressCtrl.text.trim(),
-      note: _noteCtrl.text.trim(),
-    );
-    if (!mounted) return;
-    setState(() => _placing = false);
-    if (result != null && result['success'] == true) {
-      widget.onOrderPlaced();
-      Navigator.pop(context);
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 64, height: 64, decoration: const BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle), child: const Icon(Icons.check_rounded, color: CColors.orange, size: 36)),
-            const SizedBox(height: 16),
-            const Text('สั่งอาหารสำเร็จ!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CColors.text)),
-            const SizedBox(height: 8),
-            const Text('ร้านอาหารกำลังรับออเดอร์ของคุณ', style: TextStyle(color: CColors.muted)),
-          ]),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: CColors.orange, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: const Text('ดูออเดอร์'),
-            ),
-          ],
+    final orderItems = _items.map((i) => {
+      'menu_item_id': i['id'], 'name': i['name'],
+      'price': i['price'], 'quantity': i['qty'],
+    }).toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          totalAmount: _subtotal + 30,
+          onConfirm: () async {
+            final result = await CustomerService.placeOrder(
+              customerId: widget.customerId,
+              customerName: widget.customerName,
+              customerPhone: widget.customerPhone,
+              storeId: widget.store['id'],
+              items: orderItems,
+              address: _addressCtrl.text.trim(),
+              note: _noteCtrl.text.trim(),
+            );
+            if (result != null && result['success'] == true) {
+              return result['order_id'] as String?;
+            }
+            return null;
+          },
+          onSuccess: () {
+            widget.onOrderPlaced();
+          },
         ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('สั่งอาหารไม่สำเร็จ กรุณาลองใหม่')));
-    }
+      ),
+    );
   }
 
   @override
@@ -509,11 +509,9 @@ class _CartSheetState extends State<_CartSheet> {
             child: SizedBox(
               width: double.infinity, height: 54,
               child: ElevatedButton(
-                onPressed: (_placing || _items.isEmpty) ? null : _placeOrder,
+                onPressed: _items.isEmpty ? null : _goToPayment,
                 style: ElevatedButton.styleFrom(backgroundColor: CColors.orange, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                child: _placing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text('สั่งอาหาร ฿${fmt.format(_subtotal + 30)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                child: Text('เลือกการชำระเงิน ฿${fmt.format(_subtotal + 30)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),
           ),

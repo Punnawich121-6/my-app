@@ -29,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       if (result != null) {
         Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (_) => HomeScreen(customerId: (result['user_id'] as num).toInt(), customerName: name, customerPhone: widget.phone)),
+          MaterialPageRoute(builder: (_) => HomeScreen(customerId: result['user_id'].toString(), customerName: name, customerPhone: widget.phone)),
           (r) => false,
         );
       } else {

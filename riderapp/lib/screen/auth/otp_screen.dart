@@ -10,7 +10,8 @@ import 'register_screen.dart';
 class OtpScreen extends StatefulWidget {
   final String phone;
   final String verificationId;
-  const OtpScreen({super.key, required this.phone, required this.verificationId});
+  final ConfirmationResult? confirmationResult;
+  const OtpScreen({super.key, required this.phone, required this.verificationId, this.confirmationResult});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -66,11 +67,15 @@ class _OtpScreenState extends State<OtpScreen> {
     if (_isVerifying) return;
     setState(() => _isVerifying = true);
     try {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: _otp,
-      );
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (widget.confirmationResult != null) {
+        await widget.confirmationResult!.confirm(_otp);
+      } else {
+        final credential = PhoneAuthProvider.credential(
+          verificationId: _verificationId,
+          smsCode: _otp,
+        );
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
       if (!mounted) return;
 
       final rider = await RiderService.getByPhone(widget.phone);

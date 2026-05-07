@@ -13,32 +13,36 @@ router.get('/:storeId', async (req, res) => {
 
     const [[summary]] = await db.query(
       `SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count
-       FROM earnings WHERE store_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL ${interval})`,
+       FROM transaction WHERE restaurantId=? AND createdAt >= DATE_SUB(NOW(), INTERVAL ${interval})`,
       [storeId]
     );
 
     const [[pending]] = await db.query(
-      `SELECT COALESCE(SUM(amount),0) as amount FROM earnings WHERE store_id=? AND status='pending'`,
+      `SELECT COALESCE(SUM(amount),0) as amount FROM transaction
+       WHERE restaurantId=? AND LOWER(status)='pending'`,
       [storeId]
     );
 
     const [[paid]] = await db.query(
-      `SELECT COALESCE(SUM(amount),0) as amount FROM earnings WHERE store_id=? AND status='paid'`,
+      `SELECT COALESCE(SUM(amount),0) as amount FROM transaction
+       WHERE restaurantId=? AND LOWER(status) IN ('paid','completed')`,
       [storeId]
     );
 
     const [transactions] = await db.query(
-      `SELECT e.*, o.customer_name, o.created_at as order_date
-       FROM earnings e LEFT JOIN orders o ON e.order_id = o.id
-       WHERE e.store_id=? AND e.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
-       ORDER BY e.created_at DESC`,
+      `SELECT t.*, c.name AS customer_name, o.createdAt as order_date
+       FROM transaction t
+       LEFT JOIN \`order\` o ON t.orderId = o.id
+       LEFT JOIN customer c ON o.customerId = c.id
+       WHERE t.restaurantId=? AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${interval})
+       ORDER BY t.createdAt DESC`,
       [storeId]
     );
 
     const [chartData] = await db.query(
-      `SELECT DATE(created_at) as date, SUM(amount) as revenue
-       FROM earnings WHERE store_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-       GROUP BY DATE(created_at) ORDER BY date ASC`,
+      `SELECT DATE(createdAt) as date, SUM(amount) as revenue
+       FROM transaction WHERE restaurantId=? AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+       GROUP BY DATE(createdAt) ORDER BY date ASC`,
       [storeId]
     );
 

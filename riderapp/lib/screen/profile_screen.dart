@@ -4,7 +4,7 @@ import '../main.dart';
 import 'auth/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final int riderId;
+  final String riderId;
   final String riderName;
   const ProfileScreen({super.key, required this.riderId, required this.riderName});
 

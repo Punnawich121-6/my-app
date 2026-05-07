@@ -7,38 +7,50 @@ router.get('/:storeId', async (req, res) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
 
-    const [[store]] = await db.query('SELECT * FROM stores WHERE id = ?', [storeId]);
+    const [[store]] = await db.query(
+      `SELECT id, name, category AS type, address, imageUrl AS image_url,
+              COALESCE(rating, 0) AS rating,
+              CASE WHEN LOWER(status) = 'active' THEN 1 ELSE 0 END AS is_open
+       FROM restaurant WHERE id = ?`,
+      [storeId]
+    );
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
     const [[todaySales]] = await db.query(
-      `SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as revenue
-       FROM orders WHERE store_id=? AND DATE(created_at)=? AND status='completed'`,
+      `SELECT COUNT(*) as count, COALESCE(SUM(totalAmount),0) as revenue
+       FROM \`order\` WHERE restaurantId=? AND DATE(createdAt)=? AND LOWER(status)='completed'`,
       [storeId, today]
     );
 
     const [[pendingOrders]] = await db.query(
-      `SELECT COUNT(*) as count FROM orders WHERE store_id=? AND status IN ('pending','accepted','preparing')`,
+      `SELECT COUNT(*) as count FROM \`order\`
+       WHERE restaurantId=? AND LOWER(status) IN ('pending','accepted','preparing')`,
       [storeId]
     );
 
     const [[readyOrders]] = await db.query(
-      `SELECT COUNT(*) as count FROM orders WHERE store_id=? AND status IN ('ready','delivering')`,
+      `SELECT COUNT(*) as count FROM \`order\`
+       WHERE restaurantId=? AND LOWER(status) IN ('ready','delivering')`,
       [storeId]
     );
 
     const [weekSales] = await db.query(
-      `SELECT DATE(created_at) as date, COALESCE(SUM(total_amount),0) as revenue
-       FROM orders WHERE store_id=? AND status='completed'
-       AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-       GROUP BY DATE(created_at) ORDER BY date ASC`,
+      `SELECT DATE(createdAt) as date, COALESCE(SUM(totalAmount),0) as revenue
+       FROM \`order\` WHERE restaurantId=? AND LOWER(status)='completed'
+       AND createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+       GROUP BY DATE(createdAt) ORDER BY date ASC`,
       [storeId]
     );
 
     const [recentOrders] = await db.query(
-      `SELECT o.*, GROUP_CONCAT(oi.name SEPARATOR ', ') as items_summary
-       FROM orders o LEFT JOIN order_items oi ON o.id=oi.order_id
-       WHERE o.store_id=? AND o.status IN ('pending','accepted','preparing')
-       GROUP BY o.id ORDER BY o.created_at DESC LIMIT 5`,
+      `SELECT o.id, o.orderNumber, o.status, o.totalAmount, o.notes, o.createdAt,
+              c.name AS customer_name, c.phone AS customer_phone,
+              GROUP_CONCAT(oi.name SEPARATOR ', ') as items_summary
+       FROM \`order\` o
+       LEFT JOIN customer c ON o.customerId = c.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       WHERE o.restaurantId=? AND LOWER(o.status) IN ('pending','accepted','preparing')
+       GROUP BY o.id ORDER BY o.createdAt DESC LIMIT 5`,
       [storeId]
     );
 
@@ -59,9 +71,10 @@ router.get('/:storeId', async (req, res) => {
 router.put('/:storeId/toggle', async (req, res) => {
   const { storeId } = req.params;
   try {
-    await db.query('UPDATE stores SET is_open = NOT is_open WHERE id = ?', [storeId]);
-    const [[store]] = await db.query('SELECT is_open FROM stores WHERE id = ?', [storeId]);
-    res.json({ is_open: store.is_open });
+    const [[store]] = await db.query('SELECT status FROM restaurant WHERE id = ?', [storeId]);
+    const newStatus = store.status.toLowerCase() === 'active' ? 'inactive' : 'active';
+    await db.query('UPDATE restaurant SET status = ? WHERE id = ?', [newStatus, storeId]);
+    res.json({ is_open: newStatus === 'active' ? 1 : 0 });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -19,25 +19,41 @@ class CustomerApp extends StatelessWidget {
       title: 'Zest & Savory',
       theme: ThemeData(
         scaffoldBackgroundColor: CColors.bg,
-        fontFamily: 'Roboto',
-        colorScheme: ColorScheme.fromSeed(seedColor: CColors.orange),
+        fontFamily: 'sans-serif',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: CColors.orange,
+          primary: CColors.orange,
+          surface: CColors.bg,
+        ),
       ),
+      builder: (context, child) {
+        return Container(
+          color: const Color(0xFFD0D0D0),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: child!,
+            ),
+          ),
+        );
+      },
       home: const LoginScreen(),
     );
   }
 }
 
+// Web-matching color palette (from globals.css)
 abstract class CColors {
-  static const orange      = Color(0xFFF5A623);   // warm amber orange
-  static const orangeLight = Color(0xFFFFF8E1);   // very light amber
-  static const orangeMid   = Color(0xFFFFE082);   // mid amber
-  static const bg          = Color(0xFFFFFFFF);   // white
-  static const text        = Color(0xFF1A1A1A);   // near black
-  static const muted       = Color(0xFF9E9E9E);   // grey
-  static const green       = Color(0xFF43A047);
-  static const greenLight  = Color(0xFFE8F5E9);
-  static const red         = Color(0xFFE53935);
-  static const redLight    = Color(0xFFFFEBEE);
+  static const orange      = Color(0xFFFF6B35);   // --color-primary-container
+  static const orangeLight = Color(0xFFFBF2ED);   // --color-surface-container-low
+  static const orangeMid   = Color(0xFFE1BFB5);   // --color-outline-variant
+  static const bg          = Color(0xFFFFF8F5);   // --color-background
+  static const text        = Color(0xFF1E1B18);   // --color-on-background
+  static const muted       = Color(0xFF8D7168);   // --color-outline
+  static const green       = Color(0xFF00677E);   // --color-tertiary
+  static const greenLight  = Color(0xFFB5EBFF);   // --color-tertiary-fixed
+  static const red         = Color(0xFFBA1A1A);   // --color-error
+  static const redLight    = Color(0xFFFFDAD6);   // --color-error-container
 }
 
 abstract class CTextStyles {

@@ -20,8 +20,18 @@ class RiderApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: RiderColors.bg,
         colorScheme: ColorScheme.fromSeed(seedColor: RiderColors.blue),
-        fontFamily: 'Roboto',
       ),
+      builder: (context, child) {
+        return Container(
+          color: const Color(0xFFD0D0D0),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: child!,
+            ),
+          ),
+        );
+      },
       home: const LoginScreen(),
     );
   }

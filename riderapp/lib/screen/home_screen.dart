@@ -7,7 +7,7 @@ import 'earnings_screen.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final int riderId;
+  final String riderId;
   final String riderName;
   const HomeScreen({super.key, required this.riderId, required this.riderName});
 

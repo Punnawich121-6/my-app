@@ -4,7 +4,7 @@ import '../main.dart';
 import '../services/rider_service.dart';
 
 class EarningsScreen extends StatefulWidget {
-  final int riderId;
+  final String riderId;
   const EarningsScreen({super.key, required this.riderId});
 
   @override

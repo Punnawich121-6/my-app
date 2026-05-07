@@ -8,7 +8,7 @@ import 'search_screen.dart';
 import '../services/customer_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   const HomeScreen({super.key, required this.customerId, required this.customerName, required this.customerPhone});
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
 // ─── Store List Tab ───────────────────────────────────────────────────────────
 
 class _StoreListTab extends StatefulWidget {
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   final VoidCallback onGoToOrders;
@@ -211,7 +211,7 @@ class _StoreListTabState extends State<_StoreListTab> {
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
       child: RichText(
         text: TextSpan(
-          style: const TextStyle(fontSize: 20, color: CColors.text, fontFamily: 'Roboto'),
+          style: const TextStyle(fontSize: 20, color: CColors.text),
           children: [
             TextSpan(text: 'Hey $name, '),
             TextSpan(text: '$greeting!', style: const TextStyle(fontWeight: FontWeight.w800)),

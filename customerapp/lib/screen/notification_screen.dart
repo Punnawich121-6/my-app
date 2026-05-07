@@ -5,7 +5,7 @@ import '../services/customer_service.dart';
 import 'order_tracking_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
-  final int customerId;
+  final String customerId;
   const NotificationScreen({super.key, required this.customerId});
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -107,7 +107,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       final isActive = !['completed', 'cancelled'].contains(status);
                       return GestureDetector(
                         onTap: () => Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => OrderTrackingScreen(orderId: (order['id'] as num).toInt()),
+                          builder: (_) => OrderTrackingScreen(orderId: order['id'].toString()),
                         )),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),

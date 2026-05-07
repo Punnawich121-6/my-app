@@ -4,7 +4,7 @@ import 'store_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   final List<Map<String, dynamic>> stores;
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   const SearchScreen({

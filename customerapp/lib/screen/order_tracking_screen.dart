@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../main.dart';
 import '../services/customer_service.dart';
+import 'chat_screen.dart';
+import 'call_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
-  final int orderId;
+  final String orderId;
   const OrderTrackingScreen({super.key, required this.orderId});
   @override
   State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
@@ -100,6 +102,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         _buildBanner(status),
                         const SizedBox(height: 16),
                         _buildTimeline(stepIdx, status),
+                        if (status == 'delivering') ...[
+                          const SizedBox(height: 16),
+                          _buildRiderCard(),
+                        ],
                         const SizedBox(height: 16),
                         _buildInfoCard('ร้านอาหาร', [
                           _InfoRow(Icons.store_rounded, _order!['store_name'] ?? '-', bold: true),
@@ -124,6 +130,50 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   ),
               ],
             ),
+    );
+  }
+
+  Widget _buildRiderCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)],
+      ),
+      child: Row(children: [
+        Container(
+          width: 48, height: 48,
+          decoration: const BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle),
+          child: const Icon(Icons.person_rounded, color: CColors.orange, size: 26),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Robert Fox', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: CColors.text)),
+            SizedBox(height: 2),
+            Text('Your Rider', style: TextStyle(fontSize: 12, color: CColors.muted)),
+          ]),
+        ),
+        GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen())),
+          child: Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.chat_bubble_outline_rounded, color: CColors.orange, size: 20),
+          ),
+        ),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CallScreen())),
+          child: Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(color: CColors.orange, borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.call_rounded, color: Colors.white, size: 20),
+          ),
+        ),
+      ]),
     );
   }
 

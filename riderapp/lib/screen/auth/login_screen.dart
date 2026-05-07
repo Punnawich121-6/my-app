@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
@@ -34,6 +35,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     final fullPhone = '+66${phone.startsWith('0') ? phone.substring(1) : phone}';
+
+    if (kIsWeb) {
+      try {
+        final confirmation = await FirebaseAuth.instance.signInWithPhoneNumber(fullPhone);
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => OtpScreen(phone: phone, verificationId: '', confirmationResult: confirmation),
+        ));
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ส่ง OTP ไม่สำเร็จ: $e')));
+      }
+      return;
+    }
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: fullPhone,

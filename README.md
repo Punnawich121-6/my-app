@@ -433,6 +433,22 @@ node server.js
 
 ### 3. Start Flutter App
 ```bash
-cd myapp
+cd merchantapp
 flutter run -d chrome
 ```
+# Merchant App
+cd merchantapp
+flutter run -d chrome --web-port 8080
+
+# Customer App
+cd customerapp
+flutter run -d chrome --web-port 8081
+
+# Rider App
+cd riderapp
+flutter run -d chrome --web-port 8082
+
+cd backend
+npm start
+# หรือ dev mode (auto-reload)
+npm run dev

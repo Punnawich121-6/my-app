@@ -3,7 +3,7 @@ import '../main.dart';
 import '../services/customer_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  final int customerId;
+  final String customerId;
   final String customerName;
   final String customerPhone;
   const EditProfileScreen({super.key, required this.customerId, required this.customerName, required this.customerPhone});

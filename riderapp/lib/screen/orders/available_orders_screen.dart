@@ -5,7 +5,7 @@ import '../../main.dart';
 import '../../services/rider_service.dart';
 
 class AvailableOrdersScreen extends StatefulWidget {
-  final int riderId;
+  final String riderId;
   final bool isOnline;
   final VoidCallback onOrderAccepted;
 

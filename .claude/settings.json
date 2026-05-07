@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//dev/**)",
+      "Bash(services\")",
+      "Bash(xargs -I {} find {} -type f -name \"*.dart\")"
+    ]
+  }
+}

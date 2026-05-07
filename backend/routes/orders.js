@@ -6,24 +6,28 @@ router.get('/:storeId', async (req, res) => {
   const { storeId } = req.params;
   const { status } = req.query;
   try {
-    let where = 'WHERE o.store_id = ?';
+    let where = 'WHERE o.restaurantId = ?';
     const params = [storeId];
     if (status && status !== 'all') {
       if (status === 'active') {
-        where += " AND o.status IN ('pending','accepted','preparing')";
+        where += " AND LOWER(o.status) IN ('pending','accepted','preparing')";
       } else if (status === 'delivering') {
-        where += " AND o.status IN ('ready','delivering')";
+        where += " AND LOWER(o.status) IN ('ready','delivering')";
       } else if (status === 'completed') {
-        where += " AND o.status = 'completed'";
+        where += " AND LOWER(o.status) = 'completed'";
       } else if (status === 'cancelled') {
-        where += " AND o.status = 'cancelled'";
+        where += " AND LOWER(o.status) = 'cancelled'";
       }
     }
 
     const [orders] = await db.query(
-      `SELECT o.*, GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name) SEPARATOR ', ') as items_summary
-       FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id
-       ${where} GROUP BY o.id ORDER BY o.created_at DESC`,
+      `SELECT o.id, o.orderNumber, o.status, o.totalAmount, o.serviceFee, o.notes, o.createdAt,
+              c.name AS customer_name, c.phone AS customer_phone, c.address,
+              GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name) SEPARATOR ', ') as items_summary
+       FROM \`order\` o
+       LEFT JOIN customer c ON o.customerId = c.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       ${where} GROUP BY o.id ORDER BY o.createdAt DESC`,
       params
     );
     res.json(orders);
@@ -35,12 +39,15 @@ router.get('/:storeId', async (req, res) => {
 router.get('/detail/:orderId', async (req, res) => {
   const { orderId } = req.params;
   try {
-    const [[order]] = await db.query('SELECT * FROM orders WHERE id = ?', [orderId]);
+    const [[order]] = await db.query(
+      `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, c.address
+       FROM \`order\` o LEFT JOIN customer c ON o.customerId = c.id
+       WHERE o.id = ?`,
+      [orderId]
+    );
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
-    const [items] = await db.query(
-      'SELECT * FROM order_items WHERE order_id = ?', [orderId]
-    );
+    const [items] = await db.query('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
     res.json({ ...order, items });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -55,26 +62,23 @@ router.put('/:orderId/status', async (req, res) => {
     return res.status(400).json({ error: 'Invalid status' });
   }
   try {
-    await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, orderId]);
+    await db.query('UPDATE `order` SET status = ? WHERE id = ?', [status, orderId]);
 
     if (status === 'completed') {
       const [[order]] = await db.query(
-        'SELECT store_id, total_amount, delivery_fee FROM orders WHERE id = ?',
+        'SELECT restaurantId, totalAmount FROM `order` WHERE id = ?',
         [orderId]
       );
-      // หักค่าส่งออกก่อน แล้วค่อยหักค่าบริการ 15%
-      const foodAmount = parseFloat(order.total_amount) - parseFloat(order.delivery_fee || 0);
-      const net = foodAmount * 0.85;
+      const net = parseFloat(order.totalAmount) * 0.85;
       await db.query(
-        'INSERT INTO earnings (store_id, order_id, amount, type, status) VALUES (?,?,?,?,?)',
-        [order.store_id, orderId, net.toFixed(2), 'order', 'paid']
+        'INSERT INTO transaction (id, orderId, restaurantId, amount, netPayout, status) VALUES (UUID(),?,?,?,?,?)',
+        [orderId, order.restaurantId, net.toFixed(2), net.toFixed(2), 'completed']
       );
-      // อัปเดต rating ร้าน (คำนวณเฉลี่ยใหม่)
       await db.query(
-        `UPDATE stores s SET
-          review_count = (SELECT COUNT(*) FROM orders WHERE store_id = s.id AND status = 'completed')
-        WHERE s.id = ?`,
-        [order.store_id]
+        `UPDATE restaurant SET totalOrders = (
+           SELECT COUNT(*) FROM \`order\` WHERE restaurantId = restaurant.id AND LOWER(status) = 'completed'
+         ) WHERE id = ?`,
+        [order.restaurantId]
       );
     }
     res.json({ success: true });
@@ -85,28 +89,31 @@ router.put('/:orderId/status', async (req, res) => {
 
 // Test Order Creator (DEV only)
 router.post('/test-order', async (req, res) => {
-  const { store_id, items } = req.body; // items: [{menu_item_id, name, price, quantity}]
+  const { store_id, items } = req.body;
   if (!store_id || !items || !items.length) {
     return res.status(400).json({ error: 'store_id and items are required' });
   }
-  const customerNames = ['สมชาย', 'ณัฐนันท์', 'กิตติ', 'พิชา', 'วราภรณ์'];
-  const customerName = customerNames[Math.floor(Math.random() * customerNames.length)];
-  const phones = ['081-234-5678', '086-123-4567', '089-876-5432'];
-  const phone = phones[Math.floor(Math.random() * phones.length)];
-  const notes = ['ไม่เผ็ด', 'เอาข้าวเพิ่ม', 'ซอสเพิ่ม', ''];
-  const note = notes[Math.floor(Math.random() * notes.length)];
-
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const deliveryFee = 30;
-  const totalAmount = subtotal + deliveryFee;
+  const serviceFee = 30;
+  const totalAmount = subtotal + serviceFee;
 
   try {
-    const [result] = await db.query(
-      `INSERT INTO orders (store_id, customer_name, customer_phone, address, note, status, total_amount, delivery_fee)
+    let [[testCustomer]] = await db.query('SELECT id FROM customer WHERE email = ?', ['test@test.com']);
+    if (!testCustomer) {
+      await db.query(
+        'INSERT INTO customer (id, name, email, phone, address) VALUES (UUID(), ?, ?, ?, ?)',
+        ['ลูกค้าทดสอบ', 'test@test.com', '081-234-5678', '123 ถ.ทดสอบ กรุงเทพฯ']
+      );
+      [[testCustomer]] = await db.query('SELECT id FROM customer WHERE email = ?', ['test@test.com']);
+    }
+
+    const orderId = require('crypto').randomUUID();
+    const orderNumber = 'ORD-' + Date.now();
+    await db.query(
+      `INSERT INTO \`order\` (id, orderNumber, restaurantId, customerId, status, totalAmount, serviceFee, notes)
        VALUES (?,?,?,?,?,?,?,?)`,
-      [store_id, customerName, phone, '123 ถ.ทดสอบ กรุงเทพฯ', note, 'pending', totalAmount.toFixed(2), deliveryFee]
+      [orderId, orderNumber, store_id, testCustomer.id, 'pending', totalAmount.toFixed(2), serviceFee, '']
     );
-    const orderId = result.insertId;
 
     for (const item of items) {
       await db.query(
