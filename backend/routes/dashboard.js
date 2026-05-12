@@ -54,6 +54,19 @@ router.get('/:storeId', async (req, res) => {
       [storeId]
     );
 
+    // Popular items — join with menu_items to get live image/price, filter deleted items
+    const [popularItems] = await db.query(
+      `SELECT mi.id, mi.name, mi.image_url, mi.price, SUM(oi.quantity) AS total_sold
+       FROM order_items oi
+       JOIN \`order\` o ON oi.order_id = o.id
+       JOIN menu_items mi ON mi.store_id = o.restaurantId AND mi.name = oi.name AND mi.is_available = 1
+       WHERE o.restaurantId = ? AND o.createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+       GROUP BY mi.id, mi.name, mi.image_url, mi.price
+       ORDER BY total_sold DESC
+       LIMIT 6`,
+      [storeId]
+    );
+
     res.json({
       store,
       today_orders: todaySales.count,
@@ -62,6 +75,7 @@ router.get('/:storeId', async (req, res) => {
       ready_orders: readyOrders.count,
       week_sales: weekSales,
       recent_orders: recentOrders,
+      popular_items: popularItems,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

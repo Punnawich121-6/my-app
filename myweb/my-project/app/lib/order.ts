@@ -123,13 +123,14 @@ export async function getAllOrders(params: {
            r.name    AS restaurantName,
            r.address AS restaurantAddress,
            c.name    AS customerName,
-           NULL      AS riderName,
+           ri.name   AS riderName,
            o.status,
            o.totalAmount,
            o.createdAt
          FROM \`Order\` o
          JOIN Restaurant r ON o.restaurantId = r.id
          JOIN Customer   c ON o.customerId   = c.id
+         LEFT JOIN Rider ri ON o.riderId = ri.id
          ${where}
          ORDER BY o.createdAt DESC
          LIMIT ? OFFSET ?`,

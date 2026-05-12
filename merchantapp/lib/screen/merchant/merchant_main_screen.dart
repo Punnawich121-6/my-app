@@ -1,11 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../services/api_service.dart';
 import 'dashboard_screen.dart';
 import 'orders_screen.dart';
 import 'menu_screen.dart';
-import 'earnings_screen.dart';
+import 'notification_screen.dart';
 import 'store_settings_screen.dart';
 
 class MerchantMainScreen extends StatefulWidget {
@@ -37,25 +36,16 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
 
   Future<void> _initialize() async {
     await ApiService.init();
-    // Fallback: if storeId still empty, find store by current Firebase user's phone
-    if (ApiService.storeId.isEmpty) {
-      try {
-        String? phone = FirebaseAuth.instance.currentUser?.phoneNumber;
-        if (phone != null && phone.startsWith('+66')) {
-          phone = '0${phone.substring(3)}';
-        }
-        if (phone != null && phone.isNotEmpty) {
-          final store = await ApiService.getStoreByPhone(phone);
-          ApiService.storeId = store?['id']?.toString() ?? '';
-        }
-      } catch (_) {}
-    }
     if (!mounted) return;
     _screens = [
-      DashboardScreen(onPendingChanged: updatePendingBadge, onViewAllOrders: () => setTab(1)),
+      DashboardScreen(
+        onPendingChanged: updatePendingBadge,
+        onViewAllOrders: () => setTab(1),
+        onViewMenu: () => setTab(2),
+      ),
       const OrdersScreen(),
       const MenuScreen(),
-      const EarningsScreen(),
+      const MerchantNotificationScreen(),
       const StoreSettingsScreen(),
     ];
     setState(() => _ready = true);
@@ -96,16 +86,20 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
 
   Widget _buildFab() {
     return Container(
-      width: 56,
-      height: 56,
+      width: 58,
+      height: 58,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.orange,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF8C5A), Color(0xFFFF4500)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.orange.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: AppColors.orange.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -115,7 +109,7 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: _onFabTap,
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
         ),
       ),
     );
@@ -124,12 +118,16 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
   Widget _buildBottomNav() {
     return BottomAppBar(
       color: Colors.white,
-      elevation: 12,
-      notchMargin: 8,
+      elevation: 0,
+      notchMargin: 10,
       shape: const CircularNotchedRectangle(),
       padding: EdgeInsets.zero,
-      child: SizedBox(
-        height: 60,
+      child: Container(
+        height: 62,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -141,8 +139,8 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
               onTap: setTab,
               badge: _pendingOrders,
             ),
-            const SizedBox(width: 56), // FAB space
-            _NavItem(icon: Icons.restaurant_menu_rounded, index: 2, currentIndex: _currentIndex, onTap: setTab),
+            const SizedBox(width: 58),
+            _NavItem(icon: Icons.notifications_none_rounded, index: 3, currentIndex: _currentIndex, onTap: setTab),
             _NavItem(icon: Icons.person_outline_rounded, index: 4, currentIndex: _currentIndex, onTap: setTab),
           ],
         ),
@@ -173,17 +171,33 @@ class _NavItem extends StatelessWidget {
       onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 56,
-        height: 60,
+        width: 60,
+        height: 62,
         child: Center(
-          child: Badge(
-            isLabelVisible: badge > 0,
-            label: Text('$badge'),
-            child: Icon(
-              icon,
-              size: 26,
-              color: isActive ? AppColors.orange : AppColors.muted,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Badge(
+                isLabelVisible: badge > 0,
+                label: Text('$badge', style: const TextStyle(fontSize: 10)),
+                backgroundColor: AppColors.orange,
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: isActive ? AppColors.orange : const Color(0xFFBDBDBD),
+                ),
+              ),
+              if (isActive) ...[
+                const SizedBox(height: 4),
+                Container(
+                  width: 4, height: 4,
+                  decoration: const BoxDecoration(
+                    color: AppColors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

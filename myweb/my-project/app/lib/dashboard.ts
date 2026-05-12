@@ -24,6 +24,17 @@ export type TopPerformer = {
   revenue: number   // รายได้รวมที่ร้านอาหารได้รับจากคำสั่งซื้อในวันนี้
 } 
 
+export type DailyRevenue = {
+  date: string      // วันที่ในรูปแบบ 'YYYY-MM-DD'
+  revenue: number   // รายได้รวมของวันนั้น
+  orderCount: number // จำนวน Order ของวันนั้น
+}
+
+export type StatusBreakdown = {
+  status: string  // สถานะของ Order
+  count: number   // จำนวน Order ในสถานะนั้น
+}
+
 // ฟังชันสำหรับดึงข้อมูลสถิติต่างๆ ที่จะแสดงบนหน้า Dashboard
 // เวลาสร้าง  promise ต้องกำหนดประเภท type ของข้อมูล คือ DashboardStats 
 export async function getDashboardStats(): Promise<DashboardStats> { 
@@ -56,7 +67,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // ดึงจำนวนคำสั่งซื้อที่มีสถานะเป็น PENDING, CONFIRMED, PREPARING หรือ OUT_FOR_DELIVERY ซึ่งแสดงถึงคำสั่งซื้อที่กำลังดำเนินการอยู่
   const [activeRidersRows] = await pool.query(`
     SELECT COUNT(*) AS count FROM Rider
-    WHERE status IN ('ONLINE', 'ON_DELIVERY')
+    WHERE status IN ('Available', 'Busy')
   `) as [{ count: number }[], unknown]
   
   // ดึงจำนวนไรเดอร์ที่มีสถานะเป็น ONLINE หรือ ON_DELIVERY ซึ่งแสดงถึงไรเดอร์ที่กำลังทำงานอยู่
@@ -118,16 +129,7 @@ export async function getTopPerformers(): Promise<TopPerformer[]> {
   return rows // คืนค่า  rows ที่ได้จากการ query ซึ่งเป็นอาเรย์ของร้านอาหารที่มีประสิทธิภาพสูงสุด 4 ร้าน
 }
 
-export type DailyRevenue = {
-  date: string      // วันที่ในรูปแบบ 'YYYY-MM-DD'
-  revenue: number   // รายได้รวมของวันนั้น
-  orderCount: number // จำนวน Order ของวันนั้น
-}
 
-export type StatusBreakdown = {
-  status: string  // สถานะของ Order
-  count: number   // จำนวน Order ในสถานะนั้น
-}
 
 // ดึงรายได้รวมย้อนหลัง 7 วัน (ไม่นับ CANCELLED/REFUNDED) แล้วเติม 0 สำหรับวันที่ไม่มี Order
 export async function getDailyRevenue(): Promise<DailyRevenue[]> {

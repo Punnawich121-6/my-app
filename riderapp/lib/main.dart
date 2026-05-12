@@ -1,11 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'firebase_options.dart';
 import 'screen/auth/login_screen.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const RiderApp());
 }
 
@@ -40,9 +37,9 @@ class RiderApp extends StatelessWidget {
 // ─── Colors ───────────────────────────────────────────────────────────────────
 
 abstract class RiderColors {
-  static const blue      = Color(0xFFF5A623);   // warm amber orange
-  static const blueLight = Color(0xFFFFF8E1);   // very light amber
-  static const blueMid   = Color(0xFFFFE082);   // mid amber
+  static const blue      = Color(0xFFFF6B35);
+  static const blueLight = Color(0xFFFFEDE7);
+  static const blueMid   = Color(0xFFFFB59D);
   static const bg        = Color(0xFFFFFFFF);
   static const text      = Color(0xFF1A1A1A);
   static const muted     = Color(0xFF9E9E9E);

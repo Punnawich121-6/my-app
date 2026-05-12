@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../main.dart';
 import '../services/customer_service.dart';
@@ -105,6 +109,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         if (status == 'delivering') ...[
                           const SizedBox(height: 16),
                           _buildRiderCard(),
+                        ],
+                        if (!['cancelled'].contains(status)) ...[
+                          const SizedBox(height: 16),
+                          _MapCard(
+                            storeAddress: _order!['store_address'] ?? '',
+                            deliveryAddress: _order!['address'] ?? '',
+                          ),
                         ],
                         const SizedBox(height: 16),
                         _buildInfoCard('ร้านอาหาร', [
@@ -344,4 +355,124 @@ class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixi
     opacity: _ctrl,
     child: Container(width: 7, height: 7, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
   );
+}
+
+// ─── Delivery Map Card ─────────────────────────────────────────────────────────
+
+class _MapCard extends StatefulWidget {
+  final String storeAddress;
+  final String deliveryAddress;
+  const _MapCard({required this.storeAddress, required this.deliveryAddress});
+
+  @override
+  State<_MapCard> createState() => _MapCardState();
+}
+
+class _MapCardState extends State<_MapCard> {
+  static const _kBangkok = LatLng(13.7563, 100.5018);
+  final _mapController = MapController();
+
+  LatLng? _storeLoc;
+  LatLng? _custLoc;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final locs = await Future.wait([
+      _geocode(widget.storeAddress),
+      _geocode(widget.deliveryAddress),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _storeLoc = locs[0];
+      _custLoc  = locs[1];
+      _loading  = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pts = [_storeLoc, _custLoc].whereType<LatLng>().toList();
+      if (pts.length >= 2) {
+        _mapController.fitCamera(CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(pts),
+          padding: const EdgeInsets.all(50),
+        ));
+      }
+    });
+  }
+
+  Future<LatLng?> _geocode(String address) async {
+    if (address.isEmpty) return null;
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': address, 'format': 'json', 'limit': '1', 'countrycodes': 'th',
+      });
+      final res = await http
+          .get(uri, headers: {'User-Agent': 'ZestAndSavory/1.0'})
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return null;
+      final list = jsonDecode(res.body) as List;
+      if (list.isEmpty) return null;
+      return LatLng(double.parse(list[0]['lat']), double.parse(list[0]['lon']));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10)],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _loading
+          ? Container(
+              color: CColors.orangeLight,
+              child: const Center(child: CircularProgressIndicator(color: CColors.orange)),
+            )
+          : FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _storeLoc ?? _kBangkok,
+                initialZoom: 13,
+                interactionOptions: const InteractionOptions(flags: InteractiveFlag.all),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.customerapp',
+                ),
+                MarkerLayer(markers: [
+                  if (_storeLoc != null)
+                    Marker(
+                      point: _storeLoc!,
+                      width: 40,
+                      height: 40,
+                      child: Container(
+                        decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle),
+                        child: const Icon(Icons.store_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  if (_custLoc != null)
+                    Marker(
+                      point: _custLoc!,
+                      width: 40,
+                      height: 40,
+                      child: Container(
+                        decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
+                        child: const Icon(Icons.home_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                ]),
+              ],
+            ),
+    );
+  }
 }

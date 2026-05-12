@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../main.dart';
 import '../../models/store_model.dart';
 import '../../services/api_service.dart';
@@ -106,6 +108,8 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name, _type, _address, _openTime, _closeTime;
   bool _saving = false;
+  bool _uploadingImage = false;
+  String? _previewImageUrl;
 
   @override
   void initState() {
@@ -115,6 +119,7 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     _address = TextEditingController(text: widget.store.address);
     _openTime = TextEditingController(text: widget.store.openTime);
     _closeTime = TextEditingController(text: widget.store.closeTime);
+    _previewImageUrl = widget.store.imageUrl;
   }
 
   @override
@@ -125,6 +130,37 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     _openTime.dispose();
     _closeTime.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1200);
+    if (picked == null || !mounted) return;
+    setState(() => _uploadingImage = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final base64Str = base64Encode(bytes);
+      final ext = picked.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+      final dataUri = 'data:image/$ext;base64,$base64Str';
+      final url = await ApiService.uploadStoreImage(dataUri);
+      if (!mounted) return;
+      if (url != null) {
+        setState(() => _previewImageUrl = url);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('อัปโหลดรูปร้านสำเร็จ'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('อัปโหลดรูปไม่สำเร็จ'), backgroundColor: Colors.red),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('อัปโหลดรูปไม่สำเร็จ'), backgroundColor: Colors.red),
+      );
+    }
+    setState(() => _uploadingImage = false);
   }
 
   Future<void> _pickTime(TextEditingController ctrl) async {
@@ -174,7 +210,9 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
           key: _formKey,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _buildStatusBadge(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            _buildImageCard(),
+            const SizedBox(height: 16),
             _buildInfoCard(children: [
               _label('Store Name *'),
               const SizedBox(height: 8),
@@ -236,8 +274,71 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
         ),
       );
 
+  Widget _buildImageCard() {
+    return GestureDetector(
+      onTap: _uploadingImage ? null : _pickAndUploadImage,
+      child: Container(
+        width: double.infinity,
+        height: 180,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: AppColors.orangeLight,
+          border: Border.all(color: AppColors.orangeMid),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_previewImageUrl != null && _previewImageUrl!.isNotEmpty)
+              Image.network(_previewImageUrl!, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _imagePlaceholder())
+            else
+              _imagePlaceholder(),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
+                ),
+              ),
+            ),
+            if (_uploadingImage)
+              const Center(child: CircularProgressIndicator(color: Colors.white))
+            else
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: const [
+                    Icon(Icons.camera_alt_outlined, color: Colors.white, size: 16),
+                    SizedBox(width: 6),
+                    Text('เปลี่ยนรูปร้าน', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() => Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.add_photo_alternate_outlined, color: AppColors.orange, size: 40),
+          SizedBox(height: 8),
+          Text('แตะเพื่ออัปโหลดรูปร้าน', style: TextStyle(color: AppColors.muted, fontSize: 13)),
+        ],
+      );
+
   Widget _buildStatusBadge() {
-    const colors = {'pending': Colors.amber, 'approved': Colors.green, 'rejected': Colors.red};
+    const colors = {'pending': const Color(0xFFFF6B35), 'approved': Colors.green, 'rejected': Colors.red};
     const labels = {'pending': 'Under Review', 'approved': 'Approved', 'rejected': 'Rejected'};
     final color = colors[widget.store.status] ?? Colors.grey;
     return Container(
@@ -253,7 +354,7 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
         Text('Status: ${labels[widget.store.status] ?? widget.store.status}', style: TextStyle(color: color, fontWeight: FontWeight.w600)),
         const Spacer(),
         Row(children: [
-          Icon(Icons.star_rounded, color: Colors.amber.shade600, size: 16),
+          Icon(Icons.star_rounded, color: const Color(0xFFFF6B35), size: 16),
           const SizedBox(width: 3),
           Text('${widget.store.rating} (${widget.store.reviewCount})', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.text)),
         ]),
@@ -362,7 +463,7 @@ class _ReviewsTabState extends State<_ReviewsTab> {
           child: Row(children: [
             Column(children: [
               Text(avg.toStringAsFixed(1), style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800, color: AppColors.orange)),
-              Row(children: List.generate(5, (i) => Icon(i < avg.round() ? Icons.star_rounded : Icons.star_outline_rounded, color: Colors.amber, size: 18))),
+              Row(children: List.generate(5, (i) => Icon(i < avg.round() ? Icons.star_rounded : Icons.star_outline_rounded, color: const Color(0xFFFF6B35), size: 18))),
               Text('$count reviews', style: const TextStyle(fontSize: 12, color: AppColors.muted)),
             ]),
           ]),
@@ -407,7 +508,7 @@ class _ReviewCard extends StatelessWidget {
             Text(review['customer_name'] ?? 'Customer', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
             Text('${date.day}/${date.month}/${date.year}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
           ])),
-          Row(children: List.generate(5, (i) => Icon(i < rating ? Icons.star_rounded : Icons.star_outline_rounded, color: Colors.amber, size: 14))),
+          Row(children: List.generate(5, (i) => Icon(i < rating ? Icons.star_rounded : Icons.star_outline_rounded, color: const Color(0xFFFF6B35), size: 14))),
         ]),
         if (review['comment'] != null && (review['comment'] as String).isNotEmpty) ...[
           const SizedBox(height: 8),

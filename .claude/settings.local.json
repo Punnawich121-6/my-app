@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(taskkill //F //IM node.exe)",
-      "Bash(mysql -u root -pboss2014 zest_savory_db -e \"SHOW TABLES;\")"
-    ]
-  }
-}

@@ -173,4 +173,11 @@ class ApiService {
   static Future<Map<String, dynamic>> getReviews() async {
     return await _get('/store/$storeId/reviews');
   }
+
+  static Future<String?> uploadStoreImage(String base64Image) async {
+    try {
+      final data = await _post('/store/$storeId/image', {'image': base64Image});
+      return data['image_url'] as String?;
+    } catch (_) { return null; }
+  }
 }

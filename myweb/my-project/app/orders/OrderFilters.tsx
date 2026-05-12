@@ -43,7 +43,7 @@ export default function OrderFilters({
         const params = new URLSearchParams(searchParams.toString())
         params.set(key, value)
         params.set('page', '1')
-        router.push(`?${params.toString()}`)
+        router.push(`?${params.toString()}`, { scroll: false })
     }, [router, searchParams])
 
     return (

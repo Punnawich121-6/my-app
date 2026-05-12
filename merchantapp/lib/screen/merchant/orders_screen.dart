@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../main.dart';
 import '../../models/order_model.dart';
@@ -42,23 +46,41 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: const Color(0xFFF7F7F7),
+        backgroundColor: const Color(0xFFF4F4F4),
         appBar: AppBar(
           backgroundColor: AppColors.orange,
           foregroundColor: Colors.white,
-          title: const Text('จัดการออเดอร์', style: TextStyle(fontWeight: FontWeight.w700)),
+          title: const Text('ออเดอร์', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
           elevation: 0,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFFF8C5A), Color(0xFFFF4500)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: TextButton.icon(
-                onPressed: _showTestOrderDialog,
-                icon: const Icon(Icons.science_outlined, color: Colors.white, size: 18),
-                label: const Text('Test', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: GestureDetector(
+                onTap: _showTestOrderDialog,
+                child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white30),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text('ทดสอบ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -68,8 +90,10 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             indicatorColor: Colors.white,
+            indicatorWeight: 3,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
+            unselectedLabelColor: Colors.white60,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
           ),
         ),
@@ -153,7 +177,7 @@ class _OrderCard extends StatelessWidget {
   static const _statusColor = {
     'pending': Color(0xFFFFA000),
     'accepted': Color(0xFF1976D2),
-    'preparing': Color(0xFFF5A623),
+    'preparing': AppColors.orange,
     'ready': Color(0xFF388E3C),
     'delivering': Color(0xFF7B1FA2),
     'completed': Color(0xFF388E3C),
@@ -358,6 +382,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           if (o.address != null) _Row(icon: Icons.location_on_outlined, label: 'ที่อยู่', value: o.address!),
           if (o.note != null && o.note!.isNotEmpty) _Row(icon: Icons.note_outlined, label: 'หมายเหตุ', value: o.note!),
         ]),
+        if (o.address != null) ...[
+          const SizedBox(height: 14),
+          _DeliveryMapCard(address: o.address!),
+        ],
         const SizedBox(height: 14),
         _InfoCard(children: [
           const Text('รายการอาหาร', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.text)),
@@ -714,4 +742,94 @@ class _QtyBtn extends StatelessWidget {
           child: Icon(icon, color: Colors.white, size: 16),
         ),
       );
+}
+
+// ─── Delivery Location Map ────────────────────────────────────────────────────
+
+class _DeliveryMapCard extends StatefulWidget {
+  final String address;
+  const _DeliveryMapCard({required this.address});
+
+  @override
+  State<_DeliveryMapCard> createState() => _DeliveryMapCardState();
+}
+
+class _DeliveryMapCardState extends State<_DeliveryMapCard> {
+  static const _kBangkok = LatLng(13.7563, 100.5018);
+  LatLng? _loc;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _geocode();
+  }
+
+  Future<void> _geocode() async {
+    if (widget.address.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': widget.address, 'format': 'json', 'limit': '1', 'countrycodes': 'th',
+      });
+      final res = await http
+          .get(uri, headers: {'User-Agent': 'ZestAndSavory/1.0'})
+          .timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List;
+        if (list.isNotEmpty) {
+          setState(() {
+            _loc = LatLng(double.parse(list[0]['lat']), double.parse(list[0]['lon']));
+            _loading = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Container(
+        height: 180,
+        decoration: BoxDecoration(
+          color: AppColors.orangeLight,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: CircularProgressIndicator(color: AppColors.orange)),
+      );
+    }
+
+    final center = _loc ?? _kBangkok;
+    return Container(
+      height: 180,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: FlutterMap(
+        options: MapOptions(initialCenter: center, initialZoom: 15),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.example.merchantapp',
+          ),
+          MarkerLayer(markers: [
+            Marker(
+              point: center,
+              width: 44,
+              height: 44,
+              child: Container(
+                decoration: const BoxDecoration(color: AppColors.orange, shape: BoxShape.circle),
+                child: const Icon(Icons.home_rounded, color: Colors.white, size: 22),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
 }

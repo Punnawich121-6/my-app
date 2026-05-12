@@ -1,5 +1,8 @@
+import { redirect } from 'next/navigation'
+import { verifySession } from '@/app/lib/session'
 import Link from 'next/link'
 import Navbar from '../component/navbar'
+import AutoRefresh from '../component/AutoRefresh'
 import RevenueChartWrapper from '../component/RevenueChartWrapper'
 import FinancialDonutChart from './FinancialDonutChart'
 import {
@@ -38,6 +41,9 @@ export default async function Financials({
 }: {
     searchParams: Promise<{ page?: string }>
 }) {
+    const session = await verifySession()
+    if (!session) redirect('/login')
+
     const { page } = await searchParams
     const currentPage = Math.max(1, Number(page ?? 1))
 
@@ -115,6 +121,7 @@ export default async function Financials({
 
     return (
         <>
+            <AutoRefresh interval={30_000} />
             <Navbar />
 
             <main className="pt-24 pb-12 px-6 md:px-8 md:ml-64 max-w-7xl mx-auto">
@@ -265,6 +272,7 @@ export default async function Financials({
                         <span>Showing {from} to {to} of {total.toLocaleString()} transactions</span>
                         <div className="flex gap-1 items-center">
                             <Link
+                                scroll={false}
                                 href={pageHref(currentPage - 1)}
                                 aria-disabled={currentPage <= 1}
                                 className={`p-1 rounded hover:bg-surface-container ${currentPage <= 1 ? 'pointer-events-none opacity-40' : ''}`}
@@ -281,6 +289,7 @@ export default async function Financials({
                                 return (
                                     <Link
                                         key={p}
+                                        scroll={false}
                                         href={pageHref(p)}
                                         className={`w-7 h-7 rounded flex items-center justify-center font-medium text-sm ${
                                             p === currentPage
@@ -298,6 +307,7 @@ export default async function Financials({
                             )}
 
                             <Link
+                                scroll={false}
                                 href={pageHref(currentPage + 1)}
                                 aria-disabled={currentPage >= totalPages}
                                 className={`p-1 rounded hover:bg-surface-container ${currentPage >= totalPages ? 'pointer-events-none opacity-40' : ''}`}

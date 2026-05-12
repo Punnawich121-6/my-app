@@ -1,9 +1,5 @@
-import Navbar from "./component/navbar";
+import { redirect } from 'next/navigation'
+
 export default function Home() {
-  return (
-    <div>
-      <Navbar />
-      <h1>ets</h1>
-    </div>
-  );
+  redirect('/dashboard')
 }

@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import 'auth/login_screen.dart';
@@ -34,7 +33,6 @@ class ProfileScreen extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      await FirebaseAuth.instance.signOut();
       if (!context.mounted) return;
       Navigator.pushAndRemoveUntil(
         context,

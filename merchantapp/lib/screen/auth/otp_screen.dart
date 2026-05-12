@@ -1,23 +1,16 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../main.dart';
 import '../../services/api_service.dart';
+import 'login_screen.dart';
+import 'pending_approval_screen.dart';
 import 'register_screen.dart';
 import '../merchant/merchant_main_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phone;
-  final String verificationId;
-  final ConfirmationResult? confirmationResult;
-
-  const OtpScreen({
-    super.key,
-    required this.phone,
-    required this.verificationId,
-    this.confirmationResult,
-  });
+  const OtpScreen({super.key, required this.phone});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -28,16 +21,13 @@ class _OtpScreenState extends State<OtpScreen> {
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
-  late String _verificationId;
   int _secondsLeft = 120;
   Timer? _timer;
   bool _isVerifying = false;
-  bool _isResending = false;
 
   @override
   void initState() {
     super.initState();
-    _verificationId = widget.verificationId;
     _startTimer();
   }
 
@@ -82,98 +72,44 @@ class _OtpScreenState extends State<OtpScreen> {
     if (_otp.length == 6) _verify();
   }
 
-  Future<void> _resendOtp() async {
-    if (_isResending || widget.confirmationResult != null) return;
-    setState(() => _isResending = true);
-
-    final fullPhone = '+66${widget.phone.startsWith('0') ? widget.phone.substring(1) : widget.phone}';
-
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: fullPhone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (credential) async {
-        await FirebaseAuth.instance.signInWithCredential(credential);
-        if (!mounted) return;
-        final store = await ApiService.getStoreByPhone(widget.phone);
-        if (!mounted) return;
-        if (store != null) {
-          ApiService.storeId = store['id'].toString();
-          Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => const MerchantMainScreen()), (r) => false);
-        } else {
-          Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)));
-        }
-      },
-      verificationFailed: (e) {
-        if (!mounted) return;
-        setState(() => _isResending = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ส่ง OTP ไม่สำเร็จ: ${e.message}')),
-        );
-      },
-      codeSent: (verificationId, resendToken) {
-        if (!mounted) return;
-        setState(() {
-          _verificationId = verificationId;
-          _isResending = false;
-        });
-        _startTimer();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ส่งรหัส OTP ใหม่แล้ว')),
-        );
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
-  }
-
   Future<void> _verify() async {
     if (_isVerifying) return;
-    if (!mounted) return;
     setState(() => _isVerifying = true);
 
-    try {
-      if (widget.confirmationResult != null) {
-        await widget.confirmationResult!.confirm(_otp);
-      } else {
-        final credential = PhoneAuthProvider.credential(
-          verificationId: _verificationId,
-          smsCode: _otp,
-        );
-        await FirebaseAuth.instance.signInWithCredential(credential);
-      }
-
-      if (!mounted) return;
-
-      final store = await ApiService.getStoreByPhone(widget.phone);
-      if (!mounted) return;
-
-      if (store != null) {
-        ApiService.storeId = store['id'].toString();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const MerchantMainScreen()),
-          (route) => false,
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
+    if (_otp != '123456') {
       setState(() => _isVerifying = false);
       for (final c in _controllers) { c.clear(); }
       _focusNodes[0].requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.code == 'invalid-verification-code'
-                ? 'รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่'
-                : 'เกิดข้อผิดพลาด: ${e.message}',
-          ),
-        ),
+        const SnackBar(content: Text('รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่')),
+      );
+      return;
+    }
+
+    final store = await ApiService.getStoreByPhone(widget.phone);
+    if (!mounted) return;
+
+    if (store == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)),
+      );
+      return;
+    }
+
+    ApiService.storeId = store['id'].toString();
+    final status = (store['status'] as String? ?? '').toLowerCase();
+    if (status == 'active') {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MerchantMainScreen()),
+        (route) => false,
+      );
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => PendingApprovalScreen(phone: widget.phone)),
+        (route) => false,
       );
     }
   }
@@ -199,11 +135,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 color: AppColors.orangeLight,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.phone_android_outlined,
-                color: AppColors.orange,
-                size: 28,
-              ),
+              child: const Icon(Icons.phone_android_outlined, color: AppColors.orange, size: 28),
             ),
             const SizedBox(height: 20),
             const Text('ยืนยัน OTP', style: AppTextStyles.brand),
@@ -246,17 +178,13 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined,
-                      color: AppColors.orange, size: 20),
+                  const Icon(Icons.timer_outlined, color: AppColors.orange, size: 20),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'รหัสหมดอายุใน',
-                        style:
-                            TextStyle(fontSize: 12, color: AppColors.muted),
-                      ),
+                      const Text('รหัสหมดอายุใน',
+                          style: TextStyle(fontSize: 12, color: AppColors.muted)),
                       Text(
                         _timerDisplay,
                         style: const TextStyle(
@@ -281,26 +209,15 @@ class _OtpScreenState extends State<OtpScreen> {
                   disabledBackgroundColor: AppColors.orangeMid,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: _isVerifying
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text(
-                        'ยืนยัน',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    : const Text('ยืนยัน',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 20),
@@ -308,21 +225,23 @@ class _OtpScreenState extends State<OtpScreen> {
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: _secondsLeft == 0 ? _resendOtp : null,
+                    onTap: _secondsLeft == 0 ? _startTimer : null,
                     child: Text(
                       'ไม่ได้รับรหัส? ส่งใหม่',
                       style: TextStyle(
                         fontSize: 14,
-                        color: _secondsLeft == 0
-                            ? AppColors.orange
-                            : AppColors.muted,
+                        color: _secondsLeft == 0 ? AppColors.orange : AppColors.muted,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (r) => false,
+                    ),
                     child: const Text(
                       'เปลี่ยนเบอร์โทรศัพท์',
                       style: TextStyle(fontSize: 14, color: AppColors.orange),
@@ -371,9 +290,7 @@ class _OtpBox extends StatelessWidget {
         decoration: InputDecoration(
           counterText: '',
           filled: true,
-          fillColor: controller.text.isNotEmpty
-              ? AppColors.orangeLight
-              : AppColors.bg,
+          fillColor: controller.text.isNotEmpty ? AppColors.orangeLight : AppColors.bg,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: AppColors.orangeMid),
@@ -381,9 +298,7 @@ class _OtpBox extends StatelessWidget {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
-              color: controller.text.isNotEmpty
-                  ? AppColors.orange
-                  : AppColors.orangeMid,
+              color: controller.text.isNotEmpty ? AppColors.orange : AppColors.orangeMid,
             ),
           ),
           focusedBorder: OutlineInputBorder(

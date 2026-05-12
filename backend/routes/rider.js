@@ -30,13 +30,45 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// ── Update rider GPS location ─────────────────────────────────────────────────
+router.patch('/:riderId/location', async (req, res) => {
+  const { latitude, longitude } = req.body;
+  if (latitude == null || longitude == null) {
+    return res.status(400).json({ error: 'latitude and longitude required' });
+  }
+  try {
+    await db.query(
+      'UPDATE Rider SET latitude = ?, longitude = ?, locationUpdatedAt = NOW() WHERE id = ?',
+      [latitude, longitude, req.params.riderId],
+    );
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Get all riders with last known location ───────────────────────────────────
+router.get('/locations', async (req, res) => {
+  try {
+    const [riders] = await db.query(
+      `SELECT id, name, status, vehicle, latitude, longitude, locationUpdatedAt
+       FROM Rider
+       WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+       ORDER BY locationUpdatedAt DESC`,
+    );
+    res.json(riders);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Get rider by phone ────────────────────────────────────────────────────────
 router.get('/by-phone/:phone', async (req, res) => {
   try {
     const phone = req.params.phone;
     const normalized = phone.startsWith('0') ? phone : '0' + phone;
     const [[rider]] = await db.query(
-      'SELECT id, name, phone, status FROM Rider WHERE phone = ?',
+      'SELECT id, name, phone, status, isVerified FROM Rider WHERE phone = ?',
       [normalized]
     );
     if (!rider) return res.status(404).json({ error: 'Not found' });
@@ -69,6 +101,8 @@ router.get('/orders/available', async (req, res) => {
               o.serviceFee  AS delivery_fee,
               o.notes,
               o.createdAt   AS created_at,
+              o.deliveryLatitude  AS delivery_lat,
+              o.deliveryLongitude AS delivery_lng,
               r.name        AS store_name,
               r.address     AS store_address,
               c.name        AS customer_name,
@@ -83,9 +117,34 @@ router.get('/orders/available', async (req, res) => {
        LEFT JOIN order_items oi ON o.id = oi.order_id
        WHERE LOWER(o.status) = 'ready' AND o.riderId IS NULL
        GROUP BY o.id
-       ORDER BY o.createdAt ASC`
+       ORDER BY o.createdAt ASC`,
     );
     res.json(orders);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Update delivery step (at_store / picking_up) ─────────────────────────────
+router.patch('/orders/:orderId/step', async (req, res) => {
+  const { orderId } = req.params;
+  const { rider_id, step, latitude, longitude } = req.body;
+  const allowed = ['at_store', 'picking_up'];
+  if (!rider_id || !allowed.includes(step)) {
+    return res.status(400).json({ error: 'rider_id and valid step required' });
+  }
+  try {
+    await db.query(
+      'UPDATE `Order` SET status = ? WHERE id = ? AND riderId = ?',
+      [step, orderId, rider_id]
+    );
+    if (latitude != null && longitude != null) {
+      await db.query(
+        'UPDATE Rider SET latitude = ?, longitude = ?, locationUpdatedAt = NOW() WHERE id = ?',
+        [latitude, longitude, rider_id]
+      );
+    }
+    res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -132,7 +191,10 @@ router.post('/orders/:orderId/complete', async (req, res) => {
     );
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.riderId !== rider_id) return res.status(403).json({ error: 'Not your order' });
-    if (order.status.toLowerCase() !== 'delivering') return res.status(400).json({ error: 'Order not in delivering status' });
+    const activeStatuses = ['delivering', 'at_store', 'picking_up'];
+    if (!activeStatuses.includes(order.status.toLowerCase())) {
+      return res.status(400).json({ error: 'Order not in active delivery status' });
+    }
 
     await db.query('UPDATE `Order` SET status = ? WHERE id = ?', ['completed', orderId]);
 
@@ -166,6 +228,8 @@ router.get('/orders/active/:riderId', async (req, res) => {
               o.serviceFee  AS delivery_fee,
               o.notes,
               o.createdAt   AS created_at,
+              o.deliveryLatitude  AS delivery_lat,
+              o.deliveryLongitude AS delivery_lng,
               r.name        AS store_name,
               r.address     AS store_address,
               c.name        AS customer_name,
@@ -178,7 +242,7 @@ router.get('/orders/active/:riderId', async (req, res) => {
        JOIN restaurant r ON o.restaurantId = r.id
        LEFT JOIN customer c ON o.customerId = c.id
        LEFT JOIN order_items oi ON o.id = oi.order_id
-       WHERE o.riderId = ? AND LOWER(o.status) = 'delivering'
+       WHERE o.riderId = ? AND LOWER(o.status) IN ('delivering','at_store','picking_up')
        GROUP BY o.id
        ORDER BY o.createdAt DESC
        LIMIT 1`,

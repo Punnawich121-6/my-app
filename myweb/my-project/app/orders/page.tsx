@@ -1,8 +1,11 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { verifySession } from '@/app/lib/session'
 import Link from 'next/link'
 import Navbar from '../component/navbar'
 import { getOrder, getAllOrders } from '@/app/lib/order'
 import OrderFilters from './OrderFilters'
+import AutoRefresh from '../component/AutoRefresh'
 
 function formatCurrency(amount: number): string {
     return `$${Number(amount).toFixed(2)}`
@@ -46,6 +49,9 @@ export default async function Orders({
 }: {
     searchParams: Promise<{ status?: string; zone?: string; page?: string }>
 }) {
+    const session = await verifySession()
+    if (!session) redirect('/login')
+
     const { status, zone, page } = await searchParams
 
     const currentStatus = status ?? 'ALL'
@@ -74,6 +80,7 @@ export default async function Orders({
 
     return (
         <>
+            <AutoRefresh interval={15_000} />
             <Navbar />
 
             <main className="pt-20 md:pt-24 pb-20 md:pb-8 px-4 md:px-8 md:ml-64 min-h-screen">

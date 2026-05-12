@@ -47,6 +47,8 @@ class CustomerService {
     required dynamic storeId,
     required List<Map<String, dynamic>> items,
     required String address,
+    double? latitude,
+    double? longitude,
     String note = '',
   }) async {
     try {
@@ -59,6 +61,8 @@ class CustomerService {
             'store_id': storeId,
             'items': items,
             'address': address,
+            'latitude': latitude,
+            'longitude': longitude,
             'note': note,
           }));
       return jsonDecode(res.body);

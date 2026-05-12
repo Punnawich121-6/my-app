@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 // ─── Colors ─────────────────────────────────────────────────────────────────
 
 abstract class AppColors {
-  static const orange      = Color(0xFFF5A623);
-  static const orangeLight = Color(0xFFFFF8E1);
-  static const orangeMid   = Color(0xFFFFE082);
+  static const orange      = Color(0xFFFF6B35);
+  static const orangeLight = Color(0xFFFFEDE7);
+  static const orangeMid   = Color(0xFFFFB59D);
   static const bg          = Color(0xFFFFFFFF);
   static const text        = Color(0xFF1A1A1A);
   static const muted       = Color(0xFF9E9E9E);

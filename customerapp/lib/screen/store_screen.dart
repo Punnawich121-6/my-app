@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import '../main.dart';
 import '../services/customer_service.dart';
+import 'location_picker_screen.dart';
 import 'payment_screen.dart';
 
 class StoreScreen extends StatefulWidget {
@@ -20,9 +23,20 @@ class _StoreScreenState extends State<StoreScreen> {
   final Map<int, int> _cart = {};
   bool _loading = true;
   int _selectedCat = -1;
+  Timer? _refreshTimer;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _silentRefresh());
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _load() async {
     final data = await CustomerService.getMenu(widget.store['id']);
@@ -31,6 +45,14 @@ class _StoreScreenState extends State<StoreScreen> {
       _categories = List<Map<String, dynamic>>.from(data['categories'] ?? []);
       _items = List<Map<String, dynamic>>.from(data['items'] ?? []);
       _loading = false;
+    });
+  }
+
+  Future<void> _silentRefresh() async {
+    final data = await CustomerService.getMenu(widget.store['id']);
+    if (!mounted || data == null) return;
+    setState(() {
+      _items = List<Map<String, dynamic>>.from(data['items'] ?? []);
     });
   }
 
@@ -382,22 +404,46 @@ class _CartSheet extends StatefulWidget {
 }
 
 class _CartSheetState extends State<_CartSheet> {
-  final _addressCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  bool _addressError = false;
   late List<Map<String, dynamic>> _items;
+  double? _deliveryLat;
+  double? _deliveryLng;
+  String? _deliveryAddress;
+  bool _locationError = false;
 
   @override
   void initState() { super.initState(); _items = List.from(widget.items); }
 
   @override
-  void dispose() { _addressCtrl.dispose(); _noteCtrl.dispose(); super.dispose(); }
+  void dispose() { _noteCtrl.dispose(); super.dispose(); }
 
   int get _subtotal => _items.fold(0, (s, i) => s + (double.tryParse(i['price'].toString()) ?? 0).round() * (i['qty'] as int));
 
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initial: _deliveryLat != null
+              ? LatLng(_deliveryLat!, _deliveryLng!)
+              : null,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+    if (result != null) {
+      setState(() {
+        _deliveryLat = result['lat'] as double;
+        _deliveryLng = result['lng'] as double;
+        _deliveryAddress = result['address'] as String;
+        _locationError = false;
+      });
+    }
+  }
+
   void _goToPayment() {
-    if (_addressCtrl.text.trim().isEmpty) {
-      setState(() => _addressError = true);
+    if (_deliveryLat == null) {
+      setState(() => _locationError = true);
       return;
     }
     final orderItems = _items.map((i) => {
@@ -416,7 +462,9 @@ class _CartSheetState extends State<_CartSheet> {
               customerPhone: widget.customerPhone,
               storeId: widget.store['id'],
               items: orderItems,
-              address: _addressCtrl.text.trim(),
+              address: _deliveryAddress ?? '',
+              latitude: _deliveryLat,
+              longitude: _deliveryLng,
               note: _noteCtrl.text.trim(),
             );
             if (result != null && result['success'] == true) {
@@ -460,18 +508,48 @@ class _CartSheetState extends State<_CartSheet> {
               const SizedBox(height: 16),
               const Text('ที่อยู่จัดส่ง', style: CTextStyles.label),
               const SizedBox(height: 8),
-              TextField(
-                controller: _addressCtrl, maxLines: 2,
-                style: const TextStyle(fontSize: 14, color: CColors.text),
-                onChanged: (_) => setState(() => _addressError = false),
-                decoration: InputDecoration(
-                  hintText: 'บ้านเลขที่, ถนน, แขวง, เขต...',
-                  hintStyle: const TextStyle(color: CColors.muted, fontSize: 14),
-                  filled: true, fillColor: CColors.orangeLight,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _addressError ? Colors.red : CColors.orange, width: 1.5)),
-                  errorText: _addressError ? 'กรุณากรอกที่อยู่จัดส่ง' : null,
-                  contentPadding: const EdgeInsets.all(14),
+              GestureDetector(
+                onTap: _pickLocation,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: _locationError ? const Color(0xFFFFEEEE) : CColors.orangeLight,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _locationError
+                          ? Colors.red
+                          : _deliveryLat != null
+                              ? CColors.orange
+                              : Colors.transparent,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: _deliveryLat == null
+                      ? Row(children: [
+                          const Icon(Icons.add_location_alt_rounded, color: CColors.orange, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text(
+                            _locationError ? 'กรุณาเลือกที่อยู่จัดส่ง' : 'แตะเพื่อปักหมุดที่อยู่จัดส่ง',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _locationError ? Colors.red : CColors.muted,
+                            ),
+                          )),
+                        ])
+                      : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Icon(Icons.location_on_rounded, color: CColors.orange, size: 18),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(
+                            _deliveryAddress ?? '',
+                            style: const TextStyle(fontSize: 13, color: CColors.text, height: 1.5),
+                            maxLines: 3, overflow: TextOverflow.ellipsis,
+                          )),
+                          const SizedBox(width: 8),
+                          const Text('เปลี่ยน', style: TextStyle(fontSize: 12, color: CColors.orange, fontWeight: FontWeight.w600)),
+                        ]),
                 ),
               ),
               const SizedBox(height: 12),

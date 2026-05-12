@@ -78,6 +78,7 @@ class _StoreListTab extends StatefulWidget {
 }
 
 class _StoreListTabState extends State<_StoreListTab> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   List<Map<String, dynamic>> _stores = [];
   bool _loading = true;
   String _selectedType = 'ทั้งหมด';
@@ -125,7 +126,9 @@ class _StoreListTabState extends State<_StoreListTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: CColors.bg,
+      drawer: _buildDrawer(),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _load,
@@ -175,21 +178,17 @@ class _StoreListTabState extends State<_StoreListTab> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
       child: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(12)),
-          child: const Icon(Icons.menu_rounded, color: CColors.text, size: 22),
+        GestureDetector(
+          onTap: () => _scaffoldKey.currentState?.openDrawer(),
+          child: Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.menu_rounded, color: CColors.text, size: 22),
+          ),
         ),
-        const Spacer(),
-        Column(children: [
-          const Text('DELIVER TO', style: TextStyle(fontSize: 10, color: CColors.orange, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
-          const SizedBox(height: 2),
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            const Text('My Location', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: CColors.text)),
-            const SizedBox(width: 2),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: CColors.text),
-          ]),
-        ]),
         const Spacer(),
         GestureDetector(
           onTap: widget.onGoToOrders,
@@ -200,6 +199,89 @@ class _StoreListTabState extends State<_StoreListTab> {
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(children: [
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            decoration: const BoxDecoration(
+              color: CColors.orange,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 56, height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person_rounded, color: Colors.white, size: 30),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                widget.customerName,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                widget.customerPhone,
+                style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8)),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+
+          // Menu items
+          _DrawerItem(
+            icon: Icons.home_rounded,
+            label: 'หน้าหลัก',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.receipt_long_rounded,
+            label: 'ออเดอร์ของฉัน',
+            onTap: () {
+              Navigator.pop(context);
+              widget.onGoToOrders();
+            },
+          ),
+          _DrawerItem(
+            icon: Icons.favorite_border_rounded,
+            label: 'ร้านโปรด',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.location_on_outlined,
+            label: 'ที่อยู่จัดส่ง',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.headset_mic_outlined,
+            label: 'ติดต่อฝ่ายสนับสนุน',
+            onTap: () => Navigator.pop(context),
+          ),
+
+          const Spacer(),
+          const Divider(indent: 24, endIndent: 24),
+          _DrawerItem(
+            icon: Icons.logout_rounded,
+            label: 'ออกจากระบบ',
+            color: Colors.red,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).popUntil((r) => r.isFirst);
+            },
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
     );
   }
 
@@ -319,6 +401,41 @@ class _StoreListTabState extends State<_StoreListTab> {
       ]),
     );
   }
+}
+
+// ─── Drawer Item ──────────────────────────────────────────────────────────────
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+  const _DrawerItem({required this.icon, required this.label, required this.onTap, this.color});
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+        leading: Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: (color ?? CColors.orange).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color ?? CColors.orange, size: 20),
+        ),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: color ?? CColors.text,
+          ),
+        ),
+        trailing: color == null
+            ? const Icon(Icons.chevron_right_rounded, color: CColors.muted, size: 20)
+            : null,
+        onTap: onTap,
+      );
 }
 
 // ─── Restaurant Card (list style) ─────────────────────────────────────────────

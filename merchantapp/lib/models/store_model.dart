@@ -66,6 +66,7 @@ class DashboardData {
   final int readyOrders;
   final List<Map<String, dynamic>> weekSales;
   final List<Map<String, dynamic>> recentOrders;
+  final List<Map<String, dynamic>> popularItems;
 
   DashboardData({
     required this.store,
@@ -75,6 +76,7 @@ class DashboardData {
     required this.readyOrders,
     required this.weekSales,
     required this.recentOrders,
+    required this.popularItems,
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> j) => DashboardData(
@@ -85,5 +87,6 @@ class DashboardData {
         readyOrders: j['ready_orders'] ?? 0,
         weekSales: List<Map<String, dynamic>>.from(j['week_sales'] ?? []),
         recentOrders: List<Map<String, dynamic>>.from(j['recent_orders'] ?? []),
+        popularItems: List<Map<String, dynamic>>.from(j['popular_items'] ?? []),
       );
 }

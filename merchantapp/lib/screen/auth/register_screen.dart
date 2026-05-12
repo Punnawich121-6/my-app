@@ -1,7 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import '../../main.dart';
 import '../../services/api_service.dart';
 import '../merchant/merchant_main_screen.dart';
+import 'pending_approval_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String phone;
@@ -40,6 +46,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _currentStep = 0;
   bool _acceptedTerms = false;
   bool _isLoading = false;
+  String? _storeImageBase64;
+  String? _storeImageExt;
 
   @override
   void initState() {
@@ -126,16 +134,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'address': _addressController.text.trim(),
         'email': _emailController.text.trim(),
         'owner_name': _nameController.text.trim(),
+        'line_id': _lineIdController.text.trim(),
         'bank_name': _bankNameController.text.trim(),
         'account_name': _accountNameController.text.trim(),
         'account_no': _accountNoController.text.trim(),
+        'id_card': _idCardController.text.trim(),
+        'business_license': _businessLicenseController.text.trim(),
+        'open_time': _openTimeController.text.trim(),
+        'close_time': _closeTimeController.text.trim(),
+        if (_storeLat != null) 'lat': _storeLat,
+        if (_storeLng != null) 'lng': _storeLng,
       });
       if (storeId.isEmpty) throw Exception('ไม่ได้รับ store ID จากเซิร์ฟเวอร์');
       ApiService.storeId = storeId;
+      if (_storeImageBase64 != null) {
+        final dataUri = 'data:image/$_storeImageExt;base64,$_storeImageBase64';
+        await ApiService.uploadStoreImage(dataUri);
+      }
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const MerchantMainScreen()),
+        MaterialPageRoute(
+          builder: (_) => PendingApprovalScreen(phone: widget.phone),
+        ),
         (route) => false,
       );
     } catch (e) {
@@ -148,11 +169,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _pickStoreLocation() async {
-    final selected = await showDialog<(double, double)>(
-      context: context,
-      builder: (dialogContext) => _LocationDialog(
-        initialLat: _storeLat,
-        initialLng: _storeLng,
+    final selected = await Navigator.push<(double, double)>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapLocationPickerScreen(
+          initialLat: _storeLat,
+          initialLng: _storeLng,
+        ),
       ),
     );
 
@@ -161,6 +184,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _storeLat = selected.$1;
       _storeLng = selected.$2;
     });
+    _fetchAddressFromCoords(selected.$1, selected.$2);
+  }
+
+  Future<void> _pickStoreImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1200);
+    if (picked == null || !mounted) return;
+    final bytes = await picked.readAsBytes();
+    final ext = picked.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+    setState(() {
+      _storeImageBase64 = base64Encode(bytes);
+      _storeImageExt = ext;
+    });
+  }
+
+  Future<void> _fetchAddressFromCoords(double lat, double lng) async {
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&accept-language=th',
+      );
+      final response = await http.get(
+        uri,
+        headers: {'User-Agent': 'DigioMerchantApp/1.0'},
+      );
+      if (response.statusCode != 200) return;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final displayName = data['display_name'] as String? ?? '';
+      final address = displayName.replaceAll(RegExp(r',\s*ประเทศไทย$'), '').replaceAll(RegExp(r',\s*Thailand$'), '').trim();
+      if (address.isNotEmpty && mounted) {
+        setState(() => _addressController.text = address);
+      }
+    } catch (_) {
+      // silently fail — user can fill in manually
+    }
   }
 
   Future<void> _pickBusinessTime({
@@ -313,6 +370,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildLabel('รูปร้าน (ไม่บังคับ)'),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickStoreImage,
+              child: Container(
+                width: double.infinity,
+                height: 160,
+                decoration: BoxDecoration(
+                  color: AppColors.orangeLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.orangeMid),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _storeImageBase64 != null
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.memory(base64Decode(_storeImageBase64!), fit: BoxFit.cover),
+                          Positioned(
+                            bottom: 8, right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.orange,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text('เปลี่ยนรูป', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add_photo_alternate_outlined, color: AppColors.orange, size: 36),
+                          SizedBox(height: 8),
+                          Text('แตะเพื่อเพิ่มรูปร้าน', style: TextStyle(color: AppColors.muted, fontSize: 13)),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 16),
             _buildLabel('ปักหมุดตำแหน่งร้าน *'),
             const SizedBox(height: 8),
             InkWell(
@@ -392,15 +491,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   : null,
             ),
             const SizedBox(height: 16),
-            _buildLabel('ที่อยู่ร้าน *'),
+            _buildLabel('ที่อยู่ร้าน (ปักหมุดแล้วจะดึงให้อัตโนมัติ)'),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _addressController,
               hint: 'บ้านเลขที่ / ถนน / แขวง-เขต',
               maxLines: 3,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'กรุณากรอกที่อยู่ร้าน'
-                  : null,
             ),
             const SizedBox(height: 16),
             Row(
@@ -453,13 +549,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             _buildLabel('ธนาคาร *'),
             const SizedBox(height: 8),
-            _buildTextField(
-              controller: _bankNameController,
-              hint: 'เช่น กสิกรไทย',
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'กรุณากรอกชื่อธนาคาร'
-                  : null,
-            ),
+            _buildBankPickerField(),
             const SizedBox(height: 16),
             _buildLabel('ชื่อบัญชี *'),
             const SizedBox(height: 8),
@@ -714,6 +804,146 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  static const _thaibanks = [
+    'กสิกรไทย',
+    'กรุงไทย',
+    'ไทยพาณิชย์',
+    'กรุงเทพ',
+    'กรุงศรีอยุธยา',
+    'ทหารไทยธนชาต (TTB)',
+    'ออมสิน',
+    'ธ.ก.ส.',
+    'ซีไอเอ็มบีไทย',
+    'ยูโอบี (UOB)',
+    'แลนด์แอนด์เฮ้าส์',
+    'ทิสโก้',
+    'เกียรตินาคินภัทร',
+  ];
+
+  Future<void> _pickBank() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.orangeMid,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'เลือกธนาคาร',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text),
+              ),
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _thaibanks.length,
+                  itemBuilder: (_, i) {
+                    final bank = _thaibanks[i];
+                    final isSelected = _bankNameController.text == bank;
+                    return ListTile(
+                      title: Text(
+                        bank,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isSelected ? AppColors.orange : AppColors.text,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle, color: AppColors.orange, size: 20)
+                          : null,
+                      onTap: () => Navigator.pop(context, bank),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked == null) return;
+    setState(() => _bankNameController.text = picked);
+  }
+
+  Widget _buildBankPickerField() {
+    final selected = _bankNameController.text;
+    return FormField<String>(
+      initialValue: selected.isEmpty ? null : selected,
+      validator: (_) => _bankNameController.text.trim().isEmpty ? 'กรุณาเลือกธนาคาร' : null,
+      builder: (fieldState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () async {
+                await _pickBank();
+                fieldState.didChange(_bankNameController.text);
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                decoration: BoxDecoration(
+                  color: AppColors.orangeLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: fieldState.hasError
+                        ? Colors.red
+                        : selected.isNotEmpty
+                            ? AppColors.orange
+                            : Colors.transparent,
+                    width: selected.isNotEmpty ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_balance_outlined, size: 18, color: AppColors.muted),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        selected.isEmpty ? 'เลือกธนาคาร' : selected,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: selected.isEmpty ? AppColors.muted : AppColors.text,
+                          fontWeight: selected.isEmpty ? FontWeight.w400 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.expand_more_rounded, color: AppColors.muted, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            if (fieldState.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 12),
+                child: Text(
+                  fieldState.errorText!,
+                  style: const TextStyle(fontSize: 12, color: Colors.red),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildLabel(String text) => Text(text, style: AppTextStyles.label);
 
   Widget _buildTextField({
@@ -828,112 +1058,129 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-class _LocationDialog extends StatefulWidget {
+class MapLocationPickerScreen extends StatefulWidget {
   final double? initialLat;
   final double? initialLng;
-  const _LocationDialog({this.initialLat, this.initialLng});
+
+  const MapLocationPickerScreen({super.key, this.initialLat, this.initialLng});
 
   @override
-  State<_LocationDialog> createState() => _LocationDialogState();
+  State<MapLocationPickerScreen> createState() => _MapLocationPickerScreenState();
 }
 
-class _LocationDialogState extends State<_LocationDialog> {
-  late final TextEditingController _lat;
-  late final TextEditingController _lng;
+class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
+  LatLng? _selectedPoint;
+
+  static const _bangkokCenter = LatLng(13.7563, 100.5018);
 
   @override
   void initState() {
     super.initState();
-    _lat = TextEditingController(text: widget.initialLat?.toStringAsFixed(6) ?? '');
-    _lng = TextEditingController(text: widget.initialLng?.toStringAsFixed(6) ?? '');
+    if (widget.initialLat != null && widget.initialLng != null) {
+      _selectedPoint = LatLng(widget.initialLat!, widget.initialLng!);
+    }
   }
 
-  @override
-  void dispose() {
-    _lat.dispose();
-    _lng.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final lat = double.tryParse(_lat.text.trim());
-    final lng = double.tryParse(_lng.text.trim());
-    if (lat == null || lng == null) {
+  void _confirm() {
+    if (_selectedPoint == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('พิกัดไม่ถูกต้อง')),
+        const SnackBar(content: Text('กรุณาแตะบนแผนที่เพื่อเลือกตำแหน่ง')),
       );
       return;
     }
-    Navigator.pop(context, (lat, lng));
+    Navigator.pop(context, (_selectedPoint!.latitude, _selectedPoint!.longitude));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('ปักหมุดร้าน', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _lat,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-              decoration: InputDecoration(
-                labelText: 'Latitude',
-                hintText: 'เช่น 13.756331',
-                filled: true,
-                fillColor: AppColors.orangeLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.orange, width: 1.5)),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('ปักหมุดตำแหน่งร้าน'),
+        backgroundColor: AppColors.orange,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: _selectedPoint ?? _bangkokCenter,
+              initialZoom: 15,
+              onTap: (_, point) => setState(() => _selectedPoint = point),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.digio.merchantapp',
+              ),
+              if (_selectedPoint != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selectedPoint!,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: AppColors.orange,
+                        size: 48,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.touch_app_outlined, size: 18, color: AppColors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedPoint == null
+                          ? 'แตะบนแผนที่เพื่อปักหมุดตำแหน่งร้าน'
+                          : 'Lat: ${_selectedPoint!.latitude.toStringAsFixed(6)},  Lng: ${_selectedPoint!.longitude.toStringAsFixed(6)}',
+                      style: const TextStyle(fontSize: 13, color: AppColors.text),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _lng,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-              decoration: InputDecoration(
-                labelText: 'Longitude',
-                hintText: 'เช่น 100.501762',
-                filled: true,
-                fillColor: AppColors.orangeLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.orange, width: 1.5)),
-              ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ElevatedButton(
+            onPressed: _selectedPoint != null ? _confirm : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.orangeMid,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            const SizedBox(height: 20),
-            Row(children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    side: const BorderSide(color: AppColors.orangeMid),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF9E9E9E))),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('บันทึกหมุด', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ]),
-          ],
+            child: const Text(
+              'ยืนยันตำแหน่ง',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
         ),
       ),
     );

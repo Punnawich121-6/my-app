@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import 'auth/login_screen.dart';
@@ -51,7 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (confirmed == true) {
-      await FirebaseAuth.instance.signOut();
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);

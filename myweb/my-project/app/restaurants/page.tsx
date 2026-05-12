@@ -1,6 +1,9 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { verifySession } from '@/app/lib/session'
 import Link from 'next/link'
 import Navbar from '../component/navbar'
+import AutoRefresh from '../component/AutoRefresh'
 import {
     getRestaurantStats,
     getRestaurantCategories,
@@ -35,6 +38,9 @@ export default async function Restaurants({
 }: {
     searchParams: Promise<{ status?: string; category?: string; search?: string; page?: string }>
 }) {
+    const session = await verifySession()
+    if (!session) redirect('/login')
+
     const { status, category, search, page } = await searchParams
 
     const currentStatus   = status   ?? 'ALL'
@@ -71,6 +77,7 @@ export default async function Restaurants({
 
     return (
         <>
+            <AutoRefresh interval={30_000} />
             <Navbar />
 
             <main className="md:ml-64 pt-16 px-4 md:px-8 pb-12 min-h-screen">

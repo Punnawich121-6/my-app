@@ -4,6 +4,7 @@ import { logout } from '@/app/actions/auth'
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ExportModal from "./ExportModal";
 
 const navItems = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
@@ -15,13 +16,14 @@ const navItems = [
 ];
 
 const bottomNavItems = [
-  { label: "Help Center", icon: "help", href: "/help" },
-]
+  { label: "Help Center", icon: "help", href: "/help" }
+];
 
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   return (
     <>
@@ -29,7 +31,7 @@ export default function Navbar() {
       <nav
         className={`
           bg-white font-['Plus_Jakarta_Sans'] antialiased h-screen w-64 border-r
-          border-slate-200 shadow-sm flex flex-col py-6 z-40 fixed left-0 top-0
+          border-slate-200 shadow-sm flex flex-col py-6   fixed left-0 top-0
           transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
@@ -37,15 +39,19 @@ export default function Navbar() {
       >
         {/* Logo */}
         <div className="px-6 mb-8 flex items-center gap-3">
+
           <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-white" data-weight="fill">
+            <span className="material-symbols-outlined  text-white" data-weight="fill">
               restaurant_menu
             </span>
+
           </div>
+
           <div>
             <h1 className="text-xl font-bold text-orange-600 tracking-tight">Zest &amp; Savory</h1>
             <p className="text-[10px] font-bold tracking-wider text-on-surface-variant">Admin Portal</p>
           </div>
+          
         </div>
 
         {/* Main Nav */}
@@ -57,32 +63,35 @@ export default function Navbar() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 ${
-                      active
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 
+                      ${ active
                         ? "text-orange-600 font-semibold border-r-4 border-orange-600 bg-orange-50/50"
                         : "text-slate-500 hover:text-orange-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                     onClick={() => setMobileOpen(false)}
                   >
-                    <span
-                      className="material-symbols-outlined"
-                      {...(active ? { "data-weight": "fill" } : {})}
-                    >
+                    <span className="material-symbols-outlined"{...(active ? { "data-weight": "fill" } : {})}>
                       {icon}
                     </span>
+
                     <span className="text-[14px] font-semibold leading-5 tracking-[0.02em]">
                       {label}
                     </span>
+
                   </Link>
                 </li>
               );
-            })}
+            }) }
           </ul>
         </div>
 
         {/* Export Button */}
         <div className="px-6 mt-6">
-          <button className="w-full py-2.5 bg-primary-container text-white text-[14px] font-semibold leading-5 tracking-[0.02em] rounded-full hover:bg-primary transition-colors shadow-sm">
+          <button
+            onClick={() => setExportOpen(true)}
+            className="w-full py-2.5 bg-primary-container text-white text-[14px] font-semibold leading-5 tracking-[0.02em] rounded-full hover:bg-primary transition-colors shadow-sm flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
             Export Reports
           </button>
         </div>
@@ -120,6 +129,8 @@ export default function Navbar() {
           </form>
         </div>
       </nav>
+
+      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} />
 
       {/* Mobile overlay */}
       {mobileOpen && (

@@ -1,5 +1,6 @@
 'use server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import pool from '@/app/lib/db'
 import { createSession, deleteSession } from '@/app/lib/session'
@@ -19,10 +20,11 @@ export async function login(
     return { error: 'กรุณากรอก Email และ Password' }
   }
 
+  // ดึงฟิลด์ที่จำเป็น รวมถึง sessionTimeoutMin
   const [rows] = await pool.query(
-    'SELECT id, passwordHash FROM adminuser WHERE email = ? LIMIT 1',
+    'SELECT id, passwordHash, sessionTimeoutMin FROM AdminUser WHERE email = ? LIMIT 1',
     [email]
-  ) as [{ id: string; passwordHash: string }[], unknown]
+  ) as [{ id: string; passwordHash: string; sessionTimeoutMin: number | null }[], unknown]
 
   const user = rows[0]
   if (!user) {
@@ -34,7 +36,17 @@ export async function login(
     return { error: 'Email หรือ Password ไม่ถูกต้อง' }
   }
 
-  await createSession(user.id)
+  // 1. อัปเดตเวลาเข้าสู่ระบบครั้งล่าสุด
+  await pool.query('UPDATE AdminUser SET lastLogin = NOW() WHERE id = ?', [user.id])
+
+  // 2. ดึงข้อมูล IP และ User Agent ของผู้ใช้จาก Headers
+  const headersList = await headers()
+  const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+  const userAgent = headersList.get('user-agent') || 'unknown'
+
+  // 3. สร้าง Session ลง Database
+  await createSession(user.id, user.sessionTimeoutMin, ipAddress, userAgent)
+  
   redirect('/dashboard')
 }
 

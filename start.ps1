@@ -1,7 +1,7 @@
 $BASE = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "  Zest & Savory - Food Delivery App  " -ForegroundColor Cyan
+Write-Host "  Zest & Savory - Starting All Apps  " -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -11,90 +11,45 @@ if ($conn) {
     Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
 }
 
-# Start Backend
-Write-Host "Starting Backend on http://localhost:3000 ..."
-$logOut = "$BASE\backend.log"
-$logErr = "$BASE\backend.err.log"
-$backend = Start-Process -FilePath "node" `
-    -ArgumentList "server.js" `
-    -WorkingDirectory "$BASE\backend" `
-    -RedirectStandardOutput $logOut `
-    -RedirectStandardError $logErr `
-    -NoNewWindow -PassThru
+# 1) Backend
+Write-Host "[1/5] Starting Backend..." -ForegroundColor Yellow
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", `
+    "cd '$BASE\backend'; Write-Host 'BACKEND' -ForegroundColor Cyan; node server.js"
+
+Start-Sleep -Seconds 3
+
+# 2) Web Admin (Next.js)
+Write-Host "[2/5] Starting Web Admin (Next.js)..." -ForegroundColor Yellow
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", `
+    "cd '$BASE\myweb\my-project'; Write-Host 'WEB ADMIN' -ForegroundColor Magenta; npm run dev"
 
 Start-Sleep -Seconds 2
 
-$ok = $false
-try {
-    Invoke-WebRequest -Uri "http://localhost:3000/health" -UseBasicParsing -TimeoutSec 3 | Out-Null
-    $ok = $true
-} catch {
-    $ok = $false
-}
+# 3) Merchant App
+Write-Host "[3/5] Starting Merchant App..." -ForegroundColor Yellow
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", `
+    "cd '$BASE\merchantapp'; Write-Host 'MERCHANT APP' -ForegroundColor Green; flutter run -d chrome --web-port 8080"
 
-if ($ok) {
-    Write-Host "  OK - Backend running (PID $($backend.Id))" -ForegroundColor Green
-} else {
-    Write-Host "  FAILED - check backend.log" -ForegroundColor Red
-    Get-Content $logOut -ErrorAction SilentlyContinue
-    Get-Content $logErr -ErrorAction SilentlyContinue
-    exit 1
-}
+Start-Sleep -Seconds 5
+
+# 4) Customer App
+Write-Host "[4/5] Starting Customer App..." -ForegroundColor Yellow
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", `
+    "cd '$BASE\customerapp'; Write-Host 'CUSTOMER APP' -ForegroundColor Green; flutter run -d chrome --web-port 8081"
+
+Start-Sleep -Seconds 5
+
+# 5) Rider App
+Write-Host "[5/5] Starting Rider App..." -ForegroundColor Yellow
+Start-Process "powershell" -ArgumentList "-NoExit", "-Command", `
+    "cd '$BASE\riderapp'; Write-Host 'RIDER APP' -ForegroundColor Green; flutter run -d chrome --web-port 8082"
 
 Write-Host ""
-Write-Host "Select app to run:"
-Write-Host "  1) Merchant App  -> http://localhost:8080"
-Write-Host "  2) Customer App  -> http://localhost:8081"
-Write-Host "  3) Rider App     -> http://localhost:8082"
-Write-Host "  4) All Apps"
+Write-Host "All services started:" -ForegroundColor Green
+Write-Host "  Backend:      http://localhost:3000"
+Write-Host "  Web Admin:    http://localhost:3001"
+Write-Host "  Merchant App: http://localhost:8080"
+Write-Host "  Customer App: http://localhost:8081"
+Write-Host "  Rider App:    http://localhost:8082"
 Write-Host ""
-$choice = Read-Host "Choose [1]"
-if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
-
-function Start-Flutter {
-    param($dir, $port)
-    return Start-Process -FilePath "flutter" `
-        -ArgumentList "run", "-d", "chrome", "--web-renderer", "html", "--web-port", "$port" `
-        -WorkingDirectory $dir `
-        -NoNewWindow -PassThru
-}
-
-switch ($choice) {
-    "1" {
-        Write-Host "`nMerchant App -> http://localhost:8080" -ForegroundColor Cyan
-        $p = Start-Flutter "$BASE\merchantapp" 8080
-        $p.WaitForExit()
-    }
-    "2" {
-        Write-Host "`nCustomer App -> http://localhost:8081" -ForegroundColor Cyan
-        $p = Start-Flutter "$BASE\customerapp" 8081
-        $p.WaitForExit()
-    }
-    "3" {
-        Write-Host "`nRider App -> http://localhost:8082" -ForegroundColor Cyan
-        $p = Start-Flutter "$BASE\riderapp" 8082
-        $p.WaitForExit()
-    }
-    "4" {
-        Write-Host "`nStarting all apps..." -ForegroundColor Cyan
-        $p1 = Start-Flutter "$BASE\merchantapp" 8080
-        Start-Sleep 5
-        $p2 = Start-Flutter "$BASE\customerapp" 8081
-        Start-Sleep 5
-        $p3 = Start-Flutter "$BASE\riderapp" 8082
-        Write-Host ""
-        Write-Host "All services running:" -ForegroundColor Green
-        Write-Host "  Backend:      http://localhost:3000"
-        Write-Host "  Merchant App: http://localhost:8080"
-        Write-Host "  Customer App: http://localhost:8081"
-        Write-Host "  Rider App:    http://localhost:8082"
-        Write-Host "Press Ctrl+C to stop all."
-        try { $p1.WaitForExit(); $p2.WaitForExit(); $p3.WaitForExit() }
-        finally { $p1, $p2, $p3 | ForEach-Object { if (-not $_.HasExited) { $_.Kill() } } }
-    }
-    default {
-        Write-Host "Invalid choice" -ForegroundColor Red
-    }
-}
-
-if (-not $backend.HasExited) { $backend.Kill() }
+Write-Host "ปิด terminal แต่ละหน้าต่างเพื่อหยุด app นั้น" -ForegroundColor Gray

@@ -2,6 +2,28 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+function saveImage(base64Data) {
+  if (!base64Data) return null;
+  try {
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    let buffer, ext = '.jpg';
+    if (matches && matches.length === 3) {
+      buffer = Buffer.from(matches[2], 'base64');
+      if (matches[1].includes('png')) ext = '.png';
+    } else {
+      buffer = Buffer.from(base64Data, 'base64');
+    }
+    const filename = Date.now() + ext;
+    const filepath = path.join(__dirname, '../public/uploads', filename);
+    fs.writeFileSync(filepath, buffer);
+    return 'http://localhost:3000/uploads/' + filename;
+  } catch (e) {
+    return null;
+  }
+}
 
 // ─── GET store by owner phone ─────────────────────────────────────────────────
 router.get('/by-phone/:phone', async (req, res) => {
@@ -73,13 +95,51 @@ router.get('/:storeId', async (req, res) => {
 });
 
 router.put('/:storeId', async (req, res) => {
-  const { name, type, address, image_url } = req.body;
+  const { name, type, address, image_url, open_time, close_time, lat, lng } = req.body;
   try {
     await db.query(
-      'UPDATE restaurant SET name=?, category=?, address=?, imageUrl=? WHERE id=?',
-      [name, type, address, image_url || null, req.params.storeId]
+      'UPDATE restaurant SET name=?, category=?, address=?, imageUrl=?, open_time=?, close_time=?, lat=?, lng=? WHERE id=?',
+      [name, type, address, image_url || null, open_time || null, close_time || null, lat || null, lng || null, req.params.storeId]
     );
     res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Upload store image (base64) ─────────────────────────────────────────────
+router.post('/:storeId/image', async (req, res) => {
+  const { image } = req.body;
+  if (!image) return res.status(400).json({ error: 'image required' });
+  try {
+    const url = saveImage(image);
+    if (!url) return res.status(500).json({ error: 'Failed to save image' });
+    await db.query('UPDATE restaurant SET imageUrl=? WHERE id=?', [url, req.params.storeId]);
+    res.json({ image_url: url });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── GET reviews for a store ──────────────────────────────────────────────────
+router.get('/:storeId/reviews', async (req, res) => {
+  try {
+    const [reviews] = await db.query(
+      `SELECT r.id, r.rating, r.comment, r.createdAt,
+              c.name AS customer_name
+       FROM reviews r
+       LEFT JOIN customer c ON r.customer_id = c.id
+       WHERE r.store_id = ?
+       ORDER BY r.createdAt DESC
+       LIMIT 50`,
+      [req.params.storeId]
+    );
+    const [[agg]] = await db.query(
+      `SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average
+       FROM reviews WHERE store_id = ?`,
+      [req.params.storeId]
+    );
+    res.json({ reviews, total: agg.total, average: parseFloat(agg.average).toFixed(1) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

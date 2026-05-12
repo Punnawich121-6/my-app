@@ -1,11 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'firebase_options.dart';
 import 'screen/auth/login_screen.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const CustomerApp());
 }
 
@@ -44,16 +41,16 @@ class CustomerApp extends StatelessWidget {
 
 // Web-matching color palette (from globals.css)
 abstract class CColors {
-  static const orange      = Color(0xFFFF6B35);   // --color-primary-container
-  static const orangeLight = Color(0xFFFBF2ED);   // --color-surface-container-low
-  static const orangeMid   = Color(0xFFE1BFB5);   // --color-outline-variant
-  static const bg          = Color(0xFFFFF8F5);   // --color-background
-  static const text        = Color(0xFF1E1B18);   // --color-on-background
-  static const muted       = Color(0xFF8D7168);   // --color-outline
-  static const green       = Color(0xFF00677E);   // --color-tertiary
-  static const greenLight  = Color(0xFFB5EBFF);   // --color-tertiary-fixed
-  static const red         = Color(0xFFBA1A1A);   // --color-error
-  static const redLight    = Color(0xFFFFDAD6);   // --color-error-container
+  static const orange      = Color(0xFFFF6B35);
+  static const orangeLight = Color(0xFFFBF2ED);
+  static const orangeMid   = Color(0xFFE1BFB5);
+  static const bg          = Color(0xFFFFF8F5);
+  static const text        = Color(0xFF1E1B18);
+  static const muted       = Color(0xFF8D7168);
+  static const green       = Color(0xFF00677E);
+  static const greenLight  = Color(0xFFB5EBFF);
+  static const red         = Color(0xFFBA1A1A);
+  static const redLight    = Color(0xFFFFDAD6);
 }
 
 abstract class CTextStyles {

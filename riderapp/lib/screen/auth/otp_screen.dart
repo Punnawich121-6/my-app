@@ -1,17 +1,15 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 import '../home_screen.dart';
+import 'pending_approval_screen.dart';
 import 'register_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phone;
-  final String verificationId;
-  final ConfirmationResult? confirmationResult;
-  const OtpScreen({super.key, required this.phone, required this.verificationId, this.confirmationResult});
+  const OtpScreen({super.key, required this.phone});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -20,7 +18,6 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  late String _verificationId;
   int _secondsLeft = 120;
   Timer? _timer;
   bool _isVerifying = false;
@@ -28,7 +25,6 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void initState() {
     super.initState();
-    _verificationId = widget.verificationId;
     _startTimer();
   }
 
@@ -66,41 +62,41 @@ class _OtpScreenState extends State<OtpScreen> {
   Future<void> _verify() async {
     if (_isVerifying) return;
     setState(() => _isVerifying = true);
-    try {
-      if (widget.confirmationResult != null) {
-        await widget.confirmationResult!.confirm(_otp);
-      } else {
-        final credential = PhoneAuthProvider.credential(
-          verificationId: _verificationId,
-          smsCode: _otp,
-        );
-        await FirebaseAuth.instance.signInWithCredential(credential);
-      }
-      if (!mounted) return;
 
-      final rider = await RiderService.getByPhone(widget.phone);
-      if (!mounted) return;
-      if (rider == null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)),
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => HomeScreen(riderId: rider['id'], riderName: rider['name'])),
-          (r) => false,
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
+    if (_otp != '123456') {
       setState(() => _isVerifying = false);
       for (final c in _controllers) { c.clear(); }
       _focusNodes[0].requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
-          e.code == 'invalid-verification-code' ? 'รหัส OTP ไม่ถูกต้อง' : 'เกิดข้อผิดพลาด: ${e.message}',
-        )),
+        const SnackBar(content: Text('รหัส OTP ไม่ถูกต้อง')),
+      );
+      return;
+    }
+
+    final rider = await RiderService.getByPhone(widget.phone);
+    if (!mounted) return;
+
+    if (rider == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)),
+      );
+      return;
+    }
+
+    final verified = rider['isVerified'];
+    final isVerified = verified == 1 || verified == true;
+    if (isVerified) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => HomeScreen(riderId: rider['id'], riderName: rider['name'])),
+        (r) => false,
+      );
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => PendingApprovalScreen(phone: widget.phone)),
+        (r) => false,
       );
     }
   }
@@ -188,10 +184,26 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
             const SizedBox(height: 20),
             Center(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Text('เปลี่ยนเบอร์โทรศัพท์',
-                    style: TextStyle(fontSize: 14, color: RiderColors.blue)),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _secondsLeft == 0 ? _startTimer : null,
+                    child: Text(
+                      'ไม่ได้รับรหัส? ส่งใหม่',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _secondsLeft == 0 ? RiderColors.blue : RiderColors.muted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Text('เปลี่ยนเบอร์โทรศัพท์',
+                        style: TextStyle(fontSize: 14, color: RiderColors.blue)),
+                  ),
+                ],
               ),
             ),
           ],

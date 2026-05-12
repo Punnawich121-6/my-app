@@ -112,14 +112,14 @@ class _SuccessScreenState extends State<SuccessScreen> with SingleTickerProvider
 
   List<Widget> _buildSparkles() {
     const sparkleData = [
-      {'dx': -80.0, 'dy': -60.0, 'size': 20.0, 'color': 0xFFFFA623},
-      {'dx': 72.0, 'dy': -70.0, 'size': 14.0, 'color': 0xFFFFA623},
+      {'dx': -80.0, 'dy': -60.0, 'size': 20.0, 'color': 0xFFFF6B35},
+      {'dx': 72.0, 'dy': -70.0, 'size': 14.0, 'color': 0xFFFF6B35},
       {'dx': -100.0, 'dy': 20.0, 'size': 10.0, 'color': 0xFFFFCB8E},
       {'dx': 90.0, 'dy': 30.0, 'size': 18.0, 'color': 0xFFFFCB8E},
-      {'dx': -50.0, 'dy': 80.0, 'size': 12.0, 'color': 0xFFFFA623},
+      {'dx': -50.0, 'dy': 80.0, 'size': 12.0, 'color': 0xFFFF6B35},
       {'dx': 60.0, 'dy': 75.0, 'size': 8.0, 'color': 0xFFFFCB8E},
       {'dx': 0.0, 'dy': -95.0, 'size': 10.0, 'color': 0xFFFFCB8E},
-      {'dx': -30.0, 'dy': -85.0, 'size': 7.0, 'color': 0xFFFFA623},
+      {'dx': -30.0, 'dy': -85.0, 'size': 7.0, 'color': 0xFFFF6B35},
     ];
 
     return sparkleData.map((s) {

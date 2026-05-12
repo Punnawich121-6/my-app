@@ -1,5 +1,8 @@
+import { redirect } from 'next/navigation'
+import { verifySession } from '@/app/lib/session'
 import Navbar from "../component/navbar"
 import RevenueChartWrapper from "../component/RevenueChartWrapper"
+import AutoRefresh from "../component/AutoRefresh"
 import {
   getDashboardStats,
   getLiveOrders,
@@ -8,11 +11,12 @@ import {
   getOrderStatusBreakdown,
 } from "@/app/lib/dashboard"
 
+// ฟังก์ชันสำหรับฟอร์แมตตัวเลขเป็นรูปแบบเงิน เช่น 1500 -> $1.5k, 500 -> $500
 function formatCurrency(amount: number): string {
   if (amount >= 1000) return `$${(amount / 1000).toFixed(1)}k`
   return `$${amount.toFixed(0)}`
 }
-
+// ฟังก์ชันสำหรับฟอร์แมตเวลาให้อยู่ในรูปแบบที่อ่านง่าย เช่น 14:30 PM
 function formatTime(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -21,6 +25,7 @@ function formatTime(date: Date): string {
   }).format(new Date(date))
 }
 
+// ฟังก์ชันสำหรับกำหนดสไตล์ของ badge ตามสถานะของ Order
 function getStatusStyle(status: string): string {
   switch (status) {
     case "PREPARING":        return "bg-tertiary-fixed text-on-tertiary-fixed"
@@ -32,6 +37,7 @@ function getStatusStyle(status: string): string {
   }
 }
 
+// ฟังก์ชันสำหรับกำหนด label ของแต่ละ status
 const STATUS_LABEL: Record<string, string> = {
   PENDING:          "Pending",
   CONFIRMED:        "Confirmed",
@@ -55,7 +61,11 @@ const STATUS_BAR: Record<string, { bar: string; dot: string }> = {
   REFUNDED:         { bar: "bg-purple-400", dot: "bg-purple-400" },
 }
 
+// เก็บผลลัพธ์ของการ query ที่ได้จากฟังก์ชัน getLiveOrders() ซึ่งเป็นอาเรย์ของคำสั่งซื้อที่กำลังดำเนินการอยู่ 5 รายการล่าสุด
 export default async function Dashboard() {
+  const session = await verifySession()
+  if (!session) redirect('/login')
+
   const [stats, liveOrders, topPerformers, dailyRevenue, statusBreakdown] = await Promise.all([
     getDashboardStats(),
     getLiveOrders(),
@@ -64,19 +74,23 @@ export default async function Dashboard() {
     getOrderStatusBreakdown(),
   ])
 
+  // สร้างตัวแปร today เพื่อแสดงวันที่ปัจจุบันในรูปแบบที่อ่านง่าย เช่น "Monday, Jan 1"
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
     day: "numeric",
   })
 
+  //  หาผลรวมของออเดอร์ทั้งหมดในวันนี้ โดยการใช้ reduce กับอาเรย์ statusBreakdown ซึ่งเก็บข้อมูลจำนวนคำสั่งซื้อในแต่ละสถานะ และแปลงค่า count เป็นตัวเลขด้วย Number() ก่อนนำมาบวกกันเพื่อหาผลรวมทั้งหมด
   const totalOrdersToday = statusBreakdown.reduce((s, r) => s + Number(r.count), 0)
 
   return (
     <>
-      <Navbar />
+      <AutoRefresh interval={10_000} /> // reflesh ข้อมูลทุกๆ 10 วินาที (10,000 มิลลิวินาที)
+      <Navbar /> // แสดง Navbar ที่นำเข้ามาจาก component/navbar.tsx
 
-      <main className="md:ml-64 pt-20 px-4 md:px-8 pb-12 min-h-screen">
+      // md: ml-64 = Margin Left ขนาด 64unit = 256px  spacing for sidebar 
+      <main className="md:ml-64 pt-20 px-4 md:px-8 pb-12 min-h-screen"> 
 
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">

@@ -56,7 +56,7 @@ router.post('/register', async (req, res) => {
 
 // ─── POST place order ─────────────────────────────────────────────────────────
 router.post('/orders', async (req, res) => {
-  const { customer_id, customer_name, customer_phone, store_id, items, address, note } = req.body;
+  const { customer_id, customer_name, customer_phone, store_id, items, address, latitude, longitude, note } = req.body;
   const deliveryFee = 30;
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const total = subtotal + deliveryFee;
@@ -66,9 +66,9 @@ router.post('/orders', async (req, res) => {
   try {
     const orderId = crypto.randomUUID();
     await db.query(
-      `INSERT INTO \`order\` (id, orderNumber, restaurantId, customerId, status, totalAmount, notes)
-       VALUES (?, ?, ?, ?, 'pending', ?, ?)`,
-      [orderId, orderNumber, store_id, customer_id || null, total.toFixed(2), notesField]
+      `INSERT INTO \`order\` (id, orderNumber, restaurantId, customerId, status, totalAmount, serviceFee, notes, deliveryLatitude, deliveryLongitude)
+       VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+      [orderId, orderNumber, store_id, customer_id || null, total.toFixed(2), deliveryFee.toFixed(2), notesField, latitude ?? null, longitude ?? null]
     );
     for (const item of items) {
       await db.query(
@@ -88,6 +88,7 @@ router.get('/orders/detail/:orderId', async (req, res) => {
     const [[order]] = await db.query(
       `SELECT o.id, o.orderNumber, o.status, o.totalAmount AS total_amount,
               o.notes, o.createdAt AS created_at,
+              o.deliveryLatitude AS delivery_lat, o.deliveryLongitude AS delivery_lng,
               r.name AS store_name, r.address AS store_address
        FROM \`order\` o
        LEFT JOIN restaurant r ON o.restaurantId = r.id

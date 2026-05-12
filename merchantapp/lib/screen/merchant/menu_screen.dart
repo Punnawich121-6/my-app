@@ -95,29 +95,42 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F4F4),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.orange,
+        foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('My Food List', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF1A1A1A))),
-        leading: GestureDetector(
-          onTap: () => Navigator.maybePop(context),
-          child: Container(
-            margin: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(color: Color(0xFFF5F5F5), shape: BoxShape.circle),
-            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: Color(0xFF1A1A1A)),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFF8C5A), Color(0xFFFF4500)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
         ),
+        title: const Text('เมนูอาหาร', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Colors.white)),
         actions: [
-          TextButton(
-            onPressed: () async {
-              final ok = await Navigator.push<bool>(
-                context,
-                MaterialPageRoute(builder: (_) => AddEditMenuScreen(categories: _categories)),
-              );
-              if (ok == true) _load();
-            },
-            child: const Text('+ Add', style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.w700, fontSize: 15)),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () async {
+                final ok = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (_) => AddEditMenuScreen(categories: _categories)),
+                );
+                if (ok == true) _load();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white30),
+                ),
+                child: const Text('+ เพิ่ม', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+              ),
+            ),
           ),
         ],
         bottom: _loading
@@ -126,15 +139,15 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 controller: _tab,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
-                labelColor: AppColors.orange,
-                unselectedLabelColor: const Color(0xFF9E9E9E),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white60,
                 labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                 unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
-                indicatorColor: AppColors.orange,
+                indicatorColor: Colors.white,
                 indicatorSize: TabBarIndicatorSize.label,
                 indicatorWeight: 2.5,
                 tabs: [
-                  const Tab(text: 'All'),
+                  const Tab(text: 'ทั้งหมด'),
                   ..._categories.map((c) => Tab(text: c.name)),
                 ],
               ),
@@ -323,7 +336,7 @@ class _FoodList extends StatelessWidget {
                               const SizedBox(height: 8),
                               // Rating + Pick UP
                               Row(children: [
-                                const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                                const Icon(Icons.star_rounded, color: const Color(0xFFFF6B35), size: 14),
                                 const SizedBox(width: 3),
                                 const Text('4.9', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
                                 const SizedBox(width: 3),
@@ -428,7 +441,12 @@ class FoodDetailScreen extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF1A1A1A))),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () async {
+                      await Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => AddEditMenuScreen(categories: categories, item: item)),
+                      );
+                    },
                     child: const Text('EDIT',
                       style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.w700, fontSize: 15)),
                   ),
@@ -541,7 +559,7 @@ class FoodDetailScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   // Rating
                   const Row(children: [
-                    Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                    Icon(Icons.star_rounded, color: const Color(0xFFFF6B35), size: 18),
                     SizedBox(width: 4),
                     Text('4.9', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.orange)),
                     SizedBox(width: 4),
@@ -640,12 +658,20 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
   bool _pickUp = true;
   bool _delivery = false;
   final List<String?> _images = [null, null, null];
+  final Set<String> _selectedIngredients = {};
+  late List<MenuCategory> _localCategories;
+
+  static const _presetCategories = [
+    'อาหารจานหลัก', 'เครื่องดื่ม', 'อาหารเรียกน้ำย่อย',
+    'ของหวาน', 'กับข้าว', 'อาหารทะเล', 'อาหารเจ', 'ก๋วยเตี๋ยว',
+  ];
 
   bool get _isEditing => widget.item != null;
 
   @override
   void initState() {
     super.initState();
+    _localCategories = List.from(widget.categories);
     _name = TextEditingController(text: widget.item?.name ?? '');
     _desc = TextEditingController(text: widget.item?.description ?? '');
     _price = TextEditingController(text: widget.item != null ? widget.item!.price.toStringAsFixed(0) : '');
@@ -668,6 +694,108 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
       final bytes = await pickedFile.readAsBytes();
       final ext = pickedFile.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
       setState(() => _images[slot] = 'data:image/$ext;base64,${base64Encode(bytes)}');
+    }
+  }
+
+  Future<void> _showAddCategorySheet() async {
+    final ctrl = TextEditingController();
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24, right: 24, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 18),
+            const Text('เพิ่มประเภทอาหาร', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+            const SizedBox(height: 16),
+            // preset chips
+            Wrap(spacing: 8, runSpacing: 8, children: _presetCategories.map((name) {
+              final exists = _localCategories.any((c) => c.name == name);
+              return GestureDetector(
+                onTap: exists ? null : () => Navigator.pop(ctx, name),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: exists ? const Color(0xFFF0F0F0) : AppColors.orangeLight,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: exists ? const Color(0xFFE0E0E0) : AppColors.orange),
+                  ),
+                  child: Text(name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: exists ? const Color(0xFFBDBDBD) : AppColors.orange,
+                      fontWeight: FontWeight.w600,
+                    )),
+                ),
+              );
+            }).toList()),
+            const SizedBox(height: 20),
+            const Text('หรือพิมพ์ชื่อเอง', style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E), fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'เช่น อาหารตะวันตก, สลัด',
+                    hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
+                    filled: true,
+                    fillColor: const Color(0xFFF7F7F7),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  final text = ctrl.text.trim();
+                  if (text.isNotEmpty) Navigator.pop(ctx, text);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('เพิ่ม', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ]),
+          ]),
+        );
+      },
+    );
+    if (result == null || !mounted) return;
+    // check if already exists locally
+    final existing = _localCategories.firstWhere(
+      (c) => c.name == result,
+      orElse: () => MenuCategory(id: '', storeId: '', name: ''),
+    );
+    if (existing.id.isNotEmpty) {
+      setState(() => _selectedCategoryId = existing.id);
+      return;
+    }
+    try {
+      final newCat = await ApiService.addCategory(result);
+      setState(() {
+        _localCategories.add(newCat);
+        _selectedCategoryId = newCat.id;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('สร้างประเภทไม่สำเร็จ'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -716,7 +844,7 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
           ),
         ),
         title: Text(
-          _isEditing ? 'Edit Item' : 'Add New Items',
+          _isEditing ? 'แก้ไขเมนู' : 'เพิ่มเมนูใหม่',
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF1A1A1A)),
         ),
         actions: [
@@ -724,7 +852,7 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
             onPressed: _loading ? null : _save,
             child: _loading
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AppColors.orange, strokeWidth: 2))
-                : const Text('READY', style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                : const Text('บันทึก', style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
           ),
         ],
       ),
@@ -734,13 +862,13 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             // Item Name
-            _label('ITEM NAME'),
+            _label('ชื่อเมนู'),
             const SizedBox(height: 8),
-            _field(_name, hint: 'Mazalichiken Halim', validator: (v) => (v?.trim().isEmpty ?? true) ? 'Required' : null),
+            _field(_name, hint: 'เช่น ผัดกะเพราหมูสับ', validator: (v) => (v?.trim().isEmpty ?? true) ? 'กรุณากรอกชื่อเมนู' : null),
             const SizedBox(height: 24),
 
             // Upload Photo
-            _label('UPLOAD PHOTO/VIDEO'),
+            _label('รูปภาพ'),
             const SizedBox(height: 12),
             SizedBox(
               height: 100,
@@ -757,18 +885,18 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
             const SizedBox(height: 24),
 
             // Price
-            _label('PRICE'),
+            _label('ราคา (บาท)'),
             const SizedBox(height: 8),
             Row(children: [
               SizedBox(
-                width: 110,
+                width: 130,
                 child: _field(
                   _price,
-                  hint: '\$50',
+                  hint: '฿ ราคา',
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: (v) {
-                    if (v?.trim().isEmpty ?? true) return 'Required';
-                    if (double.tryParse(v!.trim()) == null) return 'Invalid';
+                    if (v?.trim().isEmpty ?? true) return 'กรุณากรอกราคา';
+                    if (double.tryParse(v!.trim()) == null) return 'ราคาไม่ถูกต้อง';
                     return null;
                   },
                 ),
@@ -781,38 +909,80 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
             const SizedBox(height: 24),
 
             // Category
-            if (widget.categories.isNotEmpty) ...[
-              _label('CATEGORY'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategoryId,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color(0xFFF7F7F7),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            Row(children: [
+              const Expanded(child: Text('ประเภทอาหาร', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9E9E9E), letterSpacing: 0.8))),
+              GestureDetector(
+                onTap: _showAddCategorySheet,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(color: AppColors.orangeLight, borderRadius: BorderRadius.circular(20)),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.add, size: 14, color: AppColors.orange),
+                    SizedBox(width: 3),
+                    Text('สร้างประเภทใหม่', style: TextStyle(fontSize: 11, color: AppColors.orange, fontWeight: FontWeight.w700)),
+                  ]),
                 ),
-                items: widget.categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                onChanged: (v) => setState(() => _selectedCategoryId = v),
               ),
-              const SizedBox(height: 24),
-            ],
+            ]),
+            const SizedBox(height: 10),
+            _localCategories.isEmpty
+                ? GestureDetector(
+                    onTap: _showAddCategorySheet,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.orangeLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.orangeMid, style: BorderStyle.solid),
+                      ),
+                      child: const Center(child: Text('+ แตะเพื่อสร้างประเภทอาหาร', style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.w600, fontSize: 13))),
+                    ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ..._localCategories.map((cat) {
+                        final selected = _selectedCategoryId == cat.id;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedCategoryId = selected ? null : cat.id),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.orange : const Color(0xFFF7F7F7),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: selected ? AppColors.orange : const Color(0xFFE0E0E0)),
+                            ),
+                            child: Text(cat.name,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: selected ? Colors.white : const Color(0xFF424242),
+                                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                              )),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+            const SizedBox(height: 24),
 
             // Ingredients (static display)
-            _label('INGREDIENTS'),
+            _label('ส่วนผสม'),
             const SizedBox(height: 12),
             _buildIngredientsSection(),
             const SizedBox(height: 24),
 
             // Details / Description
-            _label('DETAILS'),
+            _label('รายละเอียด'),
             const SizedBox(height: 8),
             TextFormField(
               controller: _desc,
               maxLines: 4,
               style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
               decoration: InputDecoration(
-                hintText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Bibendum in vel, mattis et amet dui mauris turpis.',
+                hintText: 'อธิบายส่วนผสม รสชาติ หรือความพิเศษของเมนูนี้',
                 hintStyle: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 13),
                 filled: true,
                 fillColor: const Color(0xFFF7F7F7),
@@ -836,7 +1006,7 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
                 ),
                 child: _loading
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(_isEditing ? 'Save Changes' : 'Add Item', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    : Text(_isEditing ? 'บันทึกการแก้ไข' : 'เพิ่มเมนู', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -865,21 +1035,72 @@ class _AddEditMenuScreenState extends State<AddEditMenuScreen> {
               const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF9E9E9E)),
             ]),
             const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: items.asMap().entries.map((e) => Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      width: 50, height: 50,
-                      decoration: const BoxDecoration(color: AppColors.orangeLight, shape: BoxShape.circle),
-                      child: Icon(icons[e.key % icons.length], color: AppColors.orange, size: 22),
+            SizedBox(
+              height: 82,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 16),
+                itemBuilder: (_, i) {
+                  final name = items[i];
+                  final selected = _selectedIngredients.contains(name);
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      selected ? _selectedIngredients.remove(name) : _selectedIngredients.add(name);
+                    }),
+                    child: SizedBox(
+                      width: 58,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: selected ? AppColors.orange : AppColors.orangeLight,
+                                  shape: BoxShape.circle,
+                                  border: selected ? Border.all(color: AppColors.orange, width: 2) : null,
+                                ),
+                                child: Icon(
+                                  icons[i % icons.length],
+                                  color: selected ? Colors.white : AppColors.orange,
+                                  size: 22,
+                                ),
+                              ),
+                              if (selected)
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check_circle_rounded, size: 16, color: AppColors.orange),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: selected ? AppColors.orange : const Color(0xFF757575),
+                              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(e.value, style: const TextStyle(fontSize: 11, color: Color(0xFF757575))),
-                  ]),
-                )).toList(),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 16),

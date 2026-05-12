@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../main.dart';
@@ -9,9 +8,7 @@ import 'register_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phone;
-  final String verificationId;
-  final ConfirmationResult? confirmationResult;
-  const OtpScreen({super.key, required this.phone, required this.verificationId, this.confirmationResult});
+  const OtpScreen({super.key, required this.phone});
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
@@ -19,7 +16,6 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final List<TextEditingController> _ctrls = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _nodes = List.generate(6, (_) => FocusNode());
-  late String _verificationId;
   int _secondsLeft = 120;
   Timer? _timer;
   bool _verifying = false;
@@ -27,7 +23,6 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void initState() {
     super.initState();
-    _verificationId = widget.verificationId;
     _startTimer();
   }
 
@@ -41,7 +36,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   void _startTimer() {
     _timer?.cancel();
-    setState(() => _secondsLeft = 120);
+    if (mounted) setState(() => _secondsLeft = 120);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_secondsLeft == 0) { t.cancel(); } else { setState(() => _secondsLeft--); }
     });
@@ -65,32 +60,26 @@ class _OtpScreenState extends State<OtpScreen> {
   Future<void> _verify() async {
     if (_verifying) return;
     setState(() => _verifying = true);
-    try {
-      if (widget.confirmationResult != null) {
-        await widget.confirmationResult!.confirm(_otp);
-      } else {
-        final credential = PhoneAuthProvider.credential(verificationId: _verificationId, smsCode: _otp);
-        await FirebaseAuth.instance.signInWithCredential(credential);
-      }
-      if (!mounted) return;
-      final user = await CustomerService.getByPhone(widget.phone);
-      if (!mounted) return;
-      if (user == null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)));
-      } else {
-        Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (_) => HomeScreen(customerId: user['id'].toString(), customerName: user['name'] ?? '', customerPhone: widget.phone)),
-          (r) => false,
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
+
+    if (_otp != '123456') {
       setState(() => _verifying = false);
       for (final c in _ctrls) { c.clear(); }
       _nodes[0].requestFocus();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        e.code == 'invalid-verification-code' ? 'รหัส OTP ไม่ถูกต้อง' : 'เกิดข้อผิดพลาด: ${e.message}',
-      )));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('รหัส OTP ไม่ถูกต้อง')),
+      );
+      return;
+    }
+
+    final user = await CustomerService.getByPhone(widget.phone);
+    if (!mounted) return;
+    if (user == null) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)));
+    } else {
+      Navigator.pushAndRemoveUntil(context,
+        MaterialPageRoute(builder: (_) => HomeScreen(customerId: user['id'].toString(), customerName: user['name'] ?? '', customerPhone: widget.phone)),
+        (r) => false,
+      );
     }
   }
 
@@ -152,9 +141,25 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
             const SizedBox(height: 20),
             Center(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Text('เปลี่ยนเบอร์โทรศัพท์', style: TextStyle(fontSize: 14, color: CColors.orange)),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _secondsLeft == 0 ? _startTimer : null,
+                    child: Text(
+                      'ไม่ได้รับรหัส? ส่งใหม่',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _secondsLeft == 0 ? CColors.orange : CColors.muted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Text('เปลี่ยนเบอร์โทรศัพท์', style: TextStyle(fontSize: 14, color: CColors.orange)),
+                  ),
+                ],
               ),
             ),
           ],

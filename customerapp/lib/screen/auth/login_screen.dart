@@ -1,9 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../main.dart';
-import '../../services/customer_service.dart';
-import '../home_screen.dart';
 import 'otp_screen.dart';
 import 'register_screen.dart';
 
@@ -15,175 +11,252 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneCtrl = TextEditingController();
-  bool _loading = false;
 
   @override
-  void dispose() { _phoneCtrl.dispose(); super.dispose(); }
-
-  Future<void> _requestOtp() async {
-    final phone = _phoneCtrl.text.trim();
-    if (phone.length < 9) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('กรุณากรอกเบอร์โทรให้ถูกต้อง')));
-      return;
-    }
-    setState(() => _loading = true);
-    final fullPhone = '+66${phone.startsWith('0') ? phone.substring(1) : phone}';
-
-    if (kIsWeb) {
-      try {
-        final confirmation = await FirebaseAuth.instance.signInWithPhoneNumber(fullPhone);
-        if (!mounted) return;
-        setState(() => _loading = false);
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => OtpScreen(phone: phone, verificationId: '', confirmationResult: confirmation),
-        ));
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ส่ง OTP ไม่สำเร็จ: $e')));
-      }
-      return;
-    }
-
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: fullPhone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (credential) async {
-        await FirebaseAuth.instance.signInWithCredential(credential);
-        if (!mounted) return;
-        _navigateAfterLogin(phone);
-      },
-      verificationFailed: (e) {
-        if (!mounted) return;
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ส่ง OTP ไม่สำเร็จ: ${e.message}')));
-      },
-      codeSent: (verificationId, _) {
-        if (!mounted) return;
-        setState(() => _loading = false);
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => OtpScreen(phone: phone, verificationId: verificationId),
-        ));
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
+  void dispose() {
+    _phoneCtrl.dispose();
+    super.dispose();
   }
 
-  Future<void> _navigateAfterLogin(String phone) async {
-    final user = await CustomerService.getByPhone(phone);
-    if (!mounted) return;
-    if (user == null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: phone)));
-    } else {
-        Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => HomeScreen(customerId: user['id'].toString(), customerName: user['name'] ?? '', customerPhone: phone)),
-        (r) => false,
+  void _requestOtp() {
+    final phone = _phoneCtrl.text.trim();
+    if (phone.length < 9) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('กรุณากรอกเบอร์โทรให้ถูกต้อง'),
+          backgroundColor: CColors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
+      return;
     }
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => OtpScreen(phone: phone),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CColors.bg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(28, 48, 28, 32),
+      backgroundColor: CColors.orange,
+      body: Stack(
+        children: [
+          Positioned.fill(child: _CustomerBg()),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: _FormSheet(
+                phoneController: _phoneCtrl,
+                onRequestOtp: _requestOtp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomerBg extends StatelessWidget {
+  static const _bgImage =
+      'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=900&h=1200&fit=crop&q=80';
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.network(
+          _bgImage,
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+          errorBuilder: (_, __, ___) => Container(color: CColors.orange),
+        ),
+        Container(color: Colors.black.withValues(alpha: 0.25)),
+        SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Center(
-                child: Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.restaurant_rounded, color: CColors.orange, size: 44),
+              const SizedBox(height: 48),
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 28,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.restaurant_rounded, size: 46, color: CColors.orange),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Zest & Savory',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 0.2,
+                  shadows: [Shadow(color: Color(0x88000000), blurRadius: 10)],
                 ),
               ),
-              const SizedBox(height: 32),
-              const Text('Zest & Savory', style: CTextStyles.brand),
               const SizedBox(height: 6),
-              const Text('สั่งอาหารอร่อย ส่งถึงบ้าน', style: CTextStyles.subtitle),
-              const SizedBox(height: 36),
-              const Text('เบอร์โทรศัพท์', style: CTextStyles.label),
-              const SizedBox(height: 8),
-              _PhoneField(controller: _phoneCtrl),
-              const SizedBox(height: 28),
-              _PrimaryButton(label: 'รับ OTP', isLoading: _loading, onTap: _requestOtp),
-              const SizedBox(height: 24),
-              Center(
-                child: RichText(
-                  text: TextSpan(
-                    style: CTextStyles.muted,
-                    children: [
-                      const TextSpan(text: 'ยังไม่มีบัญชี? '),
-                      WidgetSpan(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_phoneCtrl.text.length < 9) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('กรุณากรอกเบอร์โทรให้ถูกต้อง')));
-                              return;
-                            }
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: _phoneCtrl.text)));
-                          },
-                          child: const Text('สมัครสมาชิก', style: TextStyle(color: CColors.orange, fontWeight: FontWeight.w600, fontSize: 14)),
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                'สั่งอาหารอร่อย ส่งถึงบ้าน',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.90),
+                  fontWeight: FontWeight.w400,
+                  shadows: const [Shadow(color: Color(0x77000000), blurRadius: 8)],
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }
 
-class _PhoneField extends StatelessWidget {
-  final TextEditingController controller;
-  const _PhoneField({required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.phone,
-      style: const TextStyle(fontSize: 15, color: CColors.text),
-      decoration: InputDecoration(
-        hintText: '08x-xxx-xxxx',
-        hintStyle: const TextStyle(color: CColors.muted),
-        filled: true,
-        fillColor: CColors.orangeLight,
-        prefixIcon: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          margin: const EdgeInsets.only(right: 8),
-          decoration: const BoxDecoration(border: Border(right: BorderSide(color: CColors.orangeMid, width: 1))),
-          child: const Text('+66', style: TextStyle(fontSize: 14, color: CColors.muted)),
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.transparent)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: CColors.orange, width: 1.5)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      ),
-    );
-  }
-}
+class _FormSheet extends StatelessWidget {
+  final TextEditingController phoneController;
+  final VoidCallback onRequestOtp;
+  const _FormSheet({required this.phoneController, required this.onRequestOtp});
 
-class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final bool isLoading;
-  final VoidCallback onTap;
-  const _PrimaryButton({required this.label, required this.isLoading, required this.onTap});
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity, height: 54,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onTap,
-        style: ElevatedButton.styleFrom(backgroundColor: CColors.orange, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-        child: isLoading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: EdgeInsets.only(
+        left: 28, right: 28,
+        top: 32, bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          const Text(
+            'เข้าสู่ระบบ',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'กรอกเบอร์โทรศัพท์เพื่อรับ OTP',
+            style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
+          ),
+          const SizedBox(height: 28),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F7F7),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE8E8E8)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: const BoxDecoration(
+                    border: Border(right: BorderSide(color: Color(0xFFE8E8E8))),
+                  ),
+                  child: const Text(
+                    '🇹🇭 +66',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                  ),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    decoration: const InputDecoration(
+                      hintText: '08x-xxx-xxxx',
+                      hintStyle: TextStyle(color: Color(0xFFBDBDBD), fontSize: 15),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: onRequestOtp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: CColors.orange,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text(
+                'รับ OTP',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: GestureDetector(
+              onTap: () {
+                if (phoneController.text.length < 9) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('กรุณากรอกเบอร์โทรก่อน'),
+                      backgroundColor: CColors.orange,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => RegisterScreen(phone: phoneController.text),
+                ));
+              },
+              child: RichText(
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
+                  children: [
+                    TextSpan(text: 'ยังไม่มีบัญชี? '),
+                    TextSpan(
+                      text: 'สมัครสมาชิก',
+                      style: TextStyle(
+                        color: CColors.orange,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

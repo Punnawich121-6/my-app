@@ -1,11 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'firebase_options.dart';
 import 'screen/auth/login_screen.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -14,21 +11,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  return MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-    title: 'Zest & Savory',
-    theme: ThemeData(
-      scaffoldBackgroundColor: AppColors.bg,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.orange,
-        primary: AppColors.orange,
-        secondary: AppColors.orange,
-        brightness: Brightness.light,
+      title: 'Zest & Savory',
+      theme: ThemeData(
+        scaffoldBackgroundColor: AppColors.bg,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.orange,
+          primary: AppColors.orange,
+          secondary: AppColors.orange,
+          brightness: Brightness.light,
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: AppColors.orange,
+        ),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.orange,
-      ),
-    ),
       builder: (context, child) {
         return Container(
           color: const Color(0xFFD0D0D0),
@@ -42,15 +39,15 @@ class MyApp extends StatelessWidget {
       },
       home: const LoginScreen(),
     );
-}
+  }
 }
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
 
 abstract class AppColors {
-  static const orange      = Color(0xFFF5A623);   // warm amber orange
-  static const orangeLight = Color(0xFFFFF8E1);   // very light amber
-  static const orangeMid   = Color(0xFFFFE082);   // mid amber
+  static const orange      = Color(0xFFFF6B35);
+  static const orangeLight = Color(0xFFFFEDE7);
+  static const orangeMid   = Color(0xFFFFB59D);
   static const bg          = Color(0xFFFFFFFF);
   static const text        = Color(0xFF1A1A1A);
   static const muted       = Color(0xFF9E9E9E);
@@ -66,7 +63,7 @@ abstract class AppTextStyles {
   static const brand = TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.w700,
-  color: AppColors.orange,
+    color: AppColors.orange,
     height: 1.1,
   );
 

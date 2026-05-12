@@ -66,13 +66,16 @@ router.put('/:orderId/status', async (req, res) => {
 
     if (status === 'completed') {
       const [[order]] = await db.query(
-        'SELECT restaurantId, totalAmount FROM `order` WHERE id = ?',
+        'SELECT restaurantId, totalAmount, serviceFee FROM `order` WHERE id = ?',
         [orderId]
       );
-      const net = parseFloat(order.totalAmount) * 0.85;
+      const foodAmount = parseFloat(order.totalAmount) - parseFloat(order.serviceFee || 0);
+      const netPayout  = foodAmount * 0.85;
       await db.query(
-        'INSERT INTO transaction (id, orderId, restaurantId, amount, netPayout, status) VALUES (UUID(),?,?,?,?,?)',
-        [orderId, order.restaurantId, net.toFixed(2), net.toFixed(2), 'completed']
+        `INSERT INTO transaction (id, orderId, restaurantId, amount, netPayout, status)
+         VALUES (UUID(),?,?,?,?,?)
+         ON DUPLICATE KEY UPDATE status = 'completed'`,
+        [orderId, order.restaurantId, foodAmount.toFixed(2), netPayout.toFixed(2), 'completed']
       );
       await db.query(
         `UPDATE restaurant SET totalOrders = (
@@ -82,6 +85,50 @@ router.put('/:orderId/status', async (req, res) => {
       );
     }
     res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Backfill serviceFee for orders that have serviceFee = 0 or NULL
+router.post('/backfill-service-fee', async (req, res) => {
+  try {
+    const [result] = await db.query(
+      `UPDATE \`Order\` SET serviceFee = 30 WHERE serviceFee IS NULL OR serviceFee = 0`
+    );
+    res.json({ message: 'Backfill serviceFee complete', updated: result.affectedRows });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Backfill transactions for completed orders that have no transaction record
+router.post('/backfill-transactions', async (req, res) => {
+  try {
+    const [orders] = await db.query(`
+      SELECT o.id, o.restaurantId, o.totalAmount, o.serviceFee
+      FROM \`Order\` o
+      LEFT JOIN transaction t ON t.orderId = o.id
+      WHERE LOWER(o.status) = 'completed'
+        AND t.id IS NULL
+    `);
+
+    if (orders.length === 0) {
+      return res.json({ message: 'No missing transactions found', inserted: 0 });
+    }
+
+    for (const order of orders) {
+      const foodAmount = parseFloat(order.totalAmount) - parseFloat(order.serviceFee || 0);
+      const netPayout  = foodAmount * 0.85;
+      await db.query(
+        `INSERT INTO transaction (id, orderId, restaurantId, amount, netPayout, status)
+         VALUES (UUID(), ?, ?, ?, ?, 'completed')
+         ON DUPLICATE KEY UPDATE status = 'completed'`,
+        [order.id, order.restaurantId, foodAmount.toFixed(2), netPayout.toFixed(2)]
+      );
+    }
+
+    res.json({ message: 'Backfill complete', inserted: orders.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -22,7 +22,7 @@ export default function RestaurantFilters({
         const params = new URLSearchParams(searchParams.toString())
         Object.entries(updates).forEach(([k, v]) => params.set(k, v))
         params.set('page', '1')
-        router.push(`?${params.toString()}`)
+        router.push(`?${params.toString()}`, { scroll: false })
     }, [router, searchParams])
 
     const handleSearch = useCallback(() => {

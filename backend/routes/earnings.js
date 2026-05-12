@@ -40,8 +40,9 @@ router.get('/:storeId', async (req, res) => {
     );
 
     const [chartData] = await db.query(
-      `SELECT DATE(createdAt) as date, SUM(amount) as revenue
-       FROM transaction WHERE restaurantId=? AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      `SELECT DATE(createdAt) as date, COALESCE(SUM(totalAmount),0) as revenue
+       FROM \`Order\` WHERE restaurantId=? AND LOWER(status)='completed'
+         AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
        GROUP BY DATE(createdAt) ORDER BY date ASC`,
       [storeId]
     );

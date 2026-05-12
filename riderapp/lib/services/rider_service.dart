@@ -98,4 +98,38 @@ class RiderService {
     } catch (_) {}
     return null;
   }
+
+  static Future<void> updateLocation(String riderId, double lat, double lng) async {
+    try {
+      await http.patch(
+        Uri.parse('$_base/$riderId/location'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'latitude': lat, 'longitude': lng}),
+      );
+    } catch (_) {}
+  }
+
+  static Future<bool> updateOrderStep(
+    String orderId,
+    String riderId,
+    String step, {
+    double? lat,
+    double? lng,
+  }) async {
+    try {
+      final res = await http.patch(
+        Uri.parse('$_base/orders/$orderId/step'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'rider_id': riderId,
+          'step': step,
+          if (lat != null) 'latitude': lat,
+          if (lng != null) 'longitude': lng,
+        }),
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }
