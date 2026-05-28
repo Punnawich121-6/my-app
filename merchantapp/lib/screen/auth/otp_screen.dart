@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -94,8 +94,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Future<void> _fetchEmulatorCode() async {
     try {
+      final emulatorHost = kIsWeb ? 'localhost' : '10.0.2.2';
       final res = await http.get(Uri.parse(
-        'http://10.0.2.2:9099/emulator/v1/projects/project-digit-3cea5/verificationCodes',
+        'http://$emulatorHost:9099/emulator/v1/projects/project-digit-3cea5/verificationCodes',
       ));
       if (res.statusCode != 200 || !mounted) return;
       final data = jsonDecode(res.body) as Map<String, dynamic>;

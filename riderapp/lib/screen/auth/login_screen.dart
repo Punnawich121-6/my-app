@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import 'otp_screen.dart';
@@ -41,6 +42,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _sendAndNavigate(String phone) async {
     setState(() => _loading = true);
+
+    if (kIsWeb) {
+      setState(() => _loading = false);
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => OtpScreen(phone: phone, verificationId: 'web-bypass'),
+      ));
+      return;
+    }
+
     final suffix = phone.startsWith('0') ? phone.substring(1) : phone;
     final thaiPhone = '+66$suffix';
 
