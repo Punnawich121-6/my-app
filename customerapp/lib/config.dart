@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:http/http.dart' as http;
 
-// Web → localhost, physical device & emulator → ngrok public URL
-const String kBackendUrl = 'https://backend-gqls.onrender.com';
+final String kBackendUrl = kDebugMode
+    ? (kIsWeb ? 'http://localhost:3001' : 'http://10.0.2.2:3001')
+    : 'https://backend-gqls.onrender.com';
 
 const Map<String, String> kHeaders = {
   'Content-Type': 'application/json',

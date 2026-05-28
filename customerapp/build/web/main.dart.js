@@ -10095,7 +10095,7 @@ baL(a){var s=0,r=A.z(t.nA),q,p=2,o=[],n,m,l,k
 var $async$Rc=A.v(function(b,c){if(b===1){o.push(c)
 s=p}for(;;)switch(s){case 0:p=4
 s=7
-return A.r(A.kq(A.cc("http://localhost:3001/api/menu/"+A.k(a),0,null),null),$async$Rc)
+return A.r(A.kq(A.cc("https://backend-gqls.onrender.com/api/menu/"+A.k(a),0,null),null),$async$Rc)
 case 7:n=c
 m=n
 m=B.T.el(0,A.fd(A.fb(m.e)).c9(0,m.w),null)
@@ -10394,7 +10394,7 @@ var $async$Rb=A.v(function(d,e){if(d===1){o.push(e)
 s=p}for(;;)switch(s){case 0:p=4
 m=B.T.h0(A.a8(["order_id",c,"amount",a,"description",b==null?"Food Order":b],t.N,t.K),null)
 s=7
-return A.r(A.ks(A.cc("http://localhost:3001/api/payment/qr",0,null),m,B.bX).i7(0,B.rb),$async$Rb)
+return A.r(A.ks(A.cc("https://backend-gqls.onrender.com/api/payment/qr",0,null),m,B.bX).i7(0,B.rb),$async$Rb)
 case 7:n=e
 m=n
 m=B.T.el(0,A.fd(A.fb(m.e)).c9(0,m.w),null)
@@ -10422,7 +10422,7 @@ var $async$Ra=A.v(function(d,e){if(d===1){o.push(e)
 s=p}for(;;)switch(s){case 0:p=4
 m=B.T.h0(A.a8(["order_id",c,"amount",a,"description",b==null?"Food Order":b],t.N,t.K),null)
 s=7
-return A.r(A.ks(A.cc("http://localhost:3001/api/payment/card",0,null),m,B.bX).i7(0,B.rb),$async$Ra)
+return A.r(A.ks(A.cc("https://backend-gqls.onrender.com/api/payment/card",0,null),m,B.bX).i7(0,B.rb),$async$Ra)
 case 7:n=e
 m=n
 m=B.T.el(0,A.fd(A.fb(m.e)).c9(0,m.w),null)
@@ -10476,7 +10476,7 @@ D6(a,b,c,d,e){return A.baV(a,b,c,d,e)},
 baV(a,b,a0,a1,a2){var s=0,r=A.z(t.y),q,p=2,o=[],n,m,l,k,j,i,h,g,f,e,d,c
 var $async$D6=A.v(function(a3,a4){if(a3===1){o.push(a4)
 s=p}for(;;)switch(s){case 0:p=4
-n=A.cc("http://localhost:3001/api/disputes",0,null)
+n=A.cc("https://backend-gqls.onrender.com/api/disputes",0,null)
 s=a1.length===0?7:8
 break
 case 7:i=t.N
@@ -10534,7 +10534,7 @@ s=p}for(;;)switch(s){case 0:p=4
 m=t.N
 m=B.T.h0(A.a8(["status","cancelled"],m,m),null)
 s=7
-return A.r(A.b5t(A.cc("http://localhost:3001/api/orders/"+a+"/status",0,null),m,B.bX),$async$R9)
+return A.r(A.b5t(A.cc("https://backend-gqls.onrender.com/api/orders/"+a+"/status",0,null),m,B.bX),$async$R9)
 case 7:n=c
 m=n.b
 q=m===200
@@ -52238,7 +52238,7 @@ n=o.a(A.o(a4).c.h(0,A.U(p))).b
 m=A.X(20)
 l=A.cT(B.am,B.v,1)
 k=A.b([new A.be(0,B.G,B.q.aC(0.1),B.bM,16)],t.V)
-if(a1.h(a0,a)!=null){j=B.c.bp(J.ax(a1.h(a0,a)),"http")?a1.h(a0,a):"http://localhost:3001"+A.k(a1.h(a0,a))
+if(a1.h(a0,a)!=null){j=B.c.bp(J.ax(a1.h(a0,a)),"http")?a1.h(a0,a):"https://backend-gqls.onrender.com"+A.k(a1.h(a0,a))
 j=A.is(j,B.K,new A.aMi(a4),B.bx,b,b)}else j=A.K(b,B.q7,B.e,o.a(A.o(a4).c.h(0,A.U(p))).r,b,b,b,b,b,b,b,b,b,b)
 i=t.p
 j=A.b([j],i)
@@ -52518,7 +52518,7 @@ q=r.a(A.o(a).c.h(0,A.U(h))).b
 p=A.X(16)
 o=A.b([new A.be(0,B.G,B.q.aC(0.04),B.dF,10)],t.V)
 n=A.X(12)
-if(i.h(j,k)!=null){m=B.c.bp(J.ax(i.h(j,k)),"http")?i.h(j,k):"http://localhost:3001"+A.k(i.h(j,k))
+if(i.h(j,k)!=null){m=B.c.bp(J.ax(i.h(j,k)),"http")?i.h(j,k):"https://backend-gqls.onrender.com"+A.k(i.h(j,k))
 m=A.is(m,B.K,new A.aNr(a),B.bx,56,56)}else m=A.K(l,B.tE,B.e,r.a(A.o(a).c.h(0,A.U(h))).r,l,l,l,56,l,l,l,l,l,56)
 m=A.hz(n,m)
 n=i.h(j,"name")
@@ -52534,7 +52534,7 @@ return A.K(s,B.tE,B.e,t.o.a(A.o(this.a).c.h(0,A.U(t.J))).r,s,s,s,56,s,s,s,s,s,56
 $S:47}
 A.AG.prototype={
 E(a){var s,r,q=null,p="image_url",o=t.J,n=t.o,m=n.a(A.o(a).c.h(0,A.U(o))).b,l=A.X(16),k=A.b([new A.be(0,B.G,B.q.aC(0.06),B.bM,12)],t.V),j=this.c,i=J.a2(j)
-if(i.h(j,p)!=null){s=B.c.bp(J.ax(i.h(j,p)),"http")?i.h(j,p):"http://localhost:3001"+A.k(i.h(j,p))
+if(i.h(j,p)!=null){s=B.c.bp(J.ax(i.h(j,p)),"http")?i.h(j,p):"https://backend-gqls.onrender.com"+A.k(i.h(j,p))
 s=A.is(s,B.K,new A.aKj(a),B.bx,80,80)}else s=A.K(q,B.jF,B.e,n.a(A.o(a).c.h(0,A.U(o))).r,q,q,q,80,q,q,q,q,q,80)
 s=A.aUA(s)
 r=i.h(j,"name")
@@ -52982,7 +52982,7 @@ s=i}if(s==null)s="\u0e44\u0e23\u0e40\u0e14\u0e2d\u0e23\u0e4c"
 i=k.d
 if(i==null)r=j
 else{i=J.Y(i,"rider_photo")
-r=i==null?j:J.ax(i)}q=r!=null&&r.length!==0?"http://localhost:3001"+r:j
+r=i==null?j:J.ax(i)}q=r!=null&&r.length!==0?"https://backend-gqls.onrender.com"+r:j
 i=A.X(16)
 p=A.cT(B.am,B.v,1)
 o=A.b([new A.be(0,B.G,B.q.aC(0.1),B.n,10)],t.V)
@@ -53066,7 +53066,7 @@ $0(){var s,r=this.a.d
 r.toString
 r=J.Y(r,"rider_photo")
 s=r==null?null:J.ax(r)
-return s!=null&&s.length!==0?"http://localhost:3001"+s:null},
+return s!=null&&s.length!==0?"https://backend-gqls.onrender.com"+s:null},
 $S:163}
 A.aIo.prototype={
 $0(){var s=this.a,r=s.c
@@ -53441,7 +53441,7 @@ return A.y($async$rL,r)},
 atv(a){if(a==="completed")return B.dx
 if(a==="cancelled")return B.cE
 return B.k},
-E(a9){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1=this,a2=null,a3="created_at",a4="http://localhost:3001",a5=a1.a.c,a6=A.jc("#,##0.00"),a7=J.a2(a5),a8=a7.h(a5,"total_amount")
+E(a9){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1=this,a2=null,a3="created_at",a4="https://backend-gqls.onrender.com",a5=a1.a.c,a6=A.jc("#,##0.00"),a7=J.a2(a5),a8=a7.h(a5,"total_amount")
 a8=a8==null?a2:J.ax(a8)
 s=A.dE(a8==null?"0":a8)
 if(s==null)s=0
@@ -118189,14 +118189,14 @@ $.b2k=null
 $.b45=A.t(t.N,A.aN("am<qh>(n,az<n,n>)"))
 $.b4o=A.t(t.C_,t.lT)
 $.jm=null
-$.b2v="http://localhost:3001/api/support"
-$.b2B="http://localhost:3001/api/chat"
+$.b2v="https://backend-gqls.onrender.com/api/support"
+$.b2B="https://backend-gqls.onrender.com/api/chat"
 $.oP=function(){var s=t.N
 return A.b([A.a8(["label","\u0e1a\u0e49\u0e32\u0e19","address","123 \u0e16.\u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17 \u0e41\u0e02\u0e27\u0e07\u0e04\u0e25\u0e2d\u0e07\u0e40\u0e15\u0e22 \u0e40\u0e02\u0e15\u0e04\u0e25\u0e2d\u0e07\u0e40\u0e15\u0e22 \u0e01\u0e17\u0e21.","icon","home"],s,s),A.a8(["label","\u0e17\u0e35\u0e48\u0e17\u0e33\u0e07\u0e32\u0e19","address","88 \u0e16.\u0e23\u0e31\u0e0a\u0e14\u0e32\u0e20\u0e34\u0e40\u0e29\u0e01 \u0e41\u0e02\u0e27\u0e07\u0e2b\u0e49\u0e27\u0e22\u0e02\u0e27\u0e32\u0e07 \u0e40\u0e02\u0e15\u0e2b\u0e49\u0e27\u0e22\u0e02\u0e27\u0e32\u0e07 \u0e01\u0e17\u0e21.","icon","work"],s,s)],t.m0)}()
 $.xe=A.b6(t.N)
-$.ia="http://localhost:3001/api/customer"
-$.b3K="http://localhost:3001/api/ai"
-$.avI="http://localhost:3001"
+$.ia="https://backend-gqls.onrender.com/api/customer"
+$.b3K="https://backend-gqls.onrender.com/api/ai"
+$.avI="https://backend-gqls.onrender.com"
 $.bci=A.t(t.N,A.aN("xg"))
 $.ao7=A.t(t.N,A.aN("tP"))
 $.ao3=A.t(t.N,A.aN("Uj"))
