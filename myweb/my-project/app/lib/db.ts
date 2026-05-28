@@ -17,8 +17,7 @@ const pool = global._mysqlPool ?? mysql.createPool({
   queueLimit:       0,
   enableKeepAlive:  true,
   keepAliveInitialDelay: 0,
-  // Required for PlanetScale / cloud MySQL with SSL
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
+  ssl: process.env.DB_HOST !== 'localhost' ? { minVersion: 'TLSv1.2' } : undefined,
 })
 
 // Cache pool in global so hot-reloads (dev) and warm Vercel instances reuse it
