@@ -6,7 +6,7 @@ class SocketService {
   SocketService._();
 
   io.Socket? _socket;
-  static const _url = 'http://10.0.2.2:3001';
+  static const _url = 'https://backend-gqls.onrender.com';
 
   final Set<String> _orderRooms = {};
   String? _supportRoom;

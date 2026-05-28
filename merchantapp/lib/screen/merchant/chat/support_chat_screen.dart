@@ -25,7 +25,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   File? _pickedImage;
   Timer? _pollTimer;
 
-  static const _mediaBase = 'http://10.0.2.2:3001';
+  static const _mediaBase = 'https://backend-gqls.onrender.com';
 
   @override
   void initState() {

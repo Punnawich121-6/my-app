@@ -41,7 +41,7 @@ async function cancelStaleOrders(io) {
 
 function startCancelJob(io) {
     // รันทันทีตอน boot แล้วทุก 1 นาที
-    cancelStaleOrders(io).catch(e => console.error('[cancelOrders] boot error:', e.message));
+    cancelStaleOrders(io).catch(e => console.error('[cancelOrders] boot error:', e.sqlMessage || e.message || e));
     setInterval(() => {
         cancelStaleOrders(io).catch(e => console.error('[cancelOrders] error:', e.message));
     }, 60 * 1000);

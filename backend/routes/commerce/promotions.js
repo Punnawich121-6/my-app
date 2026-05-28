@@ -49,7 +49,7 @@ async function migrateStoreId() {
 
 ensureTables()
   .then(migrateStoreId)
-  .catch(e => console.error('[promotions] ensureTables error:', e.message));
+  .catch(e => console.error('[promotions] ensureTables error:', e.sqlMessage || e.message || e));
 
 router.post('/:storeId/analyze', async (req, res) => {
   try {

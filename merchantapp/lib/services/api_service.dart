@@ -6,8 +6,8 @@ import '../models/menu_model.dart';
 import '../models/store_model.dart';
 
 class ApiService {
-  static const _base = 'http://10.0.2.2:3001/api';
-  static const serverBase = 'http://10.0.2.2:3001';
+  static const _base = 'https://backend-gqls.onrender.com/api';
+  static const serverBase = 'https://backend-gqls.onrender.com';
   static String get chatBase => '$_base/chat';
 
   // storeId and storeName are loaded once via init() before screens are built

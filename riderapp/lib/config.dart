@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 
-final String kBackendUrl = kIsWeb
-    ? 'http://localhost:3001'
-    : 'http://10.0.2.2:3001';
+const String kBackendUrl = 'https://backend-gqls.onrender.com';
 
 // เปิด true เพื่อใช้ location ร้านแทน GPS จริงตอน dev
 const bool kDevMockLocation = kDebugMode;
