@@ -54,8 +54,9 @@ desktop.ini
 *.suo
 *.user
 
-# ─── Lock files (let each env regenerate to avoid version mismatch) ─────────
+# ─── pnpm monorepo config (keep local, Vercel must use npm via package-lock.json) ─
 pnpm-lock.yaml
+pnpm-workspace.yaml
 
 # ─── Misc ────────────────────────────────────────────────────────────────────
 *.pem

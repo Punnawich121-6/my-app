@@ -1,6 +1,0 @@
-packages:
-  - "backend"
-  - "myweb/my-project"
-allowBuilds:
-  sharp: true
-  unrs-resolver: true
