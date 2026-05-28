@@ -24,6 +24,9 @@ out/
 
 # ─── Flutter / Dart ──────────────────────────────────────────────────────────
 **/build/
+!customerapp/build/
+!customerapp/build/web/
+!customerapp/build/web/**
 **/.dart_tool/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
