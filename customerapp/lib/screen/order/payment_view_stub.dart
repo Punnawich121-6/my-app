@@ -1,5 +1,5 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class PaymentWebView extends StatefulWidget {
   final String formUrl;
@@ -22,7 +22,11 @@ class _PaymentWebViewState extends State<PaymentWebView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      launchUrl(Uri.parse(widget.formUrl), mode: LaunchMode.externalApplication);
+      html.window.open(
+        widget.formUrl,
+        'payment',
+        'width=480,height=680,scrollbars=yes,resizable=yes',
+      );
     });
   }
 
@@ -40,7 +44,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
           ),
           SizedBox(height: 8),
           Text(
-            'กรุณาชำระเงินในหน้าต่างที่เปิดขึ้น\nแล้วกลับมาที่หน้านี้',
+            'กรุณาชำระเงินในหน้าต่าง Popup ที่เปิดขึ้น',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey, fontSize: 13),
           ),
