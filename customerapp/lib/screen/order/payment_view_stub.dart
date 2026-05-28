@@ -1,6 +1,5 @@
-import 'dart:html' as html;
-import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PaymentWebView extends StatefulWidget {
   final String formUrl;
@@ -19,26 +18,34 @@ class PaymentWebView extends StatefulWidget {
 }
 
 class _PaymentWebViewState extends State<PaymentWebView> {
-  late final String _viewType;
-
   @override
   void initState() {
     super.initState();
-    _viewType = 'payment-iframe-${DateTime.now().millisecondsSinceEpoch}';
-
-    ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-      final iframe = html.IFrameElement()
-        ..src = widget.formUrl
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..allow = 'payment';
-      return iframe;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      launchUrl(Uri.parse(widget.formUrl), mode: LaunchMode.externalApplication);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return HtmlElementView(viewType: _viewType);
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: Color(0xFFFF6B35)),
+          SizedBox(height: 20),
+          Text(
+            'กำลังรอผลการชำระเงิน...',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'กรุณาชำระเงินในหน้าต่างที่เปิดขึ้น\nแล้วกลับมาที่หน้านี้',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+        ],
+      ),
+    );
   }
 }
