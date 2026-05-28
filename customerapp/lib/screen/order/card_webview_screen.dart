@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import '../../main.dart';
 import '../../services/socket_service.dart';
+import 'payment_view.dart';
 
 class CardWebViewScreen extends StatefulWidget {
   final String orderId;
@@ -20,38 +20,13 @@ class CardWebViewScreen extends StatefulWidget {
 }
 
 class _CardWebViewScreenState extends State<CardWebViewScreen> {
-  late final WebViewController _controller;
-  bool _isLoading = true;
+  bool _isLoading = false;
   bool _completed = false;
 
   @override
   void initState() {
     super.initState();
-    _initWebView();
     _listenSocket();
-  }
-
-  void _initWebView() {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (url) {
-          if (url.contains('/payment/callback')) {
-            final uri = Uri.parse(url);
-            final success = uri.queryParameters['process_status'] == 'true';
-            _handleComplete(success: success, reference: uri.queryParameters['reference']);
-            return;
-          }
-          if (mounted) setState(() => _isLoading = true);
-        },
-        onPageFinished: (url) {
-          if (mounted) setState(() => _isLoading = false);
-        },
-        onWebResourceError: (_) {
-          if (mounted) setState(() => _isLoading = false);
-        },
-      ))
-      ..loadRequest(Uri.parse(widget.formUrl));
   }
 
   void _listenSocket() {
@@ -72,6 +47,20 @@ class _CardWebViewScreenState extends State<CardWebViewScreen> {
       'status': success ? 'APPROVED' : 'FAILED',
       'reference': reference,
     });
+  }
+
+  void _onPageStarted(String url) {
+    if (url.contains('/payment/callback')) {
+      final uri = Uri.parse(url);
+      final success = uri.queryParameters['process_status'] == 'true';
+      _handleComplete(success: success, reference: uri.queryParameters['reference']);
+      return;
+    }
+    if (mounted) setState(() => _isLoading = true);
+  }
+
+  void _onPageFinished() {
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -105,7 +94,11 @@ class _CardWebViewScreenState extends State<CardWebViewScreen> {
       ),
       body: Stack(
         children: [
-          WebViewWidget(controller: _controller),
+          PaymentWebView(
+            formUrl: widget.formUrl,
+            onPageStarted: _onPageStarted,
+            onPageFinished: _onPageFinished,
+          ),
           if (_isLoading)
             Container(
               color: Colors.white,
