@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
-import '../home_screen.dart';
+import '../home/home_screen.dart';
 import 'login_screen.dart';
 
 class PendingApprovalScreen extends StatefulWidget {

@@ -8,7 +8,7 @@ abstract class AppColors {
   static const orangeMid   = Color(0xFFFFB59D);
   static const bg          = Color(0xFFFFFFFF);
   static const text        = Color(0xFF1A1A1A);
-  static const muted       = Color(0xFF9E9E9E);
+  static const muted       = Color(0xFF333333);
   static const green       = Color(0xFF43A047);
   static const greenLight  = Color(0xFFE8F5E9);
   static const red         = Color(0xFFE53935);

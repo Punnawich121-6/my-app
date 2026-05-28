@@ -38,4 +38,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 
-kill 
+# รัน backend + web admin พร้อมกัน
+pnpm dev
+
+# หรือรัน specific package
+pnpm --filter admin-web dev        # Next.js อย่างเดียว
+pnpm --filter zest-savory-backend dev   # Backend อย่างเดียว

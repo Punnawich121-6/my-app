@@ -641,55 +641,59 @@ export default function Settings() {
       {/* Add / Edit Admin Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-surface-container-lowest rounded-3xl p-6 w-full max-w-md shadow-2xl border border-outline-variant/20">
+          <div className="bg-surface-container-lowest rounded-3xl p-6 w-full max-w-md shadow-2xl border border-outline-variant overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-headline-sm text-on-surface">
+              <h3 className="text-xl font-bold text-on-surface">
                 {editingAdmin ? 'Edit Admin User' : 'Add Admin User'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-on-surface-variant hover:text-on-surface">
+              <button onClick={() => setShowModal(false)} className="text-on-surface-variant hover:text-on-surface transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-label-md text-on-surface-variant block">Full Name</label>
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">Full Name</label>
                 <input
-                  className="w-full bg-surface-container px-4 py-3 rounded-xl border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-body-md text-on-surface outline-none"
                   type="text"
                   placeholder="e.g. Sarah Jenkins"
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
+                  className="block w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition-all"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-label-md text-on-surface-variant block">Email <span className="text-error">*</span></label>
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
-                  className="w-full bg-surface-container px-4 py-3 rounded-xl border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-body-md text-on-surface outline-none"
                   type="email"
                   placeholder="admin@example.com"
                   value={formEmail}
                   onChange={e => setFormEmail(e.target.value)}
+                  className="block w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition-all"
                 />
               </div>
               {!editingAdmin && (
-                <div className="space-y-2">
-                  <label className="text-label-md text-on-surface-variant block">Password <span className="text-error">*</span></label>
+                <div>
+                  <label className="block text-sm font-medium text-on-surface-variant mb-1.5">
+                    Password <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    className="w-full bg-surface-container px-4 py-3 rounded-xl border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-body-md text-on-surface outline-none"
                     type="password"
                     placeholder="Min 8 characters"
                     value={formPassword}
                     onChange={e => setFormPassword(e.target.value)}
+                    className="block w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition-all"
                   />
                 </div>
               )}
-              <div className="space-y-2">
-                <label className="text-label-md text-on-surface-variant block">Role</label>
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">Role</label>
                 <div className="relative">
                   <select
-                    className="w-full bg-surface-container px-4 py-3 rounded-xl border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-body-md text-on-surface outline-none appearance-none"
                     value={formRole}
                     onChange={e => setFormRole(e.target.value)}
+                    className="block w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-sm text-on-surface focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 appearance-none transition-all"
                   >
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
@@ -697,10 +701,10 @@ export default function Settings() {
                 </div>
               </div>
               {editingAdmin && (
-                <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-surface-container rounded-xl border border-outline-variant">
                   <div>
-                    <p className="text-body-md text-on-surface font-semibold">Account Active</p>
-                    <p className="text-label-sm text-on-surface-variant">Allow this user to log in</p>
+                    <p className="text-sm font-semibold text-on-surface">Account Active</p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">Allow this user to log in</p>
                   </div>
                   <Toggle checked={formActive} onChange={setFormActive} />
                 </div>
@@ -709,14 +713,14 @@ export default function Settings() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-full border-2 border-outline-variant text-on-surface-variant text-label-lg font-bold hover:bg-surface-container transition-colors"
+                className="flex-1 px-4 py-2.5 rounded-full border-2 border-outline-variant text-on-surface-variant text-sm font-bold hover:bg-surface-container transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleModalSave}
                 disabled={modalSaving}
-                className="flex-1 px-4 py-2.5 rounded-full bg-primary-container text-on-primary-container text-label-lg font-bold hover:shadow-md transition-shadow disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-full bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
               >
                 {modalSaving && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
                 {editingAdmin ? 'Save Changes' : 'Add User'}

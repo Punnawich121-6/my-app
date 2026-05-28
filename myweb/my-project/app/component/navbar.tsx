@@ -1,61 +1,82 @@
 "use client";
 
 import { logout } from '@/app/actions/auth'
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ExportModal from "./ExportModal";
+import SearchBar from "./SearchBar";
+import NotificationBell from "./NotificationBell";
 
 const navItems = [
-  { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
-  { label: "Live Orders", icon: "receipt_long", href: "/orders" },
-  { label: "Restaurants", icon: "restaurant", href: "/restaurants" },
-  { label: "Fleet Management", icon: "delivery_dining", href: "/fleet" },
-  { label: "Financials", icon: "payments", href: "/financials" },
-  { label: "System Settings", icon: "settings", href: "/settings" },
+  { label: "Dashboard",         icon: "dashboard",        href: "/dashboard" },
+  { label: "Live Orders",       icon: "receipt_long",     href: "/orders" },
+  { label: "Restaurants",       icon: "restaurant",       href: "/restaurants" },
+  { label: "Fleet Management",  icon: "delivery_dining",  href: "/fleet" },
+  { label: "Financials",        icon: "payments",         href: "/financials" },
+  { label: "Analytics AI",      icon: "insights",         href: "/analytics" },
+  { label: "Dispute Autopilot", icon: "gavel",            href: "/disputes" },
+  { label: "Support Chat",      icon: "support_agent",    href: "/support" },
+  { label: "System Settings",   icon: "settings",         href: "/settings" },
 ];
-
-const bottomNavItems = [
-  { label: "Help Center", icon: "help", href: "/help" }
-];
-
 
 export default function Navbar() {
-  const pathname = usePathname();
+  const pathname    = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [dark, setDark]             = useState(false);
+  const [userOpen, setUserOpen]     = useState(false);
+  const userRef = useRef<HTMLDivElement>(null);
+
+  /* ── restore dark preference ── */
+  useEffect(() => {
+    const saved = localStorage.getItem('theme') === 'dark';
+    setDark(saved);
+    document.documentElement.classList.toggle('dark', saved);
+  }, []);
+
+  /* ── close user dropdown on outside click ── */
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setUserOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  function toggleDark() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  }
+
+  /* shared class strings */
+  const navLinkBase = "flex items-center gap-3 px-4 py-3 transition-colors duration-200 text-on-surface-variant hover:text-primary-container hover:bg-surface-container";
+  const navLinkActive = "text-primary-container font-semibold border-r-4 border-primary-container bg-primary-container/10";
 
   return (
     <>
-      {/* Side NavBar */}
-      <nav
-        className={`
-          bg-white font-['Plus_Jakarta_Sans'] antialiased h-screen w-64 border-r
-          border-slate-200 shadow-sm flex flex-col py-6   fixed left-0 top-0
-          transition-transform duration-300
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0
-        `}
-      >
+      {/* ── Side Nav ── */}
+      <nav className={`
+        bg-surface-container-lowest font-['Plus_Jakarta_Sans'] antialiased
+        h-screen w-64 border-r border-surface-container-highest shadow-sm
+        flex flex-col py-6 fixed left-0 top-0 transition-transform duration-300
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
+      `}>
         {/* Logo */}
         <div className="px-6 mb-8 flex items-center gap-3">
-
           <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined  text-white" data-weight="fill">
-              restaurant_menu
-            </span>
-
+            <span className="material-symbols-outlined text-white" data-weight="fill">restaurant_menu</span>
           </div>
-
           <div>
-            <h1 className="text-xl font-bold text-orange-600 tracking-tight">Zest &amp; Savory</h1>
+            <h1 className="text-xl font-bold text-primary-container tracking-tight">Zest &amp; Savory</h1>
             <p className="text-[10px] font-bold tracking-wider text-on-surface-variant">Admin Portal</p>
           </div>
-          
         </div>
 
         {/* Main Nav */}
-        <div className="flex-1 overflow-y-auto mt-4">
+        <div className="flex-1 mt-1">
           <ul className="space-y-1">
             {navItems.map(({ label, icon, href }) => {
               const active = pathname === href;
@@ -63,128 +84,131 @@ export default function Navbar() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 
-                      ${ active
-                        ? "text-orange-600 font-semibold border-r-4 border-orange-600 bg-orange-50/50"
-                        : "text-slate-500 hover:text-orange-600 hover:bg-slate-50"
-                      }`}
+                    className={`${navLinkBase} ${active ? navLinkActive : ""}`}
                     onClick={() => setMobileOpen(false)}
                   >
-                    <span className="material-symbols-outlined"{...(active ? { "data-weight": "fill" } : {})}>
+                    <span className="material-symbols-outlined" {...(active ? { "data-weight": "fill" } : {})}>
                       {icon}
                     </span>
-
-                    <span className="text-[14px] font-semibold leading-5 tracking-[0.02em]">
-                      {label}
-                    </span>
-
+                    <span className="text-[14px] font-semibold leading-5 tracking-[0.02em]">{label}</span>
                   </Link>
                 </li>
               );
-            }) }
+            })}
           </ul>
         </div>
 
-        {/* Export Button */}
-        <div className="px-6 mt-6">
+        {/* Export */}
+        <div className="px-6 mt-2 flex flex-col gap-2">
           <button
             onClick={() => setExportOpen(true)}
-            className="w-full py-2.5 bg-primary-container text-white text-[14px] font-semibold leading-5 tracking-[0.02em] rounded-full hover:bg-primary transition-colors shadow-sm flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-primary-container text-white text-[14px] font-semibold rounded-full hover:bg-primary transition-colors shadow-sm flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             Export Reports
           </button>
-        </div>
-
-        {/* Bottom Nav */}
-        <div className="mt-8 border-t border-slate-200 pt-4">
-          <ul className="space-y-1">
-            {bottomNavItems.map(({ label, icon, href }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-orange-600 hover:bg-slate-50 transition-colors duration-200"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <span className="material-symbols-outlined">{icon}</span>
-                  <span className="text-[14px] font-semibold leading-5 tracking-[0.02em]">
-                    {label}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          {/* Logout */}
           <form action={logout}>
             <button
               type="submit"
-              className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-slate-50 transition-colors duration-200"
+              className="w-full py-2.5 bg-error/10 text-error text-[14px] font-semibold rounded-full hover:bg-error/20 transition-colors flex items-center justify-center gap-2 border border-error/20"
             >
-              <span className="material-symbols-outlined">logout</span>
-              <span className="text-[14px] font-semibold leading-5 tracking-[0.02em]">
-                Logout
-              </span>
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+              Logout
             </button>
           </form>
         </div>
+
       </nav>
 
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} />
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-30 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Top App Bar */}
-      <header className="bg-white/80 backdrop-blur-md font-['Plus_Jakarta_Sans'] text-sm font-medium fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-30 border-b border-slate-200 shadow-sm flex justify-between items-center px-4 md:px-8 h-16">
-        {/* Mobile menu button */}
+      {/* ── Top Bar ── */}
+      <header className="
+        bg-surface-container-lowest/80 backdrop-blur-md font-['Plus_Jakarta_Sans'] text-sm font-medium
+        fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-30
+        border-b border-surface-container-highest shadow-sm
+        flex justify-between items-center px-4 md:px-8 h-16
+      ">
+        {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full"
-          onClick={() => setMobileOpen((prev) => !prev)}
-          aria-label="Open menu"
+          className="md:hidden p-2 text-on-surface-variant hover:bg-surface-container rounded-full"
+          onClick={() => setMobileOpen(v => !v)}
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
 
         <div className="hidden md:block">
-          <h2 className="text-[20px] font-semibold leading-7 text-[#1e1b18]">Overview</h2>
+          <h2 className="text-[20px] font-semibold leading-7 text-on-background">Overview</h2>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
-          {/* Search */}
-          <div className="relative hidden sm:block">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search orders, riders..."
-              className="pl-10 pr-4 py-2 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary-container text-sm w-64 text-on-surface placeholder:text-on-surface-variant/70 outline-none"
-            />
+        <div className="flex items-center gap-2 md:gap-3">
+          <SearchBar />
+          <NotificationBell />
+
+          {/* Dark mode */}
+          <button
+            onClick={toggleDark}
+            className="text-on-surface-variant hover:bg-surface-container rounded-full p-2 hidden sm:flex items-center justify-center"
+            title={dark ? 'Light mode' : 'Dark mode'}
+          >
+            <span className="material-symbols-outlined">{dark ? 'light_mode' : 'dark_mode'}</span>
+          </button>
+
+          {/* User profile */}
+          <div ref={userRef} className="relative">
+            <button
+              onClick={() => setUserOpen(v => !v)}
+              className="text-on-surface-variant hover:bg-surface-container rounded-full p-2 flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined" data-weight="fill">account_circle</span>
+            </button>
+
+            {userOpen && (
+              <div className="absolute right-0 top-full mt-2 w-52 bg-surface-container-lowest rounded-2xl shadow-xl border border-surface-container-highest z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-surface-container-highest">
+                  <p className="text-sm font-semibold text-on-background">Admin</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">Zest &amp; Savory Portal</p>
+                </div>
+                <ul className="py-1">
+                  <li>
+                    <Link
+                      href="/settings"
+                      onClick={() => setUserOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">settings</span>
+                      Settings
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={toggleDark}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">{dark ? 'light_mode' : 'dark_mode'}</span>
+                      {dark ? 'Light Mode' : 'Dark Mode'}
+                    </button>
+                  </li>
+                  <li className="border-t border-surface-container-highest mt-1">
+                    <form action={logout}>
+                      <button
+                        type="submit"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container/30 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">logout</span>
+                        Sign out
+                      </button>
+                    </form>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
-
-          {/* Notifications */}
-          <button className="text-slate-500 hover:bg-slate-100 rounded-full p-2 relative">
-            <span className="material-symbols-outlined">notifications</span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-[#ba1a1a] rounded-full" />
-          </button>
-
-          {/* Dark mode toggle (placeholder) */}
-          <button className="text-slate-500 hover:bg-slate-100 rounded-full p-2 hidden sm:block">
-            <span className="material-symbols-outlined">dark_mode</span>
-          </button>
-
-          {/* Account */}
-          <button className="text-slate-500 hover:bg-slate-100 rounded-full p-2">
-            <span className="material-symbols-outlined" data-weight="fill">
-              account_circle
-            </span>
-          </button>
         </div>
       </header>
     </>

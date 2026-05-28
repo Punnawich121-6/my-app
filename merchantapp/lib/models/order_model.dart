@@ -21,6 +21,7 @@ class Order {
   final String storeId;
   final String customerName;
   final String? customerPhone;
+  final String? riderId;
   final String status;
   final double totalAmount;
   final double deliveryFee;
@@ -35,6 +36,7 @@ class Order {
     required this.storeId,
     required this.customerName,
     this.customerPhone,
+    this.riderId,
     required this.status,
     required this.totalAmount,
     required this.deliveryFee,
@@ -50,6 +52,7 @@ class Order {
         storeId: (j['store_id'] ?? j['restaurantId'] ?? '').toString(),
         customerName: (j['customer_name'] ?? j['customerName'] ?? 'Customer').toString(),
         customerPhone: (j['customer_phone'] ?? j['customerPhone'])?.toString(),
+        riderId: (j['rider_id'] ?? j['riderId'])?.toString(),
         status: (j['status'] ?? 'pending').toString(),
         totalAmount: double.tryParse((j['total_amount'] ?? j['totalAmount'] ?? 0).toString()) ?? 0,
         deliveryFee: double.tryParse((j['delivery_fee'] ?? j['serviceFee'] ?? j['deliveryFee'] ?? 0).toString()) ?? 0,
@@ -77,7 +80,7 @@ class Order {
     'pending': 'accepted',
     'accepted': 'preparing',
     'preparing': 'ready',
-    'ready': 'completed',
+    // 'ready' has no next — merchant waits for rider to complete delivery
   };
 
   String get label => statusLabel[status] ?? status;

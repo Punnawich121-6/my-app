@@ -24,13 +24,13 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_STYLE: Record<string, string> = {
     active:   'bg-green-50 text-green-700 border-green-200',
     pending:  'bg-amber-50 text-amber-700 border-amber-200',
-    inactive: 'bg-slate-100 text-slate-600 border-slate-200',
+    inactive: 'bg-surface-container text-on-surface-variant border-outline-variant',
 }
 
 const STATUS_DOT: Record<string, string> = {
     active:   'bg-green-500',
     pending:  'bg-amber-500',
-    inactive: 'bg-slate-400',
+    inactive: 'bg-on-surface-variant/40',
 }
 
 export default async function Restaurants({
@@ -224,6 +224,7 @@ export default async function Restaurants({
                                                         close_time:       r.close_time,
                                                         lat:              r.lat,
                                                         lng:              r.lng,
+                                                        imageUrl:         r.imageUrl ?? null,
                                                     }} />
                                                 </td>
                                             </tr>
@@ -282,6 +283,7 @@ export default async function Restaurants({
                     </div>
 
                 </div>
+
             </main>
         </>
     )

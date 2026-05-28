@@ -29,7 +29,7 @@ export default function PendingApprovals({ restaurants }: { restaurants: Pending
             </div>
 
             {/* Rows */}
-            <div className="bg-white divide-y divide-amber-50">
+            <div className="bg-surface-container-lowest divide-y divide-surface-container">
                 {restaurants.map(r => (
                     <ApprovalRow key={r.id} restaurant={r} />
                 ))}

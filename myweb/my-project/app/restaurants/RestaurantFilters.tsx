@@ -37,7 +37,7 @@ export default function RestaurantFilters({
                     <select
                         value={currentCategory}
                         onChange={e => updateFilter({ category: e.target.value })}
-                        className="appearance-none bg-white border border-outline-variant text-on-surface text-body-sm rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary-container focus:border-primary-container cursor-pointer"
+                        className="appearance-none bg-surface-container-lowest border border-outline-variant text-on-surface text-body-sm rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary-container focus:border-primary-container cursor-pointer"
                     >
                         <option value="ALL">All Categories</option>
                         {categories.map(c => (
@@ -52,7 +52,7 @@ export default function RestaurantFilters({
                     <select
                         value={currentStatus}
                         onChange={e => updateFilter({ status: e.target.value })}
-                        className="appearance-none bg-white border border-outline-variant text-on-surface text-body-sm rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary-container focus:border-primary-container cursor-pointer"
+                        className="appearance-none bg-surface-container-lowest border border-outline-variant text-on-surface text-body-sm rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary-container focus:border-primary-container cursor-pointer"
                     >
                         <option value="ALL">All Statuses</option>
                         <option value="active">Active</option>
@@ -70,7 +70,7 @@ export default function RestaurantFilters({
                     ref={searchRef}
                     defaultValue={currentSearch}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                    className="w-full pl-10 pr-10 py-2 bg-white border border-outline-variant rounded-lg text-body-sm focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-colors"
+                    className="w-full pl-10 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-colors"
                     placeholder="Search by name..."
                     type="text"
                 />

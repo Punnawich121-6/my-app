@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { updateRestaurant, type RestaurantFormState } from '@/app/actions/restaurant'
 import MapPicker from './MapPicker'
+import ImageCropModal from '@/app/component/ImageCropModal'
 
 const INITIAL: RestaurantFormState = { success: false, error: null }
 
@@ -32,6 +33,8 @@ type RestaurantData = {
     close_time: string | null
     lat: number | null
     lng: number | null
+    imageUrl: string | null
+    description?: string | null
 }
 
 const INPUT = "w-full border border-outline-variant rounded-xl px-4 py-2.5 text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-colors"
@@ -45,6 +48,61 @@ export default function EditRestaurantModal({ restaurant }: { restaurant: Restau
         lng: restaurant.lng != null ? Number(restaurant.lng) : null,
     })
     const [selectedStatus, setSelectedStatus] = useState(restaurant.status.toLowerCase())
+    const [previewUrl, setPreviewUrl] = useState<string | null>(restaurant.imageUrl ?? null)
+    const [uploading, setUploading] = useState(false)
+    const fileRef = useRef<HTMLInputElement>(null)
+
+    // AI description
+    const [description, setDescription] = useState(restaurant.description ?? '')
+    const [nameVal, setNameVal] = useState(restaurant.name)
+    const [categoryVal, setCategoryVal] = useState(restaurant.category)
+    const [aiLoading, setAiLoading] = useState(false)
+
+    const [cropSrc, setCropSrc] = useState<string | null>(null)
+
+    function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = ev => {
+            setCropSrc(ev.target?.result as string)
+        }
+        reader.readAsDataURL(file)
+        if (fileRef.current) fileRef.current.value = ''
+    }
+
+    async function handleCropConfirm(croppedDataUrl: string) {
+        setCropSrc(null)
+        setUploading(true)
+        try {
+            const res = await fetch(`http://localhost:3001/api/store/${restaurant.id}/image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: croppedDataUrl }),
+            })
+            const data = await res.json()
+            if (data.image_url) setPreviewUrl(data.image_url)
+        } catch {
+            alert('อัปโหลดรูปไม่สำเร็จ')
+        }
+        setUploading(false)
+    }
+
+    async function generateDescription() {
+        if (!nameVal.trim()) { alert('กรุณากรอกชื่อร้านก่อน'); return }
+        setAiLoading(true)
+        try {
+            const res = await fetch('/api/ai/description', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ name: nameVal, category: categoryVal || 'ร้านอาหาร' }),
+            })
+            const data = await res.json()
+            if (data.description) setDescription(data.description)
+        } catch { /* skip */ } finally {
+            setAiLoading(false)
+        }
+    }
 
     useEffect(() => {
         if (state.success) dialogRef.current?.close()
@@ -52,10 +110,7 @@ export default function EditRestaurantModal({ restaurant }: { restaurant: Restau
 
     function open() {
         dialogRef.current?.showModal()
-        // give Leaflet time to see the real container size after dialog paints
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'))
-        }, 150)
+        setTimeout(() => { window.dispatchEvent(new Event('resize')) }, 150)
     }
     function close() { if (!pending) { dialogRef.current?.close(); formRef.current?.reset() } }
 
@@ -65,6 +120,15 @@ export default function EditRestaurantModal({ restaurant }: { restaurant: Restau
                 className="text-on-surface-variant hover:text-primary-container p-1 transition-colors ml-2">
                 <span className="material-symbols-outlined text-[20px]">edit</span>
             </button>
+
+            {/* Image crop modal (rendered outside dialog so it stacks above) */}
+            {cropSrc && (
+                <ImageCropModal
+                    src={cropSrc}
+                    onConfirm={handleCropConfirm}
+                    onClose={() => setCropSrc(null)}
+                />
+            )}
 
             <dialog
                 ref={dialogRef}
@@ -96,25 +160,95 @@ export default function EditRestaurantModal({ restaurant }: { restaurant: Restau
                             </div>
                         )}
 
+                        {/* รูปร้านอาหาร */}
+                        <section>
+                            <p className="text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">รูปร้านอาหาร</p>
+                            <div className="flex items-center gap-4">
+                                <div className="w-20 h-20 rounded-xl overflow-hidden border border-outline-variant bg-surface-container shrink-0 flex items-center justify-center">
+                                    {previewUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={previewUrl} alt="ร้าน" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="material-symbols-outlined text-on-surface-variant text-[32px]">storefront</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+                                    <button type="button" disabled={uploading}
+                                        onClick={() => fileRef.current?.click()}
+                                        className="flex items-center gap-2 border border-outline-variant text-label-md text-on-surface px-4 py-2 rounded-full hover:bg-surface-container transition-colors disabled:opacity-50">
+                                        {uploading ? (
+                                            <><span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>กำลังอัปโหลด...</>
+                                        ) : (
+                                            <><span className="material-symbols-outlined text-[16px]">crop</span>เลือกจากเครื่อง</>
+                                        )}
+                                    </button>
+                                    <p className="text-body-xs text-on-surface-variant">รูปจะถูก Crop ก่อนอัปโหลด — มีปุ่ม AI Crop ช่วยตัดอัตโนมัติ</p>
+                                </div>
+                            </div>
+                        </section>
+
                         {/* ข้อมูลร้านอาหาร */}
                         <section>
                             <p className="text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">ข้อมูลร้านอาหาร</p>
                             <div className="flex flex-col gap-4">
                                 <div>
                                     <label className="text-label-md text-on-surface mb-1.5 block">ชื่อร้านอาหาร <span className="text-error">*</span></label>
-                                    <input name="name" required defaultValue={restaurant.name ?? ''} className={INPUT} />
+                                    <input
+                                        name="name"
+                                        required
+                                        className={INPUT}
+                                        value={nameVal}
+                                        onChange={e => setNameVal(e.target.value)}
+                                    />
                                 </div>
                                 <div>
                                     <label className="text-label-md text-on-surface mb-1.5 block">ประเภทอาหาร <span className="text-error">*</span></label>
                                     <div className="relative">
-                                        <select name="category" required defaultValue={restaurant.category ?? ''}
-                                            className={INPUT + ' appearance-none pr-10'}>
+                                        <select
+                                            name="category"
+                                            required
+                                            value={categoryVal}
+                                            onChange={e => setCategoryVal(e.target.value)}
+                                            className={INPUT + ' appearance-none pr-10'}
+                                        >
                                             <option value="" disabled>เลือกประเภทอาหาร</option>
                                             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">expand_more</span>
                                     </div>
                                 </div>
+
+                                {/* คำอธิบายร้าน (AI) */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="text-label-md text-on-surface">คำอธิบายร้าน</label>
+                                        <button
+                                            type="button"
+                                            onClick={generateDescription}
+                                            disabled={aiLoading}
+                                            className="flex items-center gap-1 text-primary-container text-body-xs hover:underline disabled:opacity-50 transition-opacity"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                                            {aiLoading ? 'กำลังสร้าง...' : 'สร้างด้วย AI'}
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        name="description"
+                                        rows={3}
+                                        placeholder="คำอธิบายร้านที่น่าสนใจ"
+                                        className={INPUT + ' resize-none'}
+                                        value={description}
+                                        onChange={e => setDescription(e.target.value)}
+                                    />
+                                    {aiLoading && (
+                                        <p className="text-body-xs text-primary-container mt-1 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[13px] animate-spin">progress_activity</span>
+                                            AI กำลังเขียนคำอธิบาย...
+                                        </p>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label className="text-label-md text-on-surface mb-1.5 block">ที่อยู่ร้าน</label>
                                     <textarea name="address" rows={2} defaultValue={restaurant.address ?? ''}

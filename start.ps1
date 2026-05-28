@@ -21,7 +21,7 @@ Start-Sleep -Seconds 3
 # 2) Web Admin (Next.js)
 Write-Host "[2/5] Starting Web Admin (Next.js)..." -ForegroundColor Yellow
 Start-Process "powershell" -ArgumentList "-NoExit", "-Command", `
-    "cd '$BASE\myweb\my-project'; Write-Host 'WEB ADMIN' -ForegroundColor Magenta; npm run dev"
+    "cd '$BASE\myweb\my-project'; Write-Host 'WEB ADMIN' -ForegroundColor Magenta; pnpm run dev"
 
 Start-Sleep -Seconds 2
 

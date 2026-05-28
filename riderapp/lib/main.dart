@@ -1,8 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'firebase_options.dart';
 import 'screen/auth/login_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAuth.instance.useAuthEmulator('10.0.2.2', 9099);
   runApp(const RiderApp());
 }
 
@@ -15,6 +21,7 @@ class RiderApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Zest & Savory Rider',
       theme: ThemeData(
+        textTheme: GoogleFonts.notoSansThaiTextTheme(ThemeData().textTheme),
         scaffoldBackgroundColor: RiderColors.bg,
         colorScheme: ColorScheme.fromSeed(seedColor: RiderColors.blue),
       ),
@@ -42,7 +49,7 @@ abstract class RiderColors {
   static const blueMid   = Color(0xFFFFB59D);
   static const bg        = Color(0xFFFFFFFF);
   static const text      = Color(0xFF1A1A1A);
-  static const muted     = Color(0xFF9E9E9E);
+  static const muted     = Color(0xFF333333);
   static const green     = Color(0xFF43A047);
   static const greenLight= Color(0xFFE8F5E9);
   static const red       = Color(0xFFE53935);

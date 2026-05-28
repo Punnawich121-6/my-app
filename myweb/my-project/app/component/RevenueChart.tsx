@@ -29,6 +29,14 @@ export default function RevenueChart({ data }: { data: DailyRevenue[] }) {
       const revenues = data.map(d => Number(d.revenue))
       const orderCounts = data.map(d => Number(d.orderCount))
 
+      const isDark = document.documentElement.classList.contains("dark")
+      const tickColor   = isDark ? "#9ca3af" : "#9ca3af"
+      const gridColor   = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"
+      const tooltipBg   = isDark ? "rgba(30,22,18,0.97)" : "rgba(255,255,255,0.97)"
+      const tooltipTitle = isDark ? "#ede0d9" : "#111827"
+      const tooltipBody  = isDark ? "#a09590" : "#6b7280"
+      const tooltipBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"
+
       const ctx = canvasRef.current.getContext("2d")!
       const gradient = ctx.createLinearGradient(0, 0, 0, 220)
       gradient.addColorStop(0, "rgba(234, 88, 12, 0.18)")
@@ -75,17 +83,17 @@ export default function RevenueChart({ data }: { data: DailyRevenue[] }) {
               align: "end",
               labels: {
                 font: { size: 11 },
-                color: "#9ca3af",
+                color: tickColor,
                 usePointStyle: true,
                 pointStyleWidth: 8,
                 boxHeight: 6,
               },
             },
             tooltip: {
-              backgroundColor: "rgba(255,255,255,0.97)",
-              titleColor: "#111827",
-              bodyColor: "#6b7280",
-              borderColor: "rgba(0,0,0,0.08)",
+              backgroundColor: tooltipBg,
+              titleColor: tooltipTitle,
+              bodyColor: tooltipBody,
+              borderColor: tooltipBorder,
               borderWidth: 1,
               padding: 10,
               callbacks: {
@@ -102,15 +110,15 @@ export default function RevenueChart({ data }: { data: DailyRevenue[] }) {
           scales: {
             x: {
               grid: { display: false },
-              ticks: { font: { size: 11 }, color: "#9ca3af" },
+              ticks: { font: { size: 11 }, color: tickColor },
               border: { display: false },
             },
             y: {
               position: "left",
-              grid: { color: "rgba(0,0,0,0.04)" },
+              grid: { color: gridColor },
               ticks: {
                 font: { size: 11 },
-                color: "#9ca3af",
+                color: tickColor,
                 callback: v => `$${Number(v) >= 1000 ? (Number(v) / 1000).toFixed(0) + "k" : v}`,
               },
               border: { display: false },

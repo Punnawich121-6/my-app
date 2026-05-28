@@ -3,6 +3,7 @@
 import pool from '@/app/lib/db'
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
+import { ensureDescriptionColumn } from '@/app/lib/migrate'
 
 export type RestaurantFormState = {
     success: boolean
@@ -13,15 +14,33 @@ export async function addRestaurant(
     _prev: RestaurantFormState,
     formData: FormData,
 ): Promise<RestaurantFormState> {
-    const name     = (formData.get('name')     as string | null)?.trim()
-    const category = (formData.get('category') as string | null)?.trim()
-    const address  = (formData.get('address')  as string | null)?.trim()
-    const phone    = (formData.get('phone')    as string | null)?.trim()
-    const email    = (formData.get('email')    as string | null)?.trim()
-    const status   = (formData.get('status')   as string | null)?.trim() || 'pending'
+    const g = (k: string) => (formData.get(k) as string | null)?.trim() || null
+
+    const name             = g('name')
+    const category         = g('category')
+    const address          = g('address')
+    const description      = g('description')
+    const phone            = g('phone')
+    const email            = g('email')
+    const status           = g('status') ?? 'pending'
+    const owner_name       = g('owner_name')
+    const line_id          = g('line_id')
+    const bank_name        = g('bank_name')
+    const account_name     = g('account_name')
+    const account_no       = g('account_no')
+    const id_card          = g('id_card')
+    const business_license = g('business_license')
+    const open_time        = g('open_time')
+    const close_time       = g('close_time')
+    const latRaw           = g('lat')
+    const lngRaw           = g('lng')
+    const lat = latRaw ? parseFloat(latRaw) : null
+    const lng = lngRaw ? parseFloat(lngRaw) : null
 
     if (!name)  return { success: false, error: 'กรุณากรอกชื่อร้านอาหาร' }
     if (!phone) return { success: false, error: 'กรุณากรอกเบอร์โทรศัพท์' }
+
+    await ensureDescriptionColumn()
 
     try {
         const [[existing]]: any = await pool.query(
@@ -32,14 +51,46 @@ export async function addRestaurant(
 
         const id = crypto.randomUUID()
         await pool.query(
-            `INSERT INTO Restaurant (id, name, category, address, phone, email, status, commissionRate, serviceFeeRate)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 15, 5)`,
-            [id, name, category || 'ร้านอาหาร', address || '', phone, email || '', status],
+            `INSERT INTO Restaurant
+               (id, name, category, address, description, phone, email, status,
+                owner_name, line_id, bank_name, account_name, account_no,
+                id_card, business_license, open_time, close_time, lat, lng,
+                commissionRate, serviceFeeRate)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,15,5)`,
+            [
+                id, name, category || 'ร้านอาหาร', address || '', description || null,
+                phone, email || '', status,
+                owner_name, line_id, bank_name, account_name, account_no,
+                id_card, business_license, open_time, close_time, lat, lng,
+            ],
         )
 
         revalidatePath('/restaurants')
         return { success: true, error: null }
     } catch (e: any) {
+        // If description column doesn't exist yet, fall back without it
+        if (e.code === 'ER_BAD_FIELD_ERROR' && e.message?.includes('description')) {
+            try {
+                const id = crypto.randomUUID()
+                await pool.query(
+                    `INSERT INTO Restaurant
+                       (id, name, category, address, phone, email, status,
+                        owner_name, line_id, bank_name, account_name, account_no,
+                        id_card, business_license, open_time, close_time, lat, lng,
+                        commissionRate, serviceFeeRate)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,15,5)`,
+                    [
+                        id, name, category || 'ร้านอาหาร', address || '', phone, email || '', status,
+                        owner_name, line_id, bank_name, account_name, account_no,
+                        id_card, business_license, open_time, close_time, lat, lng,
+                    ],
+                )
+                revalidatePath('/restaurants')
+                return { success: true, error: null }
+            } catch (e2: any) {
+                return { success: false, error: e2.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่' }
+            }
+        }
         return { success: false, error: e.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่' }
     }
 }
@@ -54,6 +105,7 @@ export async function updateRestaurant(
     const name              = g('name')
     const category          = g('category')
     const address           = g('address')
+    const description       = g('description')
     const phone             = g('phone')
     const email             = g('email')
     const status            = g('status') ?? 'pending'
@@ -75,6 +127,8 @@ export async function updateRestaurant(
     if (!name)  return { success: false, error: 'กรุณากรอกชื่อร้านอาหาร' }
     if (!phone) return { success: false, error: 'กรุณากรอกเบอร์โทรศัพท์' }
 
+    await ensureDescriptionColumn()
+
     try {
         const [[existing]]: any = await pool.query(
             'SELECT id FROM Restaurant WHERE phone = ? AND id != ?',
@@ -84,7 +138,7 @@ export async function updateRestaurant(
 
         await pool.query(
             `UPDATE Restaurant SET
-               name = ?, category = ?, address = ?, phone = ?, email = ?, status = ?,
+               name = ?, category = ?, address = ?, description = ?, phone = ?, email = ?, status = ?,
                owner_name = ?, line_id = ?,
                bank_name = ?, account_name = ?, account_no = ?,
                id_card = ?, business_license = ?,
@@ -92,7 +146,8 @@ export async function updateRestaurant(
                lat = ?, lng = ?
              WHERE id = ?`,
             [
-                name, category || 'ร้านอาหาร', address || '', phone, email || '', status,
+                name, category || 'ร้านอาหาร', address || '', description || null,
+                phone, email || '', status,
                 owner_name, line_id,
                 bank_name, account_name, account_no,
                 id_card, business_license,
@@ -105,6 +160,34 @@ export async function updateRestaurant(
         revalidatePath('/restaurants')
         return { success: true, error: null }
     } catch (e: any) {
+        // Fallback without description column
+        if (e.code === 'ER_BAD_FIELD_ERROR' && e.message?.includes('description')) {
+            try {
+                await pool.query(
+                    `UPDATE Restaurant SET
+                       name = ?, category = ?, address = ?, phone = ?, email = ?, status = ?,
+                       owner_name = ?, line_id = ?,
+                       bank_name = ?, account_name = ?, account_no = ?,
+                       id_card = ?, business_license = ?,
+                       open_time = ?, close_time = ?,
+                       lat = ?, lng = ?
+                     WHERE id = ?`,
+                    [
+                        name, category || 'ร้านอาหาร', address || '', phone, email || '', status,
+                        owner_name, line_id,
+                        bank_name, account_name, account_no,
+                        id_card, business_license,
+                        open_time, close_time,
+                        lat, lng,
+                        restaurantId,
+                    ],
+                )
+                revalidatePath('/restaurants')
+                return { success: true, error: null }
+            } catch (e2: any) {
+                return { success: false, error: e2.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่' }
+            }
+        }
         return { success: false, error: e.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่' }
     }
 }

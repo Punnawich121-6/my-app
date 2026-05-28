@@ -35,7 +35,7 @@ export default function PendingRiderApprovals({ riders }: { riders: PendingRider
             </div>
 
             {/* Rows */}
-            <div className="bg-white divide-y divide-amber-50">
+            <div className="bg-surface-container-lowest divide-y divide-surface-container">
                 {riders.map(r => (
                     <ApprovalRow key={r.id} rider={r} />
                 ))}

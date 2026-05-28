@@ -14,6 +14,7 @@ type Order = {
 }
 
 export type AllOrder = {
+    id: string
     orderNumber: string
     restaurantName: string
     restaurantAddress: string
@@ -24,6 +25,23 @@ export type AllOrder = {
     createdAt: Date
 }
 
+export type OrderDetail = {
+    id: string
+    orderNumber: string
+    status: string
+    totalAmount: number
+    serviceFee: number
+    notes: string
+    createdAt: Date
+    restaurantName: string
+    restaurantAddress: string
+    customerName: string
+    customerPhone: string
+    customerAddress: string
+    riderName: string | null
+    items: { name: string; price: number; quantity: number }[]
+}
+
 export type OrdersPage = {
     orders: AllOrder[]
     total: number
@@ -31,38 +49,18 @@ export type OrdersPage = {
 }
 
 export async function getOrder(): Promise<Order> {
-    const [[activeRow]]: any = await pool.query(`
-        SELECT COUNT(id) AS totalActive
+    const [[row]]: any = await pool.query(`
+        SELECT
+            COUNT(CASE WHEN LOWER(status) IN (${ACTIVE_STATUSES}) THEN 1 END) AS totalActive,
+            COUNT(CASE WHEN LOWER(status) = 'preparing' THEN 1 END) AS preparing,
+            COUNT(CASE WHEN LOWER(status) IN ('out_for_delivery', 'ready', 'delivering') THEN 1 END) AS outForDelivery,
+            COUNT(CASE WHEN LOWER(status) IN ('pending','accepted','preparing','delivering') AND createdAt <= NOW() - INTERVAL 45 MINUTE THEN 1 END) AS \`delayed\`,
+            COUNT(CASE WHEN DATE(createdAt) = SUBDATE(CURDATE(), 1) THEN 1 END) AS totalYesterday
         FROM \`Order\`
-        WHERE LOWER(status) IN (${ACTIVE_STATUSES})
     `)
 
-    const [[yesterdayRow]]: any = await pool.query(`
-        SELECT COUNT(id) AS totalYesterday
-        FROM \`Order\`
-        WHERE DATE(createdAt) = SUBDATE(CURDATE(), 1)
-    `)
-
-    const [[preparingRow]]: any = await pool.query(`
-        SELECT COUNT(id) AS preparing
-        FROM \`Order\`
-        WHERE LOWER(status) = 'preparing'
-    `)
-
-    const [[outForDeliveryRow]]: any = await pool.query(`
-        SELECT COUNT(id) AS outForDelivery
-        FROM \`Order\`
-        WHERE LOWER(status) IN ('out_for_delivery', 'ready', 'delivering')
-    `)
-
-    const [[delayedRow]]: any = await pool.query(`
-        SELECT COUNT(id) AS \`delayed\`
-        FROM \`Order\`
-        WHERE LOWER(status) = 'delayed'
-    `)
-
-    const totalActive: number = activeRow.totalActive
-    const totalYesterday: number = yesterdayRow.totalYesterday
+    const totalActive: number = row.totalActive
+    const totalYesterday: number = row.totalYesterday
 
     const changePercent = totalYesterday > 0
         ? Math.round(((totalActive - totalYesterday) / totalYesterday) * 100)
@@ -70,9 +68,9 @@ export async function getOrder(): Promise<Order> {
 
     return {
         totalActive,
-        preparing: preparingRow.preparing,
-        outForDelivery: outForDeliveryRow.outForDelivery,
-        delayed: delayedRow.delayed,
+        preparing: row.preparing,
+        outForDelivery: row.outForDelivery,
+        delayed: row.delayed,
         changePercent,
     }
 }
@@ -119,6 +117,7 @@ export async function getAllOrders(params: {
 
     const [rows]: any = await pool.query(
         `SELECT
+           o.id,
            o.orderNumber,
            r.name    AS restaurantName,
            r.address AS restaurantAddress,
@@ -138,4 +137,25 @@ export async function getAllOrders(params: {
     )
 
     return { orders: rows, total: countRow.total, pageSize: PAGE_SIZE }
+}
+
+export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
+    const [[order]]: any = await pool.query(
+        `SELECT o.id, o.orderNumber, o.status, o.totalAmount, o.serviceFee, o.notes, o.createdAt,
+                r.name AS restaurantName, r.address AS restaurantAddress,
+                c.name AS customerName, c.phone AS customerPhone, c.address AS customerAddress,
+                ri.name AS riderName
+         FROM \`Order\` o
+         JOIN Restaurant r ON o.restaurantId = r.id
+         JOIN Customer   c ON o.customerId   = c.id
+         LEFT JOIN Rider ri ON o.riderId = ri.id
+         WHERE o.id = ?`,
+        [id]
+    )
+    if (!order) return null
+    const [items]: any = await pool.query(
+        'SELECT name, price, quantity FROM order_items WHERE order_id = ?',
+        [id]
+    )
+    return { ...order, items }
 }

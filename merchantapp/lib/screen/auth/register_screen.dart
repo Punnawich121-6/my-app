@@ -6,8 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../main.dart';
 import '../../services/api_service.dart';
-import '../merchant/merchant_main_screen.dart';
-import 'pending_approval_screen.dart';
+import '../merchant/home/merchant_main_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String phone;
@@ -151,12 +150,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final dataUri = 'data:image/$_storeImageExt;base64,$_storeImageBase64';
         await ApiService.uploadStoreImage(dataUri);
       }
+      ApiService.storeName = _storeNameController.text.trim();
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => PendingApprovalScreen(phone: widget.phone),
-        ),
+        MaterialPageRoute(builder: (_) => const MerchantMainScreen()),
         (route) => false,
       );
     } catch (e) {
@@ -606,7 +604,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
-              'หลังส่งคำขอ แอดมินจะตรวจสอบเอกสาร เช่น บัตรประชาชน เอกสารร้านค้า และบัญชีธนาคารภายใน 1-3 วันทำการ',
+              'หลังส่งคำขอ ร้านของคุณจะเปิดใช้งานได้ทันที',
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.muted,

@@ -9,7 +9,8 @@ import AddRiderModal from '../riders/AddRiderModal'
 import EditRiderModal from '../riders/EditRiderModal'
 import RiderFilters from '../riders/RiderFilters'
 import PendingRiderApprovals from './PendingRiderApprovals'
-import RiderLiveMap from './RiderLiveMap'
+import RiderLiveMap from './RiderLiveMapClient'
+import RiderWalletSection from './RiderWalletSection'
 
 const VEHICLE_ICON: Record<string, string> = {
   motorcycle:    'two_wheeler',
@@ -21,14 +22,14 @@ const VEHICLE_ICON: Record<string, string> = {
 const STATUS_STYLE: Record<string, string> = {
   Available: 'bg-green-50 text-green-700 border-green-200',
   Busy:      'bg-blue-50 text-blue-700 border-blue-200',
-  Offline:   'bg-slate-100 text-slate-600 border-slate-200',
+  Offline:   'bg-surface-container text-on-surface-variant border-outline-variant',
   Pending:   'bg-amber-50 text-amber-700 border-amber-200',
 }
 
 const STATUS_DOT: Record<string, string> = {
   Available: 'bg-green-500',
   Busy:      'bg-blue-500',
-  Offline:   'bg-slate-400',
+  Offline:   'bg-on-surface-variant/40',
   Pending:   'bg-amber-500',
 }
 
@@ -271,6 +272,10 @@ export default async function Fleet({
             </div>
           </div>
         </div>
+
+        {/* Pre-Paid Rider Wallet */}
+        <RiderWalletSection />
+
       </main>
     </>
   )

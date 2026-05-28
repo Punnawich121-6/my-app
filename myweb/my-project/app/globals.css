@@ -116,6 +116,39 @@
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+}
+
+html.dark,
+html.dark body {
+  background-color: #201a17;
+  color: #ede0d9;
+}
+
+/* Dark mode overrides */
+html.dark {
+  --color-background: #201a17;
+  --color-on-background: #ede0d9;
+  --color-surface: #201a17;
+  --color-on-surface: #ede0d9;
+  --color-surface-variant: #52433d;
+  --color-on-surface-variant: #d8c2bb;
+  --color-surface-bright: #3a3028;
+  --color-surface-dim: #150f0c;
+  --color-surface-container-lowest: #150f0c;
+  --color-surface-container-low: #291e1a;
+  --color-surface-container: #2d2118;
+  --color-surface-container-high: #382b26;
+  --color-surface-container-highest: #433530;
+  --color-outline: #a08d84;
+  --color-outline-variant: #52433d;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-secondary-container: #4a4641;
+  --color-on-secondary-container: #e8e1da;
+  --color-inverse-surface: #ede0d9;
+  --color-inverse-on-surface: #34302c;
 }
 
 .material-symbols-outlined {

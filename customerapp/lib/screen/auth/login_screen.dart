@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import 'otp_screen.dart';
@@ -11,6 +12,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneCtrl = TextEditingController();
+  bool _loading = false;
+  PhoneAuthCredential? _autoCredential;
 
   @override
   void dispose() {
@@ -19,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _requestOtp() {
+    if (_loading) return;
     final phone = _phoneCtrl.text.trim();
     if (phone.length < 9) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,9 +35,35 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => OtpScreen(phone: phone),
-    ));
+    _sendAndNavigate(phone);
+  }
+
+  Future<void> _sendAndNavigate(String phone) async {
+    setState(() => _loading = true);
+    final thaiPhone = '+66' + (phone.startsWith('0') ? phone.substring(1) : phone);
+
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: thaiPhone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) {
+        _autoCredential = credential;
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'ส่ง OTP ไม่สำเร็จ กรุณาลองใหม่')),
+        );
+      },
+      codeSent: (String verificationId, int? _) {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => OtpScreen(phone: phone, verificationId: verificationId, autoCode: _autoCredential?.smsCode),
+        ));
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
   }
 
   @override
@@ -50,6 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: _FormSheet(
                 phoneController: _phoneCtrl,
                 onRequestOtp: _requestOtp,
+                loading: _loading,
               ),
             ),
           ),
@@ -60,8 +91,9 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _CustomerBg extends StatelessWidget {
+  // รูปอาหารน่ากิน สื่อถึงแอปสั่งอาหาร
   static const _bgImage =
-      'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=900&h=1200&fit=crop&q=80';
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=900&h=1200&fit=crop&q=80';
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +104,7 @@ class _CustomerBg extends StatelessWidget {
           _bgImage,
           fit: BoxFit.cover,
           alignment: Alignment.topCenter,
-          errorBuilder: (_, __, ___) => Container(color: CColors.orange),
+          errorBuilder: (_, _, _) => Container(color: CColors.orange),
         ),
         Container(color: Colors.black.withValues(alpha: 0.25)),
         SafeArea(
@@ -98,7 +130,7 @@ class _CustomerBg extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Zest & Savory',
+                'Food Delivery',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -128,7 +160,8 @@ class _CustomerBg extends StatelessWidget {
 class _FormSheet extends StatelessWidget {
   final TextEditingController phoneController;
   final VoidCallback onRequestOtp;
-  const _FormSheet({required this.phoneController, required this.onRequestOtp});
+  final bool loading;
+  const _FormSheet({required this.phoneController, required this.onRequestOtp, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -206,18 +239,21 @@ class _FormSheet extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: onRequestOtp,
+              onPressed: loading ? null : onRequestOtp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: CColors.orange,
+                disabledBackgroundColor: CColors.orangeMid,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text(
-                'รับ OTP',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
-              ),
+              child: loading
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text(
+                      'รับ OTP',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                    ),
             ),
           ),
           const SizedBox(height: 20),

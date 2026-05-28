@@ -1,93 +1,94 @@
-import pool from './db' // นำเข้า pool ที่สร้างไว้ใน db.ts เพื่อใช้ในการ query ข้อมูลจาก MySQL database
+import pool from './db'
 
-export type DashboardStats = { 
-  totalRevenue: number  // ยอดรายได้รวมของวันนี้
-  revenueChangePercent: number // เปอร์เซ็นต์การเปลี่ยนแปลงของรายได้เมื่อเทียบกับวันก่อนหน้า
-  activeOrders: number // จำนวนคำสั่งซื้อที่กำลังดำเนินการอยู่ (เช่น PENDING, CONFIRMED, PREPARING, OUT_FOR_DELIVERY)
-  activeRiders: number // จำนวนไรเดอร์ที่กำลังทำงานอยู่
-  pendingIssues: number // จำนวนปัญหาที่ยังไม่ได้รับการแก้ไข
+export type DashboardStats = {
+  totalRevenue: number
+  revenueChangePercent: number
+  activeOrders: number
+  activeRiders: number
+  pendingIssues: number
 }
 
 export type LiveOrder = {
-  orderNumber: string // หมายเลขคำสั่งซื้อ
-  restaurantName: string // ชื่อร้านอาหาร
-  customerName: string // ชื่อลูกค้า
-  status: string // สเตตัสของคำสั่งซื้อ
-  createdAt: Date // วันที่สร้างคำสั่งซื้อ
+  orderNumber: string
+  restaurantName: string
+  customerName: string
+  status: string
+  createdAt: Date
 }
 
 export type TopPerformer = {
-  id: string  // รหัสร้านอาหาร  
-  name: string  // ชื่อร้านอาหาร
-  imageUrl: string | null     // URL ของรูปภาพร้านอาหาร (อาจเป็น null ถ้าไม่มีรูป)
-  orderCount: number      // จำนวนคำสั่งซื้อที่ร้านอาหารได้รับในวันนี้
-  revenue: number   // รายได้รวมที่ร้านอาหารได้รับจากคำสั่งซื้อในวันนี้
-} 
+  id: string
+  name: string
+  imageUrl: string | null
+  orderCount: number
+  revenue: number
+}
 
 export type DailyRevenue = {
-  date: string      // วันที่ในรูปแบบ 'YYYY-MM-DD'
-  revenue: number   // รายได้รวมของวันนั้น
-  orderCount: number // จำนวน Order ของวันนั้น
+  date: string
+  revenue: number
+  orderCount: number
 }
 
 export type StatusBreakdown = {
-  status: string  // สถานะของ Order
-  count: number   // จำนวน Order ในสถานะนั้น
+  status: string
+  count: number
 }
 
-// ฟังชันสำหรับดึงข้อมูลสถิติต่างๆ ที่จะแสดงบนหน้า Dashboard
-// เวลาสร้าง  promise ต้องกำหนดประเภท type ของข้อมูล คือ DashboardStats 
-export async function getDashboardStats(): Promise<DashboardStats> { 
-// Query จาก  Table Order เพื่อคำนวณรายได้รวมของวันนี้และเมื่อวานนี้ 
-// [{ today: 5000, yesterday: 4000 }]
+export async function getDashboardStats(date: string): Promise<DashboardStats> {
+  const prevDate = new Date(date)
+  prevDate.setDate(prevDate.getDate() - 1)
+  const prev = prevDate.toISOString().split('T')[0]
 
-  // ดึงข้อมูลสรุปยอดขายรวมของ 'วันนี้' และ 'เมื่อวาน' (ถ้าไม่มีการขายจะส่งค่าเป็น 0) จากตาราง Order โดยนับเฉพาะออเดอร์ที่ไม่ได้ถูกยกเลิกหรือคืนเงิน
   const [revenueRows] = await pool.query(`
     SELECT
-      COALESCE(SUM(CASE WHEN DATE(createdAt) = CURDATE() THEN totalAmount ELSE 0 END), 0) AS today,
-      COALESCE(SUM(CASE WHEN DATE(createdAt) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN totalAmount ELSE 0 END), 0) AS yesterday
-    FROM \`Order\` 
+      COALESCE(SUM(CASE WHEN DATE(createdAt) = ? THEN totalAmount ELSE 0 END), 0) AS today,
+      COALESCE(SUM(CASE WHEN DATE(createdAt) = ? THEN totalAmount ELSE 0 END), 0) AS yesterday
+    FROM \`Order\`
     WHERE status NOT IN ('CANCELLED', 'REFUNDED')
-      AND DATE(createdAt) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) 
-  `) as [{ today: number; yesterday: number }[], unknown] // กำหนดประเภทของผลลัพธ์ที่ได้จากการ query ถ้าไม่มีเป็น ค่าอื่นที่ไม่รู้จัก Return (unknown) 
-  
-  const { today, yesterday } = revenueRows[0]   // today = { 5000 } , yesterday = { 4000 }
-  
-  // คำนวณเปอร์เซ็นต์การเปลี่ยนแปลงของรายได้เมื่อเทียบกับวันก่อนหน้า โดยใช้สูตร ((วันนี้ - เมื่อวาน) / เมื่อวาน) * 100 ถ้าเมื่อวานเป็น 0 จะตั้งค่าเป็น 0 เพื่อหลีกเลี่ยงการหารด้วยศูนย์
+      AND DATE(createdAt) IN (?, ?)
+  `, [date, prev, date, prev]) as [{ today: number; yesterday: number }[], unknown]
+
+  const { today, yesterday } = revenueRows[0]
   const revenueChangePercent = yesterday > 0
     ? Math.round(((today - yesterday) / yesterday) * 100)
     : 0
-  
-  // Query จาก Table Order  เพื่อดึงข้อมูลจำนวนคำสั่งซื้อที่กำลังดำเนินการอยู่ จำนวนไรเดอร์ที่กำลังทำงานอยู่ และจำนวนปัญหาที่ยังไม่ได้รับการแก้ไข
+
   const [activeOrdersRows] = await pool.query(`
     SELECT COUNT(*) AS count FROM \`Order\`
-    WHERE status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY')
-  `) as [{ count: number }[], unknown]
+    WHERE DATE(createdAt) = ?
+      AND status NOT IN ('CANCELLED', 'REFUNDED')
+  `, [date]) as [{ count: number }[], unknown]
 
-  // ดึงจำนวนคำสั่งซื้อที่มีสถานะเป็น PENDING, CONFIRMED, PREPARING หรือ OUT_FOR_DELIVERY ซึ่งแสดงถึงคำสั่งซื้อที่กำลังดำเนินการอยู่
   const [activeRidersRows] = await pool.query(`
-    SELECT COUNT(*) AS count FROM Rider
-    WHERE status IN ('Available', 'Busy')
-  `) as [{ count: number }[], unknown]
-  
-  // ดึงจำนวนไรเดอร์ที่มีสถานะเป็น ONLINE หรือ ON_DELIVERY ซึ่งแสดงถึงไรเดอร์ที่กำลังทำงานอยู่
+    SELECT COUNT(DISTINCT o.riderId) AS count
+    FROM \`Order\` o
+    WHERE DATE(o.createdAt) = ?
+      AND o.riderId IS NOT NULL
+  `, [date]) as [{ count: number }[], unknown]
+
   const [pendingIssuesRows] = await pool.query(`
-    SELECT COUNT(*) AS count FROM \`Order\`
-    WHERE status IN ('DELAYED', 'REFUNDED')
-      AND DATE(createdAt) = CURDATE()
-  `) as [{ count: number }[], unknown]
+    SELECT (
+      (SELECT COUNT(*) FROM \`Order\` WHERE LOWER(status) = 'delayed' AND DATE(createdAt) = ?) +
+      (SELECT COUNT(*) FROM disputes WHERE refund_type != 'none' AND DATE(created_at) = ?)
+    ) AS count
+  `, [date, date]) as [{ count: number }[], unknown]
 
   return {
-    totalRevenue: today, // ค่ารายได้รวมของวันนี้  = ตัวแปร today ที่ได้จากการ query
-    revenueChangePercent, // เปอร์เซ็นต์การเปลี่ยนแปลงของรายได้  = ตัวแปร revenueChangePercent ที่คำนวณจาก today และ yesterday
-    activeOrders: Number(activeOrdersRows[0].count), // จำนวนคำสั่งซื้อที่กำลังดำเนินการ  = ตัวแปร activeOrdersRows ที่ได้จากการ query
-    activeRiders: Number(activeRidersRows[0].count), // จำนวนไรเดอร์ที่กำลังทำงาน  = ตัวแปร activeRidersRows ที่ได้จากการ query
-    pendingIssues: Number(pendingIssuesRows[0].count), // จำนวนปัญหาที่ยังไม่ได้รับการแก้ไข = ตัวแปร pendingIssuesRows ที่ได้จากการ query
+    totalRevenue: Number(today),
+    revenueChangePercent,
+    activeOrders: Number(activeOrdersRows[0].count),
+    activeRiders: Number(activeRidersRows[0].count),
+    pendingIssues: Number(pendingIssuesRows[0].count),
   }
 }
-// ฟังก์ชันสำหรับดึงข้อมูลคำสั่งซื้อที่กำลังดำเนินการอยู่ 5 รายการล่าสุด เพื่อแสดงบนหน้า Dashboard
-// เวลาสร้าง  promise ต้องกำหนดประเภท type ของข้อมูล คือ LiveOrder 
-export async function getLiveOrders(): Promise<LiveOrder[]> {
+
+export async function getLiveOrders(date: string): Promise<LiveOrder[]> {
+  const isToday = date === new Date().toISOString().split('T')[0]
+  const statusFilter = isToday
+    ? `o.status IN ('PENDING','CONFIRMED','PREPARING','OUT_FOR_DELIVERY','DELAYED','pending','accepted','preparing','delivering','delayed')`
+    : `DATE(o.createdAt) = '${date}'`
+
   const [rows] = await pool.query(`
     SELECT
       o.orderNumber,
@@ -98,17 +99,16 @@ export async function getLiveOrders(): Promise<LiveOrder[]> {
     FROM \`Order\` o
     JOIN Restaurant r ON o.restaurantId = r.id
     JOIN Customer   c ON o.customerId   = c.id
-    WHERE o.status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELAYED')
+    WHERE ${statusFilter}
     ORDER BY o.createdAt DESC
     LIMIT 5
-  `) as [LiveOrder[], unknown] // กำหนดประเภทของผลลัพธ์ที่ได้จากการ query ถ้าไม่มีเป็น ค่าอื่นที่ไม่รู้จัก Return (unknown)
+  `) as [LiveOrder[], unknown]
 
-  return rows // คืนค่า  rows ที่ได้จากการ query ซึ่งเป็นอาเรย์ของคำสั่งซื้อที่กำลังดำเนินการอยู่ 5 รายการล่าสุด
+  return rows
 }
 
-// ฟังก์ชันสำหรับดึงข้อมูลร้านอาหารที่มีประสิทธิภาพสูงสุด 4 ร้าน เพื่อแสดงบนหน้า Dashboard
-//// เวลาสร้าง  promise ต้องกำหนดประเภท type ของข้อมูล คือ TopPerformer 
-export async function getTopPerformers(): Promise<TopPerformer[]> {
+export async function getTopPerformers(date: string, sortBy: 'orders' | 'revenue' = 'orders'): Promise<TopPerformer[]> {
+  const orderCol = sortBy === 'revenue' ? 'revenue' : 'orderCount'
   const [rows] = await pool.query(`
     SELECT
       r.id,
@@ -119,36 +119,33 @@ export async function getTopPerformers(): Promise<TopPerformer[]> {
     FROM Restaurant r
     LEFT JOIN \`Order\` o
       ON r.id = o.restaurantId
-      AND DATE(o.createdAt) = CURDATE()
-      AND o.status NOT IN ('CANCELLED', 'REFUNDED')
+      AND DATE(o.createdAt) = ?
+      AND o.status NOT IN ('CANCELLED', 'REFUNDED', 'cancelled')
     GROUP BY r.id, r.name, r.imageUrl
-    ORDER BY orderCount DESC
+    ORDER BY ${orderCol} DESC
     LIMIT 4
-  `) as [TopPerformer[], unknown]
+  `, [date]) as [TopPerformer[], unknown]
 
-  return rows // คืนค่า  rows ที่ได้จากการ query ซึ่งเป็นอาเรย์ของร้านอาหารที่มีประสิทธิภาพสูงสุด 4 ร้าน
+  return rows
 }
 
-
-
-// ดึงรายได้รวมย้อนหลัง 7 วัน (ไม่นับ CANCELLED/REFUNDED) แล้วเติม 0 สำหรับวันที่ไม่มี Order
-export async function getDailyRevenue(): Promise<DailyRevenue[]> {
+export async function getDailyRevenue(date: string): Promise<DailyRevenue[]> {
   const [rows] = await pool.query(`
     SELECT
       DATE_FORMAT(DATE(createdAt), '%Y-%m-%d') AS date,
       COALESCE(SUM(totalAmount), 0)            AS revenue,
       COUNT(id)                                AS orderCount
     FROM \`Order\`
-    WHERE status NOT IN ('CANCELLED', 'REFUNDED')
-      AND DATE(createdAt) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+    WHERE status NOT IN ('CANCELLED', 'REFUNDED', 'cancelled')
+      AND DATE(createdAt) BETWEEN DATE_SUB(?, INTERVAL 6 DAY) AND ?
     GROUP BY DATE_FORMAT(DATE(createdAt), '%Y-%m-%d')
     ORDER BY date ASC
-  `) as [DailyRevenue[], unknown]
+  `, [date, date]) as [DailyRevenue[], unknown]
 
-  // เติมวันที่ขาดหายไปด้วย 0 เพื่อให้กราฟแสดงครบ 7 วันเสมอ
+  // fill missing days with 0
   const filled: DailyRevenue[] = []
   for (let i = 6; i >= 0; i--) {
-    const d = new Date()
+    const d = new Date(date + 'T00:00:00')
     d.setDate(d.getDate() - i)
     const dateStr = d.toISOString().split('T')[0]
     const found = (rows as DailyRevenue[]).find(r => r.date === dateStr)
@@ -157,14 +154,13 @@ export async function getDailyRevenue(): Promise<DailyRevenue[]> {
   return filled
 }
 
-// ดึงจำนวน Order วันนี้ แยกตาม status เพื่อแสดง breakdown
-export async function getOrderStatusBreakdown(): Promise<StatusBreakdown[]> {
+export async function getOrderStatusBreakdown(date: string): Promise<StatusBreakdown[]> {
   const [rows] = await pool.query(`
     SELECT status, COUNT(*) AS count
     FROM \`Order\`
-    WHERE DATE(createdAt) = CURDATE()
+    WHERE DATE(createdAt) = ?
     GROUP BY status
     ORDER BY count DESC
-  `) as [StatusBreakdown[], unknown]
+  `, [date]) as [StatusBreakdown[], unknown]
   return rows
 }

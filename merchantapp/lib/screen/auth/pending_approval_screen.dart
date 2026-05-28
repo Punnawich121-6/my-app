@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../services/api_service.dart';
-import '../merchant/merchant_main_screen.dart';
+import '../merchant/home/merchant_main_screen.dart';
 import 'login_screen.dart';
 
 class PendingApprovalScreen extends StatefulWidget {

@@ -1,0 +1,59 @@
+# ─── Dependencies ────────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ─── Environment / Secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.env
+
+# ─── Claude Code ─────────────────────────────────────────────────────────────
+.claude/
+
+# ─── Next.js ─────────────────────────────────────────────────────────────────
+.next/
+out/
+.vercel/
+.turbo/
+
+# ─── Flutter / Dart ──────────────────────────────────────────────────────────
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/pubspec.lock
+**/.packages
+
+# ─── Build outputs ───────────────────────────────────────────────────────────
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+*.err.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.user
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.pem
+.cache/

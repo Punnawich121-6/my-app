@@ -3,6 +3,8 @@ import { verifySession } from '@/app/lib/session'
 import Navbar from "../component/navbar"
 import RevenueChartWrapper from "../component/RevenueChartWrapper"
 import AutoRefresh from "../component/AutoRefresh"
+import DatePickerButton from "./DatePickerButton"
+import TopPerformersCard from "./TopPerformersCard"
 import {
   getDashboardStats,
   getLiveOrders,
@@ -62,24 +64,26 @@ const STATUS_BAR: Record<string, { bar: string; dot: string }> = {
 }
 
 // เก็บผลลัพธ์ของการ query ที่ได้จากฟังก์ชัน getLiveOrders() ซึ่งเป็นอาเรย์ของคำสั่งซื้อที่กำลังดำเนินการอยู่ 5 รายการล่าสุด
-export default async function Dashboard() {
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string; sort?: string }>
+}) {
   const session = await verifySession()
   if (!session) redirect('/login')
 
-  const [stats, liveOrders, topPerformers, dailyRevenue, statusBreakdown] = await Promise.all([
-    getDashboardStats(),
-    getLiveOrders(),
-    getTopPerformers(),
-    getDailyRevenue(),
-    getOrderStatusBreakdown(),
-  ])
+  const { date: dateParam, sort: sortParam } = await searchParams
+  const todayStr = new Date().toISOString().split('T')[0]
+  const selectedDate = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayStr
+  const sortBy = sortParam === 'revenue' ? 'revenue' : 'orders'
 
-  // สร้างตัวแปร today เพื่อแสดงวันที่ปัจจุบันในรูปแบบที่อ่านง่าย เช่น "Monday, Jan 1"
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  })
+  const [stats, liveOrders, topPerformers, dailyRevenue, statusBreakdown] = await Promise.all([
+    getDashboardStats(selectedDate),
+    getLiveOrders(selectedDate),
+    getTopPerformers(selectedDate, sortBy),
+    getDailyRevenue(selectedDate),
+    getOrderStatusBreakdown(selectedDate),
+  ])
 
   //  หาผลรวมของออเดอร์ทั้งหมดในวันนี้ โดยการใช้ reduce กับอาเรย์ statusBreakdown ซึ่งเก็บข้อมูลจำนวนคำสั่งซื้อในแต่ละสถานะ และแปลงค่า count เป็นตัวเลขด้วย Number() ก่อนนำมาบวกกันเพื่อหาผลรวมทั้งหมด
   const totalOrdersToday = statusBreakdown.reduce((s, r) => s + Number(r.count), 0)
@@ -100,10 +104,7 @@ export default async function Dashboard() {
               Here&apos;s what&apos;s happening with Zest &amp; Savory today.
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-surface-container px-4 py-2 rounded-full border border-surface-variant self-start sm:self-auto shadow-sm">
-            <span className="material-symbols-outlined text-on-surface-variant">calendar_today</span>
-            <span className="text-label-md text-on-surface">Today, {today}</span>
-          </div>
+          <DatePickerButton date={selectedDate} />
         </div>
 
         {/* KPI Cards */}
@@ -287,49 +288,7 @@ export default async function Dashboard() {
             </div>
           </div>
 
-          {/* Top Performers */}
-          <div className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-surface-variant/50 p-6 flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-headline-sm text-on-surface">Top Performers</h3>
-                <p className="text-body-sm text-on-surface-variant mt-0.5">By order count today</p>
-              </div>
-              <span className="material-symbols-outlined text-on-surface-variant">more_vert</span>
-            </div>
-            <div className="space-y-5 flex-1">
-              {topPerformers.length === 0 ? (
-                <p className="text-body-md text-on-surface-variant">No data yet.</p>
-              ) : (
-                topPerformers.map((r, i) => (
-                  <div key={r.id} className="flex items-center gap-4">
-                    <span className="text-label-sm text-on-surface-variant w-4 shrink-0 text-center">
-                      {i + 1}
-                    </span>
-                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-surface-container shrink-0">
-                      {r.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img alt={r.name} className="w-full h-full object-cover" src={r.imageUrl} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-on-surface-variant text-label-sm font-bold">
-                          {r.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-label-lg text-on-surface truncate">{r.name}</h4>
-                      <p className="text-body-sm text-on-surface-variant">{Number(r.orderCount)} orders</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-label-lg text-primary-container">{formatCurrency(Number(r.revenue))}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <button className="w-full mt-6 py-2 bg-surface text-primary-container text-label-md rounded-full border border-outline-variant hover:bg-surface-container-high transition-colors">
-              View Full Rankings
-            </button>
-          </div>
+          <TopPerformersCard performers={topPerformers} sortBy={sortBy} />
         </div>
 
       </main>

@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import '../../config.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 import '../navigation_screen.dart';
+import '../chat/chat_screen.dart';
+import 'report_screen.dart';
 
 // ── Delivery steps (local UI state only) ──────────────────────────────────────
 enum _OrderStep { goToStore, atStore, delivering }
 
 class ActiveDeliveryScreen extends StatefulWidget {
   final String riderId;
+  final String riderName;
+  final String? riderPhotoUrl;
   final Map<String, dynamic>? order;
   final bool isLoading;
   final VoidCallback onDeliveryComplete;
@@ -17,6 +23,8 @@ class ActiveDeliveryScreen extends StatefulWidget {
   const ActiveDeliveryScreen({
     super.key,
     required this.riderId,
+    this.riderName = 'ไรเดอร์',
+    this.riderPhotoUrl,
     required this.order,
     required this.isLoading,
     required this.onDeliveryComplete,
@@ -31,6 +39,30 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
   bool _completing = false;
   bool _updatingStep = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _step = _stepFromStatus(widget.order?['status']?.toString());
+  }
+
+  @override
+  void didUpdateWidget(ActiveDeliveryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newId = widget.order?['id']?.toString();
+    final oldId = oldWidget.order?['id']?.toString();
+    // รีเซ็ต step เมื่อเปลี่ยนงาน (รับงานใหม่ หรือ งานถูกเคลียร์)
+    if (newId != oldId) {
+      setState(() => _step = _stepFromStatus(widget.order?['status']?.toString()));
+    }
+  }
+
+  _OrderStep _stepFromStatus(String? status) {
+    if (status == 'at_store') return _OrderStep.atStore;
+    if (status == 'picking_up') return _OrderStep.delivering;
+    // 'delivering' = รับงานแล้ว กำลังไปร้าน, null = ไม่มีงาน
+    return _OrderStep.goToStore;
+  }
+
   // ── Get current GPS position ───────────────────────────────────────────────
   Future<Position?> _getPosition() async {
     try {
@@ -39,7 +71,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) return null;
+          perm == LocationPermission.deniedForever) {
+        return null;
+      }
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -58,13 +92,26 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
 
     setState(() => _updatingStep = true);
 
-    final pos = await _getPosition();
+    Position? pos = await _getPosition();
+
+    // DEV: เมื่อกด "ถึงร้านแล้ว" ให้ใช้ location ร้านแทน GPS จริง
+    double? lat = pos?.latitude;
+    double? lng = pos?.longitude;
+    if (kDevMockLocation && apiStep == 'at_store') {
+      final storeLat = double.tryParse(order['store_lat']?.toString() ?? '');
+      final storeLng = double.tryParse(order['store_lng']?.toString() ?? '');
+      if (storeLat != null && storeLng != null) {
+        lat = storeLat;
+        lng = storeLng;
+      }
+    }
+
     await RiderService.updateOrderStep(
       order['id'],
       widget.riderId,
       apiStep,
-      lat: pos?.latitude,
-      lng: pos?.longitude,
+      lat: lat,
+      lng: lng,
     );
 
     if (!mounted) return;
@@ -72,9 +119,77 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       _step = nextStep;
       _updatingStep = false;
     });
+
+    // Fire AI chat to customer in background
+    _triggerStepNotification(apiStep, pos);
   }
 
-  // ── Complete delivery & show earnings ─────────────────────────────────────────
+  // ── Send AI chat message to customer ──────────────────────────────────────
+  Future<void> _triggerStepNotification(String apiStep, Position? currentPos) async {
+    final order = widget.order;
+    if (order == null) return;
+    final orderId = order['id']?.toString() ?? '';
+    if (orderId.isEmpty) return;
+
+    final storeName    = order['store_name']?.toString()    ?? 'ร้านค้า';
+    final customerName = order['customer_name']?.toString() ?? 'ลูกค้า';
+
+    // Calculate ETA to customer (25 km/h city average)
+    int? etaMinutes;
+    final pos = currentPos ?? await _getPosition();
+    if (pos != null) {
+      final destLat = double.tryParse(order['delivery_lat']?.toString() ?? '');
+      final destLng = double.tryParse(order['delivery_lng']?.toString() ?? '');
+      if (destLat != null && destLng != null) {
+        final distM = Geolocator.distanceBetween(
+            pos.latitude, pos.longitude, destLat, destLng);
+        etaMinutes = (distM / 1000 / 25 * 60).ceil().clamp(1, 999);
+      }
+    }
+
+    // Get AI-generated message (rider → customer perspective)
+    final aiMsg = await RiderService.getRiderNotification(
+      step: apiStep,
+      storeName: storeName,
+      customerName: customerName,
+      riderName: widget.riderName,
+      etaMinutes: etaMinutes,
+    );
+
+    final etaSuffix = etaMinutes != null ? ' อีกประมาณ $etaMinutes นาทีนะครับ' : '';
+    final fallbacks = {
+      'at_store':   'สวัสดีครับ ผมถึงร้านแล้วนะครับ กำลังรับอาหารให้อยู่ 🙏',
+      'picking_up': 'รับอาหารเรียบร้อยแล้วครับ กำลังออกเดินทางมาส่งครับ$etaSuffix 🚴',
+    };
+    final message = aiMsg ?? fallbacks[apiStep] ?? 'อัพเดทสถานะออเดอร์ของคุณแล้วครับ';
+
+    // Send as chat message to customer
+    final sent = await RiderService.sendAutoChat(
+      orderId: orderId,
+      riderId: widget.riderId,
+      riderName: widget.riderName,
+      message: message,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          sent ? 'ส่งข้อความแจ้งลูกค้าแล้ว ✓' : 'ส่งข้อความไม่สำเร็จ',
+          style: const TextStyle(fontSize: 13),
+        ),
+      ]),
+      backgroundColor: sent ? const Color(0xFF1565C0) : Colors.red,
+      duration: const Duration(seconds: 3),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+    ));
+  }
+
+  // ── Complete delivery & show earnings ─────────────────────────────────────
   Future<void> _completeDelivery() async {
     final order = widget.order;
     if (order == null) return;
@@ -126,7 +241,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
     }
   }
 
-  // ── Earnings bottom sheet ──────────────────────────────────────────────────────
+  // ── Earnings bottom sheet ─────────────────────────────────────────────────
   Future<void> _showEarningsSheet(Map<String, dynamic> order) async {
     final fmt = NumberFormat('#,##0.00');
     final deliveryFee =
@@ -135,8 +250,6 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         double.tryParse(order['total_amount']?.toString() ?? '0') ?? 0;
     final foodAmount = totalAmount - deliveryFee;
 
-    // Simple distance-based fee breakdown: ฿20 base + ฿5/km (approx)
-    // We show delivery_fee as actual earning since it's what backend computed.
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -149,17 +262,17 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
               color: const Color(0xFFE0E0E0),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Success icon
           Container(
-            width: 72, height: 72,
+            width: 72,
+            height: 72,
             decoration: const BoxDecoration(
               color: RiderColors.blueLight,
               shape: BoxShape.circle,
@@ -174,24 +287,20 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                   fontWeight: FontWeight.w800,
                   color: RiderColors.text)),
           const SizedBox(height: 4),
-          Text('ออเดอร์ #${order['orderNumber'] ?? order['id'].toString().substring(0, 8)}',
-              style: const TextStyle(fontSize: 13, color: RiderColors.muted)),
+          Text(
+              'ออเดอร์ #${order['orderNumber'] ?? order['id'].toString().substring(0, 8)}',
+              style:
+                  const TextStyle(fontSize: 13, color: RiderColors.muted)),
           const SizedBox(height: 24),
-
-          // Earnings card
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFF8C5A), Color(0xFFFF4500)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFFFF6B35),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(children: [
               const Text('รายได้ของคุณ',
-                  style: TextStyle(fontSize: 13, color: Colors.white70)),
+                  style: TextStyle(fontSize: 13, color: Colors.white)),
               const SizedBox(height: 4),
               Text('฿${fmt.format(deliveryFee)}',
                   style: const TextStyle(
@@ -199,12 +308,11 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                       fontWeight: FontWeight.w900,
                       color: Colors.white)),
               const SizedBox(height: 16),
-              Container(
-                height: 1,
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.2)),
               const SizedBox(height: 16),
-              _EarningRow(label: 'ยอดอาหาร', value: '฿${fmt.format(foodAmount)}'),
+              _EarningRow(
+                  label: 'ยอดอาหาร',
+                  value: '฿${fmt.format(foodAmount)}'),
               const SizedBox(height: 8),
               _EarningRow(
                 label: 'ค่าส่ง (รายได้คุณ)',
@@ -213,25 +321,23 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               ),
               const SizedBox(height: 8),
               _EarningRow(
-                label: 'ยอดรวมออเดอร์',
-                value: '฿${fmt.format(totalAmount)}',
-              ),
+                  label: 'ยอดรวมออเดอร์',
+                  value: '฿${fmt.format(totalAmount)}'),
             ]),
           ),
           const SizedBox(height: 16),
-
-          // Fee breakdown
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: RiderColors.blueLight,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(children: [
-                  Icon(Icons.calculate_rounded, color: RiderColors.blue, size: 16),
+                Row(children: [
+                  Icon(Icons.calculate_rounded,
+                      color: RiderColors.blue, size: 16),
                   SizedBox(width: 6),
                   Text('วิธีคิดค่าส่ง',
                       style: TextStyle(
@@ -239,18 +345,19 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                           fontWeight: FontWeight.w700,
                           color: RiderColors.blue)),
                 ]),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'ค่าส่งพื้นฐาน ฿20 + ระยะทาง × ฿5/กม.\n(ขั้นต่ำ ฿30)',
-                  style: TextStyle(fontSize: 12, color: RiderColors.muted, height: 1.6),
+                  style: TextStyle(
+                      fontSize: 12, color: RiderColors.muted, height: 1.6),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-
           SizedBox(
-            width: double.infinity, height: 52,
+            width: double.infinity,
+            height: 52,
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
@@ -261,8 +368,8 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                     borderRadius: BorderRadius.circular(16)),
               ),
               child: const Text('รับเงินแล้ว ปิดหน้าต่าง',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700)),
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ),
         ]),
@@ -273,8 +380,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: RiderColors.blue));
+      return const Center(child: CircularProgressIndicator(color: RiderColors.blue));
     }
 
     if (widget.order == null) {
@@ -282,115 +388,292 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
             width: 80, height: 80,
-            decoration: const BoxDecoration(
-                color: RiderColors.blueLight, shape: BoxShape.circle),
-            child: const Icon(Icons.directions_bike_rounded,
-                color: RiderColors.muted, size: 40),
+            decoration: const BoxDecoration(color: RiderColors.blueLight, shape: BoxShape.circle),
+            child: const Icon(Icons.directions_bike_rounded, color: RiderColors.muted, size: 40),
           ),
           const SizedBox(height: 16),
           const Text('ไม่มีงานที่กำลังส่ง',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: RiderColors.text)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: RiderColors.text)),
           const SizedBox(height: 8),
-          const Text('รับงานจากหน้า "งานใหม่"',
-              style: TextStyle(color: RiderColors.muted)),
+          const Text('รับงานจากหน้า "งานใหม่"', style: TextStyle(color: RiderColors.muted)),
         ]),
       );
     }
 
     final order = widget.order!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(children: [
-        // ── Step progress ──────────────────────────────────────────────────────
-        _buildStepsCard(),
-        const SizedBox(height: 16),
-
-        // ── Step action button ─────────────────────────────────────────────────
-        _buildStepAction(),
-        const SizedBox(height: 16),
-
-        // ── Order detail ───────────────────────────────────────────────────────
-        _buildOrderDetail(order),
-        const SizedBox(height: 16),
-
-        // ── Buttons: nav + call ────────────────────────────────────────────────
-        _buildNavButton(order),
-        const SizedBox(height: 8),
-        _buildCallButton(),
-        const SizedBox(height: 24),
-      ]),
+    return Column(
+      children: [
+        _buildStepStrip(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(children: [
+              _buildDestCard(order),
+              const SizedBox(height: 12),
+              _buildCompactDetail(order),
+              const SizedBox(height: 12),
+              _buildActionRow(order),
+              const SizedBox(height: 16),
+            ]),
+          ),
+        ),
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          child: _buildStepAction(),
+        ),
+      ],
     );
   }
 
-  // ── Step progress bar ─────────────────────────────────────────────────────────
-  Widget _buildStepsCard() {
+  // ── Grab-style step strip ────────────────────────────────────────────────
+  Widget _buildStepStrip() {
     final stepIdx = _step.index;
+    final steps = [
+      (Icons.store_rounded, 'ไปร้าน'),
+      (Icons.shopping_bag_rounded, 'รับอาหาร'),
+      (Icons.directions_bike_rounded, 'กำลังส่ง'),
+      (Icons.check_circle_rounded, 'ส่งแล้ว'),
+    ];
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      child: Row(
+        children: List.generate(steps.length * 2 - 1, (i) {
+          if (i.isOdd) {
+            return Expanded(
+              child: Container(
+                height: 2,
+                margin: const EdgeInsets.only(bottom: 20),
+                color: i ~/ 2 < stepIdx
+                    ? RiderColors.blue
+                    : const Color(0xFFEEEEEE),
+              ),
+            );
+          }
+          final idx = i ~/ 2;
+          final isDone = idx < stepIdx;
+          final isActive = idx == stepIdx;
+          return Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDone || isActive
+                    ? RiderColors.blue
+                    : const Color(0xFFF0F0F0),
+                border: isActive
+                    ? Border.all(color: RiderColors.blue, width: 2.5)
+                    : null,
+              ),
+              child: Icon(
+                isDone ? Icons.check_rounded : steps[idx].$1,
+                size: 16,
+                color: isDone || isActive ? Colors.white : const Color(0xFFBDBDBD),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(steps[idx].$2,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isActive ? RiderColors.blue : const Color(0xFFBDBDBD),
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                )),
+          ]);
+        }),
+      ),
+    );
+  }
+
+  // ── Current destination card ─────────────────────────────────────────────
+  Widget _buildDestCard(Map<String, dynamic> order) {
+    final isDelivering = _step == _OrderStep.delivering;
+    final label = isDelivering ? 'ส่งถึงลูกค้า' : (_step == _OrderStep.atStore ? 'รับอาหารที่ร้าน' : 'ไปรับที่ร้าน');
+    final name = isDelivering ? (order['customer_name'] ?? '-') : (order['store_name'] ?? '-');
+    final address = isDelivering ? (order['address'] ?? '-') : (order['store_address'] ?? '-');
+    final icon = isDelivering ? Icons.home_rounded : Icons.store_rounded;
+    final iconBg = isDelivering ? const Color(0xFFE8F5E9) : RiderColors.blueLight;
+    final iconColor = isDelivering ? RiderColors.green : RiderColors.blue;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: RiderColors.blue.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4))
-        ],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8E8E8), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 12, offset: const Offset(0, 3))],
       ),
-      child: Row(children: [
-        _StepDot(
-          icon: Icons.store_rounded,
-          label: 'ไปร้าน',
-          done: stepIdx > 0,
-          active: stepIdx == 0,
-        ),
-        _StepLine(filled: stepIdx > 0),
-        _StepDot(
-          icon: Icons.shopping_bag_rounded,
-          label: 'ถึงร้าน',
-          done: stepIdx > 1,
-          active: stepIdx == 1,
-        ),
-        _StepLine(filled: stepIdx > 1),
-        _StepDot(
-          icon: Icons.directions_bike_rounded,
-          label: 'กำลังส่ง',
-          done: stepIdx > 2,
-          active: stepIdx == 2,
-        ),
-        _StepLine(filled: false),
-        _StepDot(
-          icon: Icons.check_circle_rounded,
-          label: 'ส่งแล้ว',
-          done: false,
-          active: false,
-        ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: const TextStyle(fontSize: 12, color: RiderColors.muted, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 2),
+            Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: RiderColors.text)),
+          ])),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => NavigationScreen(
+                storeAddress: order['store_address'] ?? '-',
+                storeName: order['store_name'] ?? '-',
+                customerAddress: order['address'] ?? '-',
+                customerName: order['customer_name'] ?? '-',
+                customerLat: double.tryParse(order['delivery_lat']?.toString() ?? ''),
+                customerLng: double.tryParse(order['delivery_lng']?.toString() ?? ''),
+                riderPhotoUrl: widget.riderPhotoUrl,
+                riderName: widget.riderName,
+              ),
+            )),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: RiderColors.blue, width: 1.5),
+              ),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.navigation_rounded, color: RiderColors.blue, size: 14),
+                SizedBox(width: 5),
+                Text('นำทาง', style: TextStyle(color: RiderColors.blue, fontSize: 13, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        const Divider(height: 1, color: Color(0xFFE0E0E0)),
+        const SizedBox(height: 12),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.location_on_rounded, color: iconColor, size: 16),
+          const SizedBox(width: 8),
+          Expanded(child: Text(address,
+              style: const TextStyle(fontSize: 13, color: RiderColors.text, height: 1.45))),
+        ]),
       ]),
     );
   }
 
-  // ── Action button per step ────────────────────────────────────────────────────
+  // ── Compact order info ────────────────────────────────────────────────────
+  Widget _buildCompactDetail(Map<String, dynamic> order) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8E8E8), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.person_outline_rounded, size: 16, color: RiderColors.muted),
+          const SizedBox(width: 8),
+          Text(order['customer_name'] ?? '-',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RiderColors.text)),
+          const Spacer(),
+          const Icon(Icons.phone_outlined, size: 14, color: RiderColors.muted),
+          const SizedBox(width: 4),
+          Text(order['customer_phone'] ?? '-',
+              style: const TextStyle(fontSize: 13, color: RiderColors.muted)),
+        ]),
+        const SizedBox(height: 10),
+        const Divider(height: 1, color: Color(0xFFE0E0E0)),
+        const SizedBox(height: 10),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.receipt_long_rounded, size: 16, color: RiderColors.muted),
+          const SizedBox(width: 8),
+          Expanded(child: Text(order['items_summary'] ?? '-',
+              style: const TextStyle(fontSize: 13, color: RiderColors.text, height: 1.4))),
+        ]),
+        if ((order['note'] ?? '').toString().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Row(children: [
+            const Icon(Icons.sticky_note_2_outlined, size: 16, color: RiderColors.muted),
+            const SizedBox(width: 8),
+            Expanded(child: Text(order['note'],
+                style: const TextStyle(fontSize: 13, color: RiderColors.muted, fontStyle: FontStyle.italic))),
+          ]),
+        ],
+      ]),
+    );
+  }
+
+  // ── Secondary action row ─────────────────────────────────────────────────
+  Widget _buildActionRow(Map<String, dynamic> order) {
+    return Row(children: [
+      Expanded(child: _ActionChip(
+        icon: Icons.person_rounded,
+        label: 'ลูกค้า',
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => RiderChatScreen(
+            orderId: order['id'].toString(), riderId: widget.riderId,
+            riderName: widget.riderName,
+            customerName: order['customer_name'] ?? 'ลูกค้า',
+            storeName: order['store_name'] ?? 'ร้านค้า',
+            chatType: 'rider',
+          ),
+        )),
+      )),
+      const SizedBox(width: 8),
+      Expanded(child: _ActionChip(
+        icon: Icons.store_rounded,
+        label: 'ร้านค้า',
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => RiderChatScreen(
+            orderId: order['id'].toString(), riderId: widget.riderId,
+            riderName: widget.riderName,
+            customerName: order['customer_name'] ?? 'ลูกค้า',
+            storeName: order['store_name'] ?? 'ร้านค้า',
+            chatType: 'store',
+          ),
+        )),
+      )),
+      const SizedBox(width: 8),
+      Expanded(child: _ActionChip(
+        icon: Icons.flag_rounded,
+        label: 'รายงาน',
+        color: RiderColors.red,
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => RiderReportScreen(
+            orderId: order['id'].toString(),
+            orderNumber: order['orderNumber']?.toString() ?? order['id'].toString().substring(0, 8),
+            riderId: widget.riderId,
+          ),
+        )),
+      )),
+    ]);
+  }
+
+  // ── Action button per step ────────────────────────────────────────────────
+  ButtonStyle get _actionBtnStyle => ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: RiderColors.blue,
+        disabledBackgroundColor: const Color(0xFFF5F5F5),
+        disabledForegroundColor: RiderColors.blueMid,
+        elevation: 0,
+        side: const BorderSide(color: RiderColors.blue, width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      );
+
   Widget _buildStepAction() {
     final busy = _updatingStep || _completing;
     if (_step == _OrderStep.goToStore) {
       return SizedBox(
-        width: double.infinity, height: 56,
+        width: double.infinity,
+        height: 56,
         child: ElevatedButton.icon(
           onPressed: busy ? null : () => _updateStep('at_store', _OrderStep.atStore),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: RiderColors.blue,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: RiderColors.blueMid,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
+          style: _actionBtnStyle,
           icon: busy
-              ? const SizedBox(width: 18, height: 18,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              ? SizedBox(width: 18, height: 18,
+                  child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
               : const Icon(Icons.store_rounded, size: 20),
           label: Text(busy ? 'กำลังอัพเดท...' : 'ถึงร้านแล้ว',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -398,19 +681,14 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       );
     } else if (_step == _OrderStep.atStore) {
       return SizedBox(
-        width: double.infinity, height: 56,
+        width: double.infinity,
+        height: 56,
         child: ElevatedButton.icon(
           onPressed: busy ? null : () => _updateStep('picking_up', _OrderStep.delivering),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF8F00),
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: const Color(0xFFFFCC80),
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
+          style: _actionBtnStyle,
           icon: busy
-              ? const SizedBox(width: 18, height: 18,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              ? SizedBox(width: 18, height: 18,
+                  child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
               : const Icon(Icons.check_rounded, size: 20),
           label: Text(busy ? 'กำลังอัพเดท...' : 'รับอาหารแล้ว ออกเดินทาง',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -418,19 +696,14 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       );
     } else {
       return SizedBox(
-        width: double.infinity, height: 56,
+        width: double.infinity,
+        height: 56,
         child: ElevatedButton.icon(
           onPressed: busy ? null : _completeDelivery,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: RiderColors.blue,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: RiderColors.blueMid,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
+          style: _actionBtnStyle,
           icon: busy
-              ? const SizedBox(width: 18, height: 18,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              ? SizedBox(width: 18, height: 18,
+                  child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
               : const Icon(Icons.flag_rounded, size: 20),
           label: Text(busy ? 'กำลังบันทึก...' : 'ส่งสำเร็จ รับเงิน!',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -439,188 +712,46 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
     }
   }
 
-  // ── Order detail card ─────────────────────────────────────────────────────────
-  Widget _buildOrderDetail(Map<String, dynamic> order) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: RiderColors.blue.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('รายละเอียดออเดอร์',
-            style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: RiderColors.text)),
-        const SizedBox(height: 12),
-        _DetailRow(
-            icon: Icons.store_rounded,
-            label: 'ร้านอาหาร',
-            value: order['store_name'] ?? '-'),
-        const SizedBox(height: 8),
-        _DetailRow(
-            icon: Icons.location_on_rounded,
-            label: 'รับที่',
-            value: order['store_address'] ?? '-',
-            accent: true),
-        const Divider(height: 20, color: RiderColors.blueLight),
-        _DetailRow(
-            icon: Icons.person_rounded,
-            label: 'ลูกค้า',
-            value: order['customer_name'] ?? '-'),
-        const SizedBox(height: 8),
-        _DetailRow(
-            icon: Icons.phone_rounded,
-            label: 'เบอร์',
-            value: order['customer_phone'] ?? '-'),
-        const SizedBox(height: 8),
-        _DetailRow(
-            icon: Icons.home_rounded,
-            label: 'ส่งที่',
-            value: order['address'] ?? '-',
-            accent: true),
-        const Divider(height: 20, color: RiderColors.blueLight),
-        _DetailRow(
-            icon: Icons.receipt_long_rounded,
-            label: 'รายการ',
-            value: order['items_summary'] ?? '-'),
-        if ((order['note'] ?? '').toString().isNotEmpty) ...[
-          const SizedBox(height: 8),
-          _DetailRow(
-              icon: Icons.note_rounded,
-              label: 'หมายเหตุ',
-              value: order['note']),
-        ],
-      ]),
-    );
-  }
-
-  Widget _buildNavButton(Map<String, dynamic> order) => SizedBox(
-        width: double.infinity, height: 48,
-        child: OutlinedButton.icon(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => NavigationScreen(
-                storeAddress: order['store_address'] ?? '-',
-                storeName: order['store_name'] ?? '-',
-                customerAddress: order['address'] ?? '-',
-                customerName: order['customer_name'] ?? '-',
-                customerLat: double.tryParse(
-                    order['delivery_lat']?.toString() ?? ''),
-                customerLng: double.tryParse(
-                    order['delivery_lng']?.toString() ?? ''),
-              ),
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: RiderColors.blue),
-            foregroundColor: RiderColors.blue,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-          ),
-          icon: const Icon(Icons.map_rounded, size: 18),
-          label: const Text('ดูเส้นทาง',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-        ),
-      );
-
-  Widget _buildCallButton() => SizedBox(
-        width: double.infinity, height: 48,
-        child: OutlinedButton.icon(
-          onPressed: () {},
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: RiderColors.blue),
-            foregroundColor: RiderColors.blue,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-          ),
-          icon: const Icon(Icons.phone_rounded, size: 18),
-          label: const Text('โทรหาลูกค้า',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-        ),
-      );
 }
 
-// ─── Sub-widgets ───────────────────────────────────────────────────────────────
+// ─── Sub-widgets ──────────────────────────────────────────────────────────────
 
-class _StepDot extends StatelessWidget {
+class _ActionChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool done;
-  final bool active;
-  const _StepDot(
-      {required this.icon,
-      required this.label,
-      required this.done,
-      required this.active});
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color = RiderColors.blue,
+  });
 
   @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: active ? 42 : 34,
-            height: active ? 42 : 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: done
-                  ? RiderColors.blue
-                  : active
-                      ? RiderColors.blue
-                      : RiderColors.blueLight,
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                          color: RiderColors.blue.withValues(alpha: 0.4),
-                          blurRadius: 10)
-                    ]
-                  : null,
-            ),
-            child: Icon(
-              done ? Icons.check_rounded : icon,
-              color: done || active ? Colors.white : RiderColors.muted,
-              size: active ? 20 : 16,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: done
-                      ? RiderColors.blue
-                      : active
-                          ? RiderColors.blue
-                          : RiderColors.muted,
-                  fontWeight: active || done
-                      ? FontWeight.w700
-                      : FontWeight.w400)),
-        ],
-      );
-}
-
-class _StepLine extends StatelessWidget {
-  final bool filled;
-  const _StepLine({required this.filled});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
         child: Container(
-          height: 3,
-          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            color: filled ? RiderColors.blue : RiderColors.blueLight,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE8E8E8), width: 1),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 8, offset: const Offset(0, 2))],
           ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF333333), fontWeight: FontWeight.w600)),
+          ]),
         ),
       );
 }
@@ -637,7 +768,7 @@ class _EarningRow extends StatelessWidget {
         Text(label,
             style: TextStyle(
                 fontSize: 13,
-                color: highlight ? Colors.white : Colors.white70)),
+                color: highlight ? Colors.white : Colors.white)),
         const Spacer(),
         Text(value,
             style: TextStyle(
@@ -648,38 +779,3 @@ class _EarningRow extends StatelessWidget {
       ]);
 }
 
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool accent;
-  const _DetailRow(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      this.accent = false});
-
-  @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon,
-              size: 16,
-              color: accent ? RiderColors.blue : RiderColors.muted),
-          const SizedBox(width: 8),
-          SizedBox(
-              width: 55,
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 12, color: RiderColors.muted))),
-          Expanded(
-              child: Text(value,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: RiderColors.text,
-                      fontWeight: accent
-                          ? FontWeight.w600
-                          : FontWeight.w500))),
-        ],
-      );
-}

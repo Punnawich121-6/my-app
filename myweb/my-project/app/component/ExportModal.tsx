@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ReportKey = 'orders' | 'financials' | 'restaurants' | 'fleet'
-type FormatKey = 'csv' | 'xlsx' | 'pdf'
+type FormatKey = 'csv' | 'xlsx' | 'pdf' | 'pptx'
 type RangeKey  = 'today' | '7d' | '30d' | 'month' | 'alltime' | 'custom'
 
 interface Props {
@@ -23,10 +23,11 @@ const REPORT_OPTIONS: { key: ReportKey; label: string; icon: string; desc: strin
   { key: 'fleet',       label: 'Fleet',       icon: 'delivery_dining', desc: 'Rider roster and delivery stats'         },
 ]
 
-const FORMAT_OPTIONS: { key: FormatKey; label: string; icon: string; color: string }[] = [
-  { key: 'csv',  label: 'CSV',   icon: 'csv',           color: 'text-tertiary' },
-  { key: 'xlsx', label: 'Excel', icon: 'table_chart',   color: 'text-[#217346]' },
-  { key: 'pdf',  label: 'PDF',   icon: 'picture_as_pdf',color: 'text-error' },
+const FORMAT_OPTIONS: { key: FormatKey; label: string; sub: string; icon: string; color: string }[] = [
+  { key: 'csv',  label: 'CSV',    sub: 'ข้อมูลดิบ',         icon: 'csv',             color: 'text-tertiary' },
+  { key: 'xlsx', label: 'Excel',  sub: 'ตาราง + กราฟ',      icon: 'table_chart',     color: 'text-[#217346]' },
+  { key: 'pdf',  label: 'PDF',    sub: 'print dialog',      icon: 'picture_as_pdf',  color: 'text-error' },
+  { key: 'pptx', label: 'Slides', sub: 'Canva / PowerPoint', icon: 'slideshow',       color: 'text-[#7C3AED]' },
 ]
 
 const DATE_RANGES: { key: RangeKey; label: string }[] = [
@@ -144,7 +145,7 @@ export default function ExportModal({ open, onClose }: Props) {
 
     try {
       const { from, to } = getDateRange(range, customFrom, customTo)
-      const params = new URLSearchParams({ report, format, from, to })
+      const params = new URLSearchParams({ report, format: format === 'pptx' ? 'pdf' : format, from, to })
       const res = await fetch(`/api/export?${params}`)
 
       if (!res.ok) {
@@ -159,7 +160,16 @@ export default function ExportModal({ open, onClose }: Props) {
         return
       }
 
-      // Download file
+      if (format === 'pptx') {
+        const data = await res.json()
+        const { generatePptx } = await import('@/app/lib/generatePptx')
+        await generatePptx(data, report)
+        setLoading(false)
+        onClose()
+        return
+      }
+
+      // Download file (CSV / XLSX)
       const blob   = await res.blob()
       const url    = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
@@ -292,24 +302,29 @@ export default function ExportModal({ open, onClose }: Props) {
           {/* File format */}
           <div className="space-y-3">
             <p className="text-label-md font-semibold text-on-surface-variant uppercase tracking-wide">File Format</p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {FORMAT_OPTIONS.map(f => (
                 <button
                   key={f.key}
                   onClick={() => setFormat(f.key)}
-                  className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all
+                  className={`flex items-center gap-3 px-3 py-3 rounded-2xl border-2 text-left transition-all
                     ${format === f.key
                       ? 'border-primary bg-primary-container/10'
                       : 'border-outline-variant/40 hover:border-outline-variant hover:bg-surface-container-low'}`}
                 >
-                  <span className={`material-symbols-outlined text-[24px] ${format === f.key ? 'text-primary' : f.color}`}>
+                  <span className={`material-symbols-outlined text-[22px] shrink-0 ${format === f.key ? 'text-primary' : f.color}`}>
                     {f.icon}
                   </span>
-                  <span className={`text-label-md font-semibold ${format === f.key ? 'text-primary' : 'text-on-surface'}`}>
-                    {f.label}
-                  </span>
-                  {f.key === 'pdf' && (
-                    <span className="text-[10px] text-on-surface-variant">opens print dialog</span>
+                  <div className="min-w-0">
+                    <p className={`text-label-md font-semibold leading-tight ${format === f.key ? 'text-primary' : 'text-on-surface'}`}>
+                      {f.label}
+                    </p>
+                    <p className="text-[11px] text-on-surface-variant leading-tight mt-0.5">{f.sub}</p>
+                  </div>
+                  {f.key === 'pptx' && (
+                    <span className="ml-auto shrink-0 text-[10px] font-bold text-[#7C3AED] bg-[#7C3AED]/10 px-1.5 py-0.5 rounded-full">
+                      NEW
+                    </span>
                   )}
                 </button>
               ))}

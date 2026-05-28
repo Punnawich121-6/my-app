@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../services/customer_service.dart';
-import '../home_screen.dart';
+import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String phone;

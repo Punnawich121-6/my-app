@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import 'otp_screen.dart';
@@ -12,6 +13,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
+  bool _loading = false;
+  PhoneAuthCredential? _autoCredential;
 
   @override
   void dispose() {
@@ -20,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _requestOtp() {
+    if (_loading) return;
     final phone = _phoneController.text.trim();
     if (phone.length < 9) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -32,25 +36,57 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => OtpScreen(phone: phone),
-    ));
+    _sendAndNavigate(phone);
+  }
+
+  Future<void> _sendAndNavigate(String phone) async {
+    setState(() => _loading = true);
+    final suffix = phone.startsWith('0') ? phone.substring(1) : phone;
+    final thaiPhone = '+66$suffix';
+
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: thaiPhone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) {
+        _autoCredential = credential;
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'ส่ง OTP ไม่สำเร็จ กรุณาลองใหม่')),
+        );
+      },
+      codeSent: (String verificationId, int? _) {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => OtpScreen(phone: phone, verificationId: verificationId, autoCode: _autoCredential?.smsCode),
+        ));
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RiderColors.blue,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          Positioned.fill(child: _RiderBg()),
+          Positioned(
+            top: 0, left: 0, right: 0,
+            height: MediaQuery.of(context).size.height * 0.38,
+            child: _RiderBg(),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.65,
+              height: MediaQuery.of(context).size.height * 0.70,
               child: _FormSheet(
                 phoneController: _phoneController,
                 onRequestOtp: _requestOtp,
+                loading: _loading,
               ),
             ),
           ),
@@ -61,26 +97,35 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _RiderBg extends StatelessWidget {
-  static const _bgImage =
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&h=1200&fit=crop&q=80';
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.network(
-          _bgImage,
+        Image.asset(
+          'assets/top-income-of-food-delivery-riders-1.jpg',
           fit: BoxFit.cover,
-          alignment: Alignment.topCenter,
-          errorBuilder: (_, __, ___) => Container(color: RiderColors.blue),
+          alignment: Alignment.center,
         ),
-        Container(color: Colors.black.withValues(alpha: 0.30)),
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0x55000000),
+                Color(0x00000000),
+                Colors.white,
+              ],
+              stops: [0.0, 0.55, 1.0],
+            ),
+          ),
+        ),
         SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
               Container(
                 width: 88,
                 height: 88,
@@ -129,7 +174,8 @@ class _RiderBg extends StatelessWidget {
 class _FormSheet extends StatelessWidget {
   final TextEditingController phoneController;
   final VoidCallback onRequestOtp;
-  const _FormSheet({required this.phoneController, required this.onRequestOtp});
+  final bool loading;
+  const _FormSheet({required this.phoneController, required this.onRequestOtp, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -207,18 +253,21 @@ class _FormSheet extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: onRequestOtp,
+              onPressed: loading ? null : onRequestOtp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: RiderColors.blue,
+                disabledBackgroundColor: RiderColors.blueMid,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text(
-                'รับ OTP',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
-              ),
+              child: loading
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text(
+                      'รับ OTP',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                    ),
             ),
           ),
           const SizedBox(height: 20),

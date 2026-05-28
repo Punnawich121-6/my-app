@@ -64,6 +64,7 @@ class DefaultFirebaseOptions {
     appId: '1:157517455877:android:26caeb58370ed97f78b26c',
     messagingSenderId: '157517455877',
     projectId: 'project-digit-3cea5',
+    authDomain: 'project-digit-3cea5.firebaseapp.com',
     storageBucket: 'project-digit-3cea5.firebasestorage.app',
   );
 }

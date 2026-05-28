@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { seedRiderLocations } from './actions'
+import { mountAdminSocket, unmountAdminSocket } from '@/app/lib/socket'
 
 type RiderLoc = {
   id: string
@@ -43,8 +44,10 @@ export default function RiderLiveMap() {
   const [seeding, startSeed]          = useTransition()
 
   const containerRef   = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
   const markersRef     = useRef<Record<string, any>>({})
-  const fetchNowRef    = useRef<(() => void) | null>(null) // lets "ทดสอบ" button trigger fetch
+  const fetchNowRef    = useRef<(() => void) | null>(null)
+  const socketRef      = useRef<import('socket.io-client').Socket | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -55,7 +58,7 @@ export default function RiderLiveMap() {
     let interval: ReturnType<typeof setInterval>
 
     const updateMarkers = (riders: RiderLoc[]) => {
-      if (!map || !L || cancelled) return
+      if (!map || !L || cancelled || !containerRef.current) return
 
       const ids = new Set(riders.map(r => r.id))
       for (const id of Object.keys(markersRef.current)) {
@@ -81,15 +84,20 @@ export default function RiderLiveMap() {
           <div style="font-size:11px;color:#999;margin-top:4px">📍 ${timeAgo(rider.locationUpdatedAt)}</div>
         </div>`
 
-        if (markersRef.current[rider.id]) {
-          markersRef.current[rider.id]
-            .setLatLng([rider.latitude, rider.longitude])
-            .setIcon(icon)
-            .getPopup()?.setContent(popup)
-        } else {
-          markersRef.current[rider.id] = L.marker([rider.latitude, rider.longitude], { icon })
-            .bindPopup(popup)
-            .addTo(map)
+        try {
+          if (markersRef.current[rider.id]) {
+            markersRef.current[rider.id]
+              .setLatLng([rider.latitude, rider.longitude])
+              .setIcon(icon)
+              .getPopup()?.setContent(popup)
+          } else {
+            markersRef.current[rider.id] = L.marker([rider.latitude, rider.longitude], { icon })
+              .bindPopup(popup)
+              .addTo(map)
+          }
+        } catch (_) {
+          // marker was removed mid-update (HMR / unmount race); recreate it next tick
+          delete markersRef.current[rider.id]
         }
       }
 
@@ -142,8 +150,20 @@ export default function RiderLiveMap() {
         shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       })
 
-      map = L.map(containerRef.current!, { zoomControl: true })
+      const el = containerRef.current!
+      // HMR guard: container may still have a stale _leaflet_id if cleanup raced the async init
+      if ((el as any)._leaflet_id) {
+        try { if (mapInstanceRef.current) { mapInstanceRef.current.remove() } } catch (_) {}
+        mapInstanceRef.current = null
+        el.innerHTML = ''
+        delete (el as any)._leaflet_id
+        Object.values(markersRef.current).forEach(m => { try { m.remove() } catch (_) {} })
+        markersRef.current = {}
+      }
+
+      map = L.map(el, { zoomControl: true })
         .setView([13.7563, 100.5018], 11)
+      mapInstanceRef.current = map
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
@@ -152,6 +172,23 @@ export default function RiderLiveMap() {
       await fetchAndUpdate()
       if (cancelled) return
       interval = setInterval(fetchAndUpdate, 15_000)
+
+      // Socket: update individual rider marker on location push
+      socketRef.current = mountAdminSocket()
+      socketRef.current.on('rider_location_updated', (data: { id: string; latitude: number; longitude: number; locationUpdatedAt: string }) => {
+        if (cancelled || !markersRef.current[data.id]) return
+        const { latitude, longitude, locationUpdatedAt } = data
+        const m = markersRef.current[data.id]
+        m.setLatLng([latitude, longitude])
+        const popup = m.getPopup()
+        if (popup) {
+          const content = popup.getContent() as string
+          popup.setContent(
+            content.replace(/📍 .+?<\/div>/, `📍 ${timeAgo(locationUpdatedAt)}</div>`)
+          )
+        }
+        setLastUpdated(new Date())
+      })
     }
 
     init()
@@ -160,7 +197,11 @@ export default function RiderLiveMap() {
       cancelled = true
       clearInterval(interval)
       fetchNowRef.current = null
-      if (map) { map.remove(); map = null }
+      socketRef.current?.off('rider_location_updated')
+      socketRef.current = null
+      unmountAdminSocket()
+      const m = mapInstanceRef.current
+      if (m) { try { m.remove() } catch (_) {} ; mapInstanceRef.current = null }
       markersRef.current = {}
     }
   }, [])
@@ -266,7 +307,7 @@ export default function RiderLiveMap() {
         {[
           { cls: 'bg-green-500', label: 'Available' },
           { cls: 'bg-blue-500',  label: 'Busy / On Delivery' },
-          { cls: 'bg-slate-400', label: 'Offline' },
+          { cls: 'bg-on-surface-variant/40', label: 'Offline' },
           { cls: 'bg-amber-500', label: 'Pending' },
         ].map(({ cls, label }) => (
           <span key={label} className="flex items-center gap-1.5 text-label-sm text-on-surface-variant">

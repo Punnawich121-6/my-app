@@ -1,14 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../../main.dart';
 import '../../services/customer_service.dart';
-import '../home_screen.dart';
+import '../home/home_screen.dart';
 import 'register_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phone;
-  const OtpScreen({super.key, required this.phone});
+  final String verificationId;
+  final String? autoCode;
+  const OtpScreen({super.key, required this.phone, required this.verificationId, this.autoCode});
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
@@ -19,11 +25,24 @@ class _OtpScreenState extends State<OtpScreen> {
   int _secondsLeft = 120;
   Timer? _timer;
   bool _verifying = false;
+  late String _verificationId;
+  String? _suggestedCode;
 
   @override
   void initState() {
     super.initState();
+    _verificationId = widget.verificationId;
     _startTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _nodes[0].requestFocus();
+    });
+    if (widget.autoCode != null && widget.autoCode!.length == 6) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _suggestedCode = widget.autoCode);
+      });
+    } else if (kDebugMode) {
+      Future.delayed(const Duration(milliseconds: 800), _fetchEmulatorCode);
+    }
   }
 
   @override
@@ -57,30 +76,113 @@ class _OtpScreenState extends State<OtpScreen> {
     if (_otp.length == 6) _verify();
   }
 
+  Future<void> _animatedFill(String code) async {
+    setState(() => _suggestedCode = null);
+    for (int i = 0; i < 6; i++) {
+      if (!mounted) return;
+      _ctrls[i].text = code[i];
+      setState(() {});
+      await Future.delayed(const Duration(milliseconds: 80));
+    }
+    if (mounted) _verify();
+  }
+
+  Future<void> _fetchEmulatorCode() async {
+    try {
+      final res = await http.get(Uri.parse(
+        'http://10.0.2.2:9099/emulator/v1/projects/project-digit-3cea5/verificationCodes',
+      ));
+      if (res.statusCode != 200 || !mounted) return;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final codes = data['verificationCodes'] as List?;
+      if (codes == null || codes.isEmpty) return;
+      final suffix = widget.phone.startsWith('0') ? widget.phone.substring(1) : widget.phone;
+      final thaiPhone = '+66$suffix';
+      final match = codes.lastWhere(
+        (c) => c['phoneNumber'] == thaiPhone,
+        orElse: () => null,
+      );
+      final code = match?['code'] as String?;
+      if (code != null && code.length == 6 && mounted) {
+        setState(() => _suggestedCode = code);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _verify() async {
     if (_verifying) return;
     setState(() => _verifying = true);
 
-    if (_otp != '123456') {
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId,
+        smsCode: _otp,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() => _verifying = false);
       for (final c in _ctrls) { c.clear(); }
       _nodes[0].requestFocus();
+      final msg = e.code == 'session-expired'
+          ? 'รหัส OTP หมดอายุแล้ว กรุณาขอใหม่'
+          : 'รหัส OTP ไม่ถูกต้อง';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _verifying = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('รหัส OTP ไม่ถูกต้อง')),
+        const SnackBar(content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่')),
       );
       return;
     }
 
-    final user = await CustomerService.getByPhone(widget.phone);
-    if (!mounted) return;
-    if (user == null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)));
-    } else {
-      Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => HomeScreen(customerId: user['id'].toString(), customerName: user['name'] ?? '', customerPhone: widget.phone)),
-        (r) => false,
+    try {
+      final user = await CustomerService.getByPhone(widget.phone)
+          .timeout(const Duration(seconds: 10));
+      if (!mounted) return;
+      if (user == null) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegisterScreen(phone: widget.phone)));
+      } else {
+        Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => HomeScreen(customerId: user['id'].toString(), customerName: user['name'] ?? '', customerPhone: widget.phone)),
+          (r) => false,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _verifying = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ไม่สามารถเชื่อมต่อ server ได้ กรุณาลองใหม่')),
       );
     }
+  }
+
+  Future<void> _resendOtp() async {
+    _startTimer();
+    setState(() => _suggestedCode = null);
+    final suffix = widget.phone.startsWith('0') ? widget.phone.substring(1) : widget.phone;
+    final thaiPhone = '+66$suffix';
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: thaiPhone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) {
+        if (credential.smsCode != null && mounted) {
+          setState(() => _suggestedCode = credential.smsCode);
+        }
+      },
+      verificationFailed: (_) {},
+      codeSent: (String verificationId, int? _) {
+        if (mounted) {
+          setState(() => _verificationId = verificationId);
+          if (kDebugMode) {
+            Future.delayed(const Duration(milliseconds: 800), _fetchEmulatorCode);
+          }
+        }
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
   }
 
   @override
@@ -88,83 +190,100 @@ class _OtpScreenState extends State<OtpScreen> {
     return Scaffold(
       backgroundColor: CColors.bg,
       appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, iconTheme: const IconThemeData(color: CColors.text)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 56, height: 56,
-              decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.phone_android_outlined, color: CColors.orange, size: 28),
-            ),
-            const SizedBox(height: 20),
-            const Text('ยืนยัน OTP', style: CTextStyles.brand),
-            const SizedBox(height: 8),
-            RichText(text: TextSpan(style: CTextStyles.subtitle, children: [
-              const TextSpan(text: 'ส่งรหัส 6 หลักไปยัง\n'),
-              TextSpan(text: '+66 ${widget.phone}', style: const TextStyle(color: CColors.text, fontWeight: FontWeight.w600, fontSize: 15)),
-            ])),
-            const SizedBox(height: 36),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(6, (i) => _OtpBox(controller: _ctrls[i], focusNode: _nodes[i], onChanged: (v) => _onChanged(i, v))),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(14)),
-              child: Row(children: [
-                const Icon(Icons.timer_outlined, color: CColors.orange, size: 20),
-                const SizedBox(width: 10),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('รหัสหมดอายุใน', style: TextStyle(fontSize: 12, color: CColors.muted)),
-                  Text(_timerDisplay, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: CColors.orange)),
-                ]),
-              ]),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity, height: 54,
-              child: ElevatedButton(
-                onPressed: (_otp.length == 6 && !_verifying) ? _verify : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CColors.orange,
-                  disabledBackgroundColor: CColors.orangeMid,
-                  foregroundColor: Colors.white, elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      bottomNavigationBar: _suggestedCode != null
+          ? GestureDetector(
+              onTap: () => _animatedFill(_suggestedCode!),
+              child: Container(
+                color: const Color(0xFFF2F2F2),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.sms_rounded, size: 16, color: Color(0xFF888888)),
+                    const SizedBox(width: 8),
+                    const Text('จาก Firebase Emulator', style: TextStyle(fontSize: 12, color: Color(0xFF888888))),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(color: CColors.orange, borderRadius: BorderRadius.circular(20)),
+                      child: Text(_suggestedCode!,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 3)),
+                    ),
+                  ],
                 ),
-                child: _verifying
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('ยืนยัน', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
-            ),
-            const SizedBox(height: 20),
-            Center(
+            )
+          : null,
+      body: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: _secondsLeft == 0 ? _startTimer : null,
-                    child: Text(
-                      'ไม่ได้รับรหัส? ส่งใหม่',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _secondsLeft == 0 ? CColors.orange : CColors.muted,
-                        fontWeight: FontWeight.w500,
+                  Container(
+                    width: 56, height: 56,
+                    decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(16)),
+                    child: const Icon(Icons.phone_android_rounded, color: CColors.orange, size: 28),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('ยืนยัน OTP', style: CTextStyles.brand),
+                  const SizedBox(height: 8),
+                  RichText(text: TextSpan(style: CTextStyles.subtitle, children: [
+                    const TextSpan(text: 'ส่งรหัส 6 หลักไปยัง\n'),
+                    TextSpan(text: '+66 ${widget.phone}', style: const TextStyle(color: CColors.text, fontWeight: FontWeight.w600, fontSize: 15)),
+                  ])),
+                  const SizedBox(height: 36),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(6, (i) => _OtpBox(controller: _ctrls[i], focusNode: _nodes[i], onChanged: (v) => _onChanged(i, v))),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      const Icon(Icons.timer_rounded, color: CColors.orange, size: 20),
+                      const SizedBox(width: 10),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('รหัสหมดอายุใน', style: TextStyle(fontSize: 12, color: CColors.muted)),
+                        Text(_timerDisplay, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: CColors.orange)),
+                      ]),
+                    ]),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity, height: 54,
+                    child: ElevatedButton(
+                      onPressed: (_otp.length == 6 && !_verifying) ? _verify : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CColors.orange,
+                        disabledBackgroundColor: CColors.orangeMid,
+                        foregroundColor: Colors.white, elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
+                      child: _verifying
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('ยืนยัน', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Text('เปลี่ยนเบอร์โทรศัพท์', style: TextStyle(fontSize: 14, color: CColors.orange)),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _secondsLeft == 0 ? _resendOtp : null,
+                          child: Text('ไม่ได้รับรหัส? ส่งใหม่',
+                            style: TextStyle(fontSize: 14, color: _secondsLeft == 0 ? CColors.orange : CColors.muted, fontWeight: FontWeight.w500)),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Text('เปลี่ยนเบอร์โทรศัพท์', style: TextStyle(fontSize: 14, color: CColors.orange)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

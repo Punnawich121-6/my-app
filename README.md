@@ -181,6 +181,331 @@ Order Lifecycle:
 ---
 
 
+## 🤖 AI Features — ฟีเจอร์ปัญญาประดิษฐ์
+
+ระบบใช้ AI ทั้งหมด **15 ฟีเจอร์** ผ่าน AI Proxy (`gen.ai.kku.ac.th`) โดย Backend เป็น Gateway กลาง — ทุก App ไม่ต่อ AI โดยตรง
+
+### สัญลักษณ์ Flowchart
+
+| สัญลักษณ์ | ความหมาย |
+|-----------|----------|
+| วงรี / Pill | จุดเริ่มต้น (Start) และจุดสิ้นสุด (End) |
+| สี่เหลี่ยมมุมมน | กระบวนการ (Process) |
+| ข้าวหลามตัด | การตัดสินใจ (Decision) — มีทางแยก Yes / No |
+| สี่เหลี่ยมขนมเปียกปูน | Input / Output |
+| กระบอก | ฐานข้อมูล (Database) |
+
+---
+
+### โครงสร้าง AI ทั้งระบบ
+
+```mermaid
+flowchart TD
+    CA(["📱 Customer App"])
+    MA(["🏪 Merchant App"])
+    RA(["🚴 Rider App"])
+    WA(["🖥️ Web Admin"])
+
+    CA -->|scan-food\nmatch-food\nnutrition\nsuggest-food| BE
+    MA -->|auto-crop\nsmart-price\ngenerate-description| BE
+    RA -->|rider-plan\nrider-notification\nrider-insight\ngenerate-description| BE
+    WA -->|chat\ndescription\nanalytics\nai-draft| BE
+
+    BE[["⚙️ Backend /api/ai/*\nNode.js + OpenAI SDK"]]
+
+    BE --> G1["Gemini 2.5 Flash\n(Food / Image / Description)"]
+    BE --> G2["Claude Sonnet 4.6\n(Admin Chat)"]
+    BE --> G3["Grok 4.3\n(Business Analytics)"]
+    BE --> G4["o4-mini\n(Support Draft / Fallback)"]
+```
+
+| โมเดล | ใช้กับ |
+|-------|--------|
+| **Gemini 2.5 Flash Lite** | วิเคราะห์รูปอาหาร, โภชนาการ |
+| **Gemini 2.5 Flash** | สร้างคำอธิบาย, auto crop, ราคา |
+| **Claude Sonnet 4.6** | Admin Chat Widget |
+| **Grok 4.3** | Business Analytics |
+| **o4-mini** | Support Draft Reply / fallback |
+
+---
+
+### 📱 Customer App — 4 AI Features
+
+---
+
+#### 1. Food Image Scanner (`POST /api/ai/scan-food`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[/ถ่ายรูปอาหาร\nCamera หรือ Gallery/]
+    B --> C[base64 encode รูปภาพ]
+    C --> D["POST /api/ai/scan-food\nGemini 2.5 Flash Lite"]
+    D --> E{AI วิเคราะห์\nสำเร็จ?}
+    E -- Yes --> F[/"Return JSON:\ncalories, protein, carbs, fat\nfiber, sugar, sodium\nhealth_score 1-10"/]
+    E -- No --> G[แสดง Error Message]
+    F --> H([แสดงข้อมูลโภชนาการในแอป])
+    G --> H
+```
+
+---
+
+#### 2. Food Image Match (`POST /api/ai/match-food`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[/ถ่ายรูปอาหาร/]
+    B --> C[base64 encode]
+    C --> D["POST /api/ai/match-food"]
+    D --> E["Step 1: AI ระบุชื่ออาหารจากรูป"]
+    E --> F[("Step 2: ค้นหาใน Database\nเมนูที่ตรงกัน")]
+    F --> G{พบเมนู\nที่ตรงกัน?}
+    G -- Yes --> H[/"Return: รายการเมนู\nชื่อ + ราคา + ชื่อร้าน\nstore_id, item_id"/]
+    G -- No --> I[แสดง ไม่พบเมนูที่ตรงกัน]
+    H --> J([User เลือกสั่งได้เลย])
+    I --> J
+```
+
+---
+
+#### 3. Nutrition by Name (`POST /api/ai/nutrition-by-name`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[User เปิดดูรายละเอียดเมนู]
+    B --> C[/"ส่ง foodName + storeName"/]
+    C --> D["POST /api/ai/nutrition-by-name\nGemini 2.5 Flash Lite"]
+    D --> E["AI วิเคราะห์จากชื่อ\n(ไม่ต้องมีรูป)"]
+    E --> F[/"Return: ข้อมูลโภชนาการโดยประมาณ"/]
+    F --> G([แสดงใน Menu Detail Screen])
+```
+
+---
+
+#### 4. Food Recommendation (`POST /api/ai/suggest-food`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[/"User พิมพ์ความต้องการ\nเช่น อยากกินเผ็ดๆ"/]
+    B --> C["POST /api/ai/suggest-food\nGemini 2.5 Flash\n(preference, excludeStore, sameStore)"]
+    C --> D{AI เลือก\nเมนูได้?}
+    D -- Yes --> E[/"Return: เมนูแนะนำ 1 รายการ"/]
+    D -- No --> F[("Fallback:\nKeyword Search ใน DB")]
+    F --> G{พบเมนู?}
+    G -- Yes --> E
+    G -- No --> H[แสดง ไม่พบเมนูที่ต้องการ]
+    E --> I([แสดงเมนูแนะนำ])
+    H --> I
+```
+
+---
+
+### 🏪 Merchant App — 3 AI Features
+
+---
+
+#### 5. Auto Crop Image (`POST /api/ai/auto-crop`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[/"Merchant เลือกรูปเมนู"/]
+    B --> C[base64 encode]
+    C --> D["POST /api/ai/auto-crop\nGemini 2.5 Flash"]
+    D --> E["AI วิเคราะห์หา Bounding Box ของอาหาร"]
+    E --> F[/"Return: x, y, width, height\n(สัดส่วน 0–1)"/]
+    F --> G["Canvas crop ตามพิกัด"]
+    G --> H["Resize เป็น 800×800 px"]
+    H --> I([Upload รูปที่ crop แล้วไป Backend])
+```
+
+---
+
+#### 6. Smart Price (`POST /api/ai/smart-price`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[/"Merchant กรอกชื่อเมนู\nเช่น ผัดกระเพราไก่"/]
+    B --> C["POST /api/ai/smart-price\nGemini 2.5 Flash"]
+    C --> D["AI วิเคราะห์ราคาตลาด"]
+    D --> E[/"Return:\nmin_price, max_price\navg_price, suggested_price"/]
+    E --> F([แสดง Price Range ให้ Merchant อ้างอิง])
+```
+
+---
+
+#### 7. Generate Description / Store Name (`POST /api/ai/generate-description`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B{เลือก context}
+    B -- menu --> C["สร้างคำอธิบายเมนู\n2-3 ประโยค ภาษาไทย"]
+    B -- rider --> D["สร้าง Bio ไรเดอร์\nจากชื่อ + จำนวน delivery"]
+    B -- store_name --> E["สร้างชื่อร้าน"]
+    E --> F[("ตรวจสอบชื่อซ้ำใน DB")]
+    F --> G{ชื่อซ้ำ?}
+    G -- Yes --> H["Retry สูงสุด 5 ครั้ง"]
+    H --> E
+    G -- No --> I[/"Return: ข้อความภาษาไทย"/]
+    C --> I
+    D --> I
+    I --> J([กรอกลงฟอร์มอัตโนมัติ])
+```
+
+---
+
+### 🚴 Rider App — 4 AI Features
+
+---
+
+#### 8. Rider Bio Generator
+
+```mermaid
+flowchart TD
+    A([Start]) --> B["Rider กด สร้าง Bio"]
+    B --> C[/"ส่ง riderName + runsCompleted"/]
+    C --> D["POST /api/ai/generate-description\ncontext: rider\nGemini 2.5 Flash"]
+    D --> E["AI สร้างบทแนะนำตัวแบบมืออาชีพ"]
+    E --> F([กรอกใน Rider Profile อัตโนมัติ])
+```
+
+---
+
+#### 9. Rider Daily Plan (`POST /api/ai/rider-plan`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B["เปิดหน้า Rider Dashboard"]
+    B --> C[/"ส่ง todayEarned, todayCount\navgPerDelivery, targetAmount\nremainingDeliveries"/]
+    C --> D["POST /api/ai/rider-plan\nGemini 2.5 Flash"]
+    D --> E["AI วิเคราะห์ performance วันนี้"]
+    E --> F[/"Return:\nmotivational tips\n+ เป้าหมายที่ควรทำ"/]
+    F --> G([แสดงเป็น Tips Card ใน Dashboard])
+```
+
+---
+
+#### 10. Rider Notification Generator (`POST /api/ai/rider-notification`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B{Rider กด Update สถานะ}
+    B -- ถึงร้านแล้ว --> C["step: at_store"]
+    B -- กำลังรับอาหาร --> D["step: picking_up"]
+    C --> E["POST /api/ai/rider-notification\nGemini 2.5 Flash\n(storeName, customerName, etaMinutes)"]
+    D --> E
+    E --> F["AI สร้างข้อความ ≤30 คำ + 1-2 emoji"]
+    F --> G([ส่ง Push Notification หา Customer])
+```
+
+---
+
+#### 11. Rider Insight & Analytics (`POST /api/ai/rider-insight`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B["Rider กดดู Insight"]
+    B --> C[/"ส่ง earnings, counts, rating\npeak hours, customer comments"/]
+    C --> D["POST /api/ai/rider-insight\nGemini 2.5 Flash"]
+    D --> E["AI วิเคราะห์ performance แบบครอบคลุม"]
+    E --> F[/"Return JSON:\nscore + scoreLabel\ninsights array\nrecommendations\nmotivation text"/]
+    F --> G([แสดงเป็น Insight Cards ใน Rider App])
+```
+
+---
+
+### 🖥️ Web Admin — 4 AI Features
+
+---
+
+#### 12. AI Chat Widget (`POST /api/ai/chat` — Streaming SSE)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B["Admin คลิก 💬 Chat Widget"]
+    B --> C[("โหลด Live Context จาก DB\norders 100 รายการ\nร้านอาหาร + ไรเดอร์ + ลูกค้า\nธุรกรรม + รีวิว + monthly trends")]
+    C --> D[/"Admin พิมพ์คำถาม"/]
+    D --> E["POST /api/ai/chat\nClaude Sonnet 4.6\n(Streaming SSE)"]
+    E --> F["AI ตอบภาษาไทย\nอ้างอิงข้อมูลจริง ห้ามแต่งข้อมูล"]
+    F --> G["Stream text ทีละ chunk"]
+    G --> H([แสดงคำตอบแบบ Real-time])
+    H --> I{ถามต่อ?}
+    I -- Yes --> D
+    I -- No --> J([ปิด Chat Panel])
+```
+
+Suggested questions (built-in): "ยอดขายวันนี้เป็นอย่างไร?" / "ร้านไหนทำผลงานดีที่สุด?" / "ไรเดอร์คนไหน rating ต่ำสุด?"
+
+---
+
+#### 13. Restaurant Description Generator (`POST /api/ai/description`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B[/"Admin กรอก\nชื่อร้าน + หมวดหมู่ + ที่อยู่"/]
+    B --> C["Admin กด สร้างด้วย AI"]
+    C --> D["POST /api/ai/description\nGemini 2.5 Flash"]
+    D --> E["AI สร้างคำอธิบายร้าน 2-3 ประโยค"]
+    E --> F([กรอกใน Add หรือ Edit Restaurant Modal])
+```
+
+---
+
+#### 14. Business Analytics & Planning (`POST /api/ai/analytics`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B["Admin เปิดหน้า /analytics\nเลือกปี / เดือน / ระยะแผน"]
+    B --> C[("ดึงข้อมูลจาก DB\nรายได้รายเดือน, top restaurants\nrider stats, peak hours\nquarterly history 4 ไตรมาส")]
+    C --> D["POST /api/ai/analytics\nGrok 4.3"]
+    D --> E{AI ตอบสนอง?}
+    E -- Yes --> F[/"Return Markdown:\nExecutive Summary\nแผนรายเดือน + KPIs\nStrategic recommendations"/]
+    E -- No --> G["Fallback: o4-mini"]
+    G --> F
+    F --> H([แสดง Business Plan + Revenue Chart])
+```
+
+---
+
+#### 15. Support Chat AI Draft Reply (`POST /api/support/[storeId]/ai-draft`)
+
+```mermaid
+flowchart TD
+    A([Start]) --> B["Admin เปิด Support Chat\nกับร้านค้า"]
+    B --> C["กด สร้างคำตอบด้วย AI"]
+    C --> D[/"ส่ง conversation history ทั้งหมด"/]
+    D --> E["POST /api/support/storeId/ai-draft\no4-mini"]
+    E --> F["AI ร่างคำตอบแบบมืออาชีพ ภาษาไทย"]
+    F --> G{Admin ตรวจสอบ}
+    G -- แก้ไข --> H["แก้ไขข้อความ"]
+    H --> I["กดส่ง"]
+    G -- โอเค --> I
+    I --> J([ส่งข้อความหาร้านค้า])
+```
+
+---
+
+### สรุป AI Endpoints ทั้งหมด
+
+| Endpoint | โมเดล | ใช้ใน |
+|----------|-------|-------|
+| `POST /api/ai/scan-food` | Gemini 2.5 Flash Lite | Customer App |
+| `POST /api/ai/match-food` | Gemini 2.5 Flash Lite | Customer App |
+| `POST /api/ai/nutrition-by-name` | Gemini 2.5 Flash Lite | Customer App |
+| `POST /api/ai/suggest-food` | Gemini 2.5 Flash | Customer App |
+| `POST /api/ai/auto-crop` | Gemini 2.5 Flash | Merchant + Web Admin |
+| `POST /api/ai/smart-price` | Gemini 2.5 Flash | Merchant App |
+| `POST /api/ai/generate-description` | Gemini 2.5 Flash | Merchant + Rider App |
+| `POST /api/ai/rider-plan` | Gemini 2.5 Flash | Rider App |
+| `POST /api/ai/rider-notification` | Gemini 2.5 Flash | Rider App |
+| `POST /api/ai/rider-insight` | Gemini 2.5 Flash | Rider App |
+| `POST /api/ai/chat` | Claude Sonnet 4.6 | Web Admin |
+| `POST /api/ai/description` | Gemini 2.5 Flash | Web Admin |
+| `POST /api/ai/analytics` | Grok 4.3 | Web Admin |
+| `POST /api/support/[id]/ai-draft` | o4-mini | Web Admin |
+
+> ⚙️ ต้องตั้งค่า `AI_BASE_URL`, `AI_MODEL`, `AI_ANALYTICS_MODEL`, `AI_DESCRIPTION_MODEL` ใน `.env.local`
+
+---
+
 ## 🗄️ Database Schema
 
 ชื่อ Database: `zest_savory`  
