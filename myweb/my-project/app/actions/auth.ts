@@ -22,7 +22,7 @@ export async function login(
 
   // ดึงฟิลด์ที่จำเป็น รวมถึง sessionTimeoutMin
   const [rows] = await pool.query(
-    'SELECT id, passwordHash, sessionTimeoutMin FROM AdminUser WHERE email = ? LIMIT 1',
+    'SELECT id, passwordHash, sessionTimeoutMin FROM adminuser WHERE email = ? LIMIT 1',
     [email]
   ) as [{ id: string; passwordHash: string; sessionTimeoutMin: number | null }[], unknown]
 
@@ -37,7 +37,7 @@ export async function login(
   }
 
   // 1. อัปเดตเวลาเข้าสู่ระบบครั้งล่าสุด
-  await pool.query('UPDATE AdminUser SET lastLogin = NOW() WHERE id = ?', [user.id])
+  await pool.query('UPDATE adminuser SET lastLogin = NOW() WHERE id = ?', [user.id])
 
   // 2. ดึงข้อมูล IP และ User Agent ของผู้ใช้จาก Headers
   const headersList = await headers()

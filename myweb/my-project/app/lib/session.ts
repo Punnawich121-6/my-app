@@ -20,11 +20,11 @@ export async function createSession(
   
   // 2. สร้าง Session Token
   const token = generateToken()
-  const sessionId = crypto.randomUUID() // สร้าง ID สำหรับตาราง AdminSession
+  const sessionId = crypto.randomUUID() // สร้าง ID สำหรับตาราง adminsession
 
-  // 3. บันทึกลง Database ตาราง AdminSession
+  // 3. บันทึกลง Database ตาราง adminsession
   await pool.query(
-    `INSERT INTO AdminSession (id, adminUserId, token, ipAddress, userAgent, expiresAt) 
+    `INSERT INTO adminsession (id, adminUserId, token, ipAddress, userAgent, expiresAt) 
      VALUES (?, ?, ?, ?, ?, ?)`,
     [sessionId, adminUserId, token, ipAddress, userAgent, expiresAt]
   )
@@ -49,7 +49,7 @@ export async function verifySession() {
   // ค้นหา Token ใน Database และต้องยังไม่หมดอายุ
   const [rows] = await pool.query(
     `SELECT adminUserId, expiresAt 
-     FROM AdminSession 
+     FROM adminsession 
      WHERE token = ? AND expiresAt > NOW() 
      LIMIT 1`,
     [token]
@@ -67,7 +67,7 @@ export async function deleteSession() {
 
   // 1. ถ้ามี Token ให้ลบออกจาก Database ด้วย
   if (token) {
-    await pool.query('DELETE FROM AdminSession WHERE token = ?', [token])
+    await pool.query('DELETE FROM adminsession WHERE token = ?', [token])
   }
 
   // 2. ลบออกจาก Cookie

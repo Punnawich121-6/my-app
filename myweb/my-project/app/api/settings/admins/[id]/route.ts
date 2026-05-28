@@ -10,7 +10,7 @@ export async function PUT(
     const { name, email, role, isActive } = await request.json()
 
     await pool.query(
-      'UPDATE AdminUser SET name = ?, email = ?, role = ?, isActive = ? WHERE id = ?',
+      'UPDATE adminuser SET name = ?, email = ?, role = ?, isActive = ? WHERE id = ?',
       [name, email, role, isActive ? 1 : 0, id]
     )
 
@@ -30,10 +30,10 @@ export async function DELETE(
 
     // Delete related sessions first to avoid FK constraint errors
     try {
-      await pool.query('DELETE FROM AdminSession WHERE adminUserId = ?', [id])
-    } catch { /* AdminSession may not exist */ }
+      await pool.query('DELETE FROM adminsession WHERE adminUserId = ?', [id])
+    } catch { /* adminsession may not exist */ }
 
-    await pool.query('DELETE FROM AdminUser WHERE id = ?', [id])
+    await pool.query('DELETE FROM adminuser WHERE id = ?', [id])
 
     return NextResponse.json({ success: true })
   } catch (err) {

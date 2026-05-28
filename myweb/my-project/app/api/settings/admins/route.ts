@@ -6,10 +6,10 @@ import crypto from 'crypto'
 async function ensureColumns() {
   // Add optional columns if they don't exist yet
   const alter = [
-    "ALTER TABLE AdminUser ADD COLUMN IF NOT EXISTS name VARCHAR(100) NULL",
-    "ALTER TABLE AdminUser ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'Editor'",
-    "ALTER TABLE AdminUser ADD COLUMN IF NOT EXISTS isActive TINYINT(1) DEFAULT 1",
-    "ALTER TABLE AdminUser ADD COLUMN IF NOT EXISTS createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    "ALTER TABLE adminuser ADD COLUMN IF NOT EXISTS name VARCHAR(100) NULL",
+    "ALTER TABLE adminuser ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'Editor'",
+    "ALTER TABLE adminuser ADD COLUMN IF NOT EXISTS isActive TINYINT(1) DEFAULT 1",
+    "ALTER TABLE adminuser ADD COLUMN IF NOT EXISTS createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
   ]
   for (const sql of alter) {
     try { await pool.query(sql) } catch { /* column already exists */ }
@@ -26,7 +26,7 @@ export async function GET() {
         COALESCE(role, 'Editor') AS role,
         COALESCE(isActive, 1)   AS isActive,
         lastLogin
-       FROM AdminUser
+       FROM adminuser
        ORDER BY createdAt ASC`
     ) as [{ id: string; name: string; email: string; role: string; isActive: number; lastLogin: Date | null }[], unknown]
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
-    const [existing] = await pool.query('SELECT id FROM AdminUser WHERE email = ? LIMIT 1', [email]) as [{ id: string }[], unknown]
+    const [existing] = await pool.query('SELECT id FROM adminuser WHERE email = ? LIMIT 1', [email]) as [{ id: string }[], unknown]
     if ((existing as unknown[]).length > 0) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 })
     }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     const id = crypto.randomUUID()
 
     await pool.query(
-      'INSERT INTO AdminUser (id, name, email, passwordHash, role, isActive) VALUES (?, ?, ?, ?, ?, 1)',
+      'INSERT INTO adminuser (id, name, email, passwordHash, role, isActive) VALUES (?, ?, ?, ?, ?, 1)',
       [id, name || email.split('@')[0], email, passwordHash, role || 'Editor']
     )
 
