@@ -295,7 +295,7 @@ export default function DisputesClient() {
               ) : disputes.map(d => (
                 <tr key={d.id} className="hover:bg-surface-container/50 transition-colors">
                   <td className="p-4 text-on-surface-variant text-sm">#{d.id}</td>
-                  <td className="p-4 text-sm font-mono text-on-background">{d.order_number || d.order_id?.slice(0, 8)}</td>
+                  <td className="p-4 text-sm font-mono text-on-background">{d.order_number || `#${d.id}`}</td>
                   <td className="p-4">
                     <p className="text-sm font-semibold text-on-background">{d.customer_name || "—"}</p>
                     <p className="text-xs text-on-surface-variant">{d.restaurant_name || "—"}</p>
@@ -367,7 +367,7 @@ export default function DisputesClient() {
                 <div className="flex items-center justify-between p-6 border-b border-surface-container-highest">
                   <div>
                     <h2 className="text-title-lg font-bold text-on-background">Dispute #{detail.id}</h2>
-                    <p className="text-body-sm text-on-surface-variant mt-0.5">ออเดอร์ {detail.order_number || detail.order_id}</p>
+                    <p className="text-body-sm text-on-surface-variant mt-0.5">ออเดอร์ {detail.order_number}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     {statusBadge(detail.status)}
