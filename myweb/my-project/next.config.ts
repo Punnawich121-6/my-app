@@ -1,11 +1,13 @@
-import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: path.resolve(__dirname, "../.."),
+  // Images: allow external domains used in the app
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "**" },
+      { protocol: "http",  hostname: "**" },
+    ],
   },
-  allowedDevOrigins: ["192.168.123.1"],
 };
 
 export default nextConfig;
