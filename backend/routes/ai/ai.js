@@ -140,6 +140,42 @@ keywords = ชื่อเรียกอื่น ชื่อย่อ หร�
   }
 });
 
+router.post('/match-food-text', async (req, res) => {
+  try {
+    const db = require('../../db');
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'ไม่พบชื่ออาหาร' });
+
+    const keywords = [name];
+    const conditions = keywords.map(() => 'mi.name LIKE ?').join(' OR ');
+    const params = keywords.map(k => `%${k}%`);
+
+    const [rows] = await db.query(`
+      SELECT mi.id, mi.name, mi.price, mi.image_url, mi.description,
+             r.id AS store_id, r.name AS store_name, r.category AS store_type,
+             r.imageUrl AS store_image, r.address AS store_address,
+             COALESCE(r.rating, 0) AS store_rating
+      FROM menu_items mi
+      JOIN restaurant r ON mi.store_id = r.id
+      WHERE mi.is_available = 1 AND r.status = 'active'
+        AND (${conditions})
+      ORDER BY r.rating DESC
+      LIMIT 20
+    `, params);
+
+    res.json({
+      identified: name,
+      matches: rows.map(r => ({
+        item: { id: r.id, name: r.name, price: r.price, image_url: r.image_url, description: r.description },
+        store: { id: r.store_id, name: r.store_name, type: r.store_type, image_url: r.store_image, address: r.store_address, rating: r.store_rating, is_open: 1 },
+      })),
+    });
+  } catch (err) {
+    console.error('match-food-text error:', err.message);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+  }
+});
+
 router.post('/suggest-food', async (req, res) => {
   try {
     const db = require('../../db');
