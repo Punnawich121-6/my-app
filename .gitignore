@@ -54,6 +54,9 @@ desktop.ini
 *.suo
 *.user
 
+# ─── Lock files (let each env regenerate to avoid version mismatch) ─────────
+pnpm-lock.yaml
+
 # ─── Misc ────────────────────────────────────────────────────────────────────
 *.pem
 .cache/
