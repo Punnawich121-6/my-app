@@ -89,21 +89,6 @@ export default function Login() {
                             </div>
                         </div>
 
-                        {/** Remember / Forgot **/}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <input
-                                    id="remember-me" name="remember-me" type="checkbox"
-                                    className="h-4 w-4 border-outline-variant rounded"
-                                />
-                                <label className="text-body-sm text-on-surface-variant" htmlFor="remember-me">
-                                    Remember this device
-                                </label>
-                            </div>
-                            <a href="#" className="text-label-md text-primary-container hover:text-primary transition-colors">
-                                Forgot password?
-                            </a>
-                        </div>
 
                         {/** Submit **/}
                         <button
