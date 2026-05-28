@@ -41,7 +41,8 @@ export async function login(
 
   // 2. ดึงข้อมูล IP และ User Agent ของผู้ใช้จาก Headers
   const headersList = await headers()
-  const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+  const rawIp = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+  const ipAddress = rawIp.split(',')[0].trim().slice(0, 45)
   const userAgent = headersList.get('user-agent') || 'unknown'
 
   // 3. สร้าง Session ลง Database
