@@ -9,6 +9,7 @@ import '../order/orders_screen.dart';
 import '../profile/profile_screen.dart';
 import 'search_screen.dart';
 import '../food/random_food_screen.dart';
+import '../food/food_scan_match_screen.dart';
 import '../../cart_manager.dart';
 import '../../services/customer_service.dart';
 import '../cart/cart_screen.dart';
@@ -277,17 +278,38 @@ class _StoreListTabState extends State<_StoreListTab> {
   Widget _buildScanFoodBanner(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
-      child: _AIFeatureCard(
-        icon: Icons.casino_rounded,
-        title: S.randomTitle,
-        subtitle: S.randomSubtitle,
-        onTap: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => RandomFoodScreen(
-            customerId: widget.customerId,
-            customerName: widget.customerName,
-            customerPhone: widget.customerPhone,
+      child: Row(
+        children: [
+          Expanded(
+            child: _AIFeatureCard(
+              icon: Icons.image_search_rounded,
+              title: S.scanTitle,
+              subtitle: S.scanSubtitle,
+              onTap: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => FoodScanMatchScreen(
+                  customerId: widget.customerId,
+                  customerName: widget.customerName,
+                  customerPhone: widget.customerPhone,
+                ),
+              )),
+            ),
           ),
-        )),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _AIFeatureCard(
+              icon: Icons.casino_rounded,
+              title: S.randomTitle,
+              subtitle: S.randomSubtitle,
+              onTap: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => RandomFoodScreen(
+                  customerId: widget.customerId,
+                  customerName: widget.customerName,
+                  customerPhone: widget.customerPhone,
+                ),
+              )),
+            ),
+          ),
+        ],
       ),
     );
   }
