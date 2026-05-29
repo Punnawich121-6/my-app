@@ -192,25 +192,55 @@ export default function SupportClient() {
     try {
       let imageUrl: string | null = null;
 
+      // ── Step 1: convert image to base64 ──
       if (imageFile) {
-        imageUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(imageFile);
-        });
-        clearImage();
+        try {
+          imageUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const result = e.target?.result as string;
+              console.log('[Support] base64 length:', result?.length, 'preview:', result?.slice(0, 50));
+              resolve(result);
+            };
+            reader.onerror = (e) => {
+              console.error('[Support] FileReader error:', e);
+              reject(e);
+            };
+            reader.readAsDataURL(imageFile);
+          });
+          clearImage();
+          console.log('[Support] image converted to base64 OK, length:', imageUrl?.length);
+        } catch (e) {
+          console.error('[Support] base64 conversion failed:', e);
+          alert('ไม่สามารถแปลงรูปได้: ' + String(e));
+          setSending(false);
+          return;
+        }
       }
 
+      // ── Step 2: send message ──
+      console.log('[Support] sending to:', `${API}/${selected}`, 'imageUrl length:', imageUrl?.length ?? 0);
       const res = await fetch(`${API}/${selected}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ senderRole: "admin", senderName: "Admin", message: text, imageUrl }),
       });
+
+      console.log('[Support] POST status:', res.status);
+
       if (res.ok) {
         const msg: Message = await res.json();
+        console.log('[Support] message saved, image_url length:', msg.image_url?.length ?? 0);
         setMessages(prev => [...prev, msg]);
+      } else {
+        const errText = await res.text();
+        console.error('[Support] POST failed:', res.status, errText);
+        alert(`ส่งข้อความไม่สำเร็จ (${res.status}): ${errText}`);
       }
-    } catch {}
+    } catch (e) {
+      console.error('[Support] sendMessage error:', e);
+      alert('เกิดข้อผิดพลาด: ' + String(e));
+    }
     setSending(false);
   }
 

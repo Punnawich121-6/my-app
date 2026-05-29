@@ -93,9 +93,18 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   Future<void> _loadMessages() async {
     try {
+      debugPrint('[Chat] loading messages from: $_base/$_threadId');
       final res = await apiGet('$_base/$_threadId');
+      debugPrint('[Chat] load status: ${res.statusCode}');
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
+        debugPrint('[Chat] loaded ${data.length} messages');
+        for (final m in data) {
+          final imgUrl = m['image_url'];
+          if (imgUrl != null) {
+            debugPrint('[Chat] msg id=${m['id']} image_url length=${imgUrl.toString().length} prefix=${imgUrl.toString().substring(0, imgUrl.toString().length.clamp(0, 30))}');
+          }
+        }
         setState(() {
           _messages
             ..clear()
@@ -103,8 +112,12 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           _loading = false;
         });
         _scrollToBottom();
+      } else {
+        debugPrint('[Chat] load failed: ${res.statusCode} ${res.body}');
+        if (mounted) setState(() => _loading = false);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Chat] _loadMessages exception: $e');
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -381,23 +394,42 @@ class _SupportBubble extends StatelessWidget {
   });
 
   Widget _buildImage(String url) {
+    debugPrint('[Chat] _buildImage url length=${url.length} prefix=${url.substring(0, url.length.clamp(0, 40))}');
     final broken = Container(
       width: 160, height: 120,
       color: CColors.orangeLight,
-      child: const Icon(Icons.broken_image_rounded, color: CColors.orange),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.broken_image_rounded, color: CColors.orange),
+        const SizedBox(height: 4),
+        Text('โหลดไม่ได้', style: TextStyle(fontSize: 10, color: CColors.orange)),
+      ]),
     );
     if (url.startsWith('data:')) {
       try {
-        final bytes = base64Decode(url.split(',').last);
+        final parts = url.split(',');
+        if (parts.length < 2) {
+          debugPrint('[Chat] base64 format invalid, parts: ${parts.length}');
+          return broken;
+        }
+        final bytes = base64Decode(parts.last);
+        debugPrint('[Chat] base64 decoded OK, bytes: ${bytes.length}');
         return Image.memory(bytes, fit: BoxFit.cover,
-            errorBuilder: (_, e, s) => broken);
-      } catch (_) {
+            errorBuilder: (_, e, s) {
+              debugPrint('[Chat] Image.memory error: $e');
+              return broken;
+            });
+      } catch (e) {
+        debugPrint('[Chat] base64 decode error: $e, url_length=${url.length}');
         return broken;
       }
     }
     final fullUrl = url.startsWith('http') ? url : '$kBackendUrl$url';
+    debugPrint('[Chat] Image.network url: $fullUrl');
     return Image.network(fullUrl, fit: BoxFit.cover,
-        errorBuilder: (_, e, s) => broken);
+        errorBuilder: (_, e, s) {
+          debugPrint('[Chat] Image.network error: $e url: $fullUrl');
+          return broken;
+        });
   }
 
   @override
