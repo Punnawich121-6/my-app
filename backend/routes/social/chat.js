@@ -37,13 +37,7 @@ async function ensureCols() {
   } catch (_) {}
   try { await db.query(`ALTER TABLE messages ADD COLUMN image_url VARCHAR(500) AFTER message`); } catch (_) {}
   try { await db.query(`ALTER TABLE messages ADD COLUMN chat_type ENUM('store','rider') NOT NULL DEFAULT 'store' AFTER image_url`); } catch (_) {}
-  try { await db.query(`ALTER TABLE messages MODIFY COLUMN order_id VARCHAR(100) NOT NULL`); } catch (_) {}
-  try { await db.query(`ALTER TABLE messages MODIFY COLUMN sender_id VARCHAR(100) NOT NULL`); } catch (_) {}
   _migrated = true;
-}
-
-async function ensureImageCol() {
-  return ensureCols();
 }
 
 async function hasAccess(orderId, userId, userRole) {
@@ -68,34 +62,42 @@ router.get('/conversations/:userRole/:userId', async (req, res) => {
   const { userRole, userId } = req.params;
   const chatType = userRole === 'rider' ? 'rider' : 'store';
 
-  let where = '';
-  if      (userRole === 'customer') where = 'o.customerId = ?';
-  else if (userRole === 'store')    where = 'o.restaurantId = ?';
-  else if (userRole === 'rider')    where = 'o.riderId = ?';
+  let whereCol = '';
+  if      (userRole === 'customer') whereCol = 'o.customerId';
+  else if (userRole === 'store')    whereCol = 'o.restaurantId';
+  else if (userRole === 'rider')    whereCol = 'o.riderId';
   else return res.status(400).json({ error: 'invalid role' });
 
   try {
     await ensureCols();
     const [rows] = await db.query(
-      `SELECT o.id as order_id, o.status, o.riderId,
-              c.name as customer_name,
-              r.name as store_name,
-              o.createdAt as created_at, o.totalAmount as total_amount,
-              (SELECT COUNT(*) FROM messages m WHERE m.order_id = o.id AND m.chat_type = ?) as msg_count,
-              (SELECT m2.message FROM messages m2 WHERE m2.order_id = o.id AND m2.chat_type = ?
-               ORDER BY m2.created_at DESC LIMIT 1) as last_msg,
-              (SELECT m3.sender_name FROM messages m3 WHERE m3.order_id = o.id AND m3.chat_type = ?
-               ORDER BY m3.created_at DESC LIMIT 1) as last_sender,
-              (SELECT m4.created_at FROM messages m4 WHERE m4.order_id = o.id AND m4.chat_type = ?
-               ORDER BY m4.created_at DESC LIMIT 1) as last_msg_at
+      `SELECT o.id          AS order_id,
+              o.status,
+              o.riderId,
+              c.name        AS customer_name,
+              r.name        AS store_name,
+              o.createdAt   AS created_at,
+              o.totalAmount AS total_amount,
+              COALESCE(ms.msg_count, 0) AS msg_count,
+              ms.last_msg,
+              ms.last_sender,
+              ms.last_msg_at
        FROM \`order\` o
-       JOIN restaurant r ON r.id = o.restaurantId
+       JOIN  restaurant r ON r.id = o.restaurantId
        LEFT JOIN customer c ON c.id = o.customerId
-       WHERE ${where}
-       ORDER BY COALESCE(
-         (SELECT m5.created_at FROM messages m5 WHERE m5.order_id = o.id AND m5.chat_type = ?
-          ORDER BY m5.created_at DESC LIMIT 1), o.createdAt) DESC`,
-      [chatType, chatType, chatType, chatType, userId, chatType]
+       LEFT JOIN (
+         SELECT order_id,
+                COUNT(*)                                                               AS msg_count,
+                MAX(created_at)                                                        AS last_msg_at,
+                SUBSTRING_INDEX(GROUP_CONCAT(message     ORDER BY created_at DESC SEPARATOR '\x01'), '\x01', 1) AS last_msg,
+                SUBSTRING_INDEX(GROUP_CONCAT(sender_name ORDER BY created_at DESC SEPARATOR '\x01'), '\x01', 1) AS last_sender
+         FROM   messages
+         WHERE  chat_type = ?
+         GROUP  BY order_id
+       ) ms ON CAST(ms.order_id AS CHAR) = CAST(o.id AS CHAR)
+       WHERE ${whereCol} = ?
+       ORDER BY COALESCE(ms.last_msg_at, o.createdAt) DESC`,
+      [chatType, userId]
     );
     res.json(rows);
   } catch (e) {
@@ -153,7 +155,7 @@ router.post('/:orderId', async (req, res) => {
   if (!message?.trim() && !imageUrl) return res.status(400).json({ error: 'message or image required' });
 
   try {
-    await ensureImageCol();
+    await ensureCols();
 
     if (!await hasAccess(orderId, userId, userRole))
       return res.status(403).json({ error: 'access denied' });
