@@ -759,7 +759,7 @@ class _QrSheetState extends State<_QrSheet> {
     }
     final url = Uri.parse(rawUrl);
     if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+      await launchUrl(url, mode: LaunchMode.inAppWebView);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('ไม่สามารถเปิดหน้าชำระเงินได้')));
