@@ -82,6 +82,15 @@ router.get('/unread-count', async (req, res) => {
   }
 });
 
+// POST /api/support/notify — emit socket event only (no DB write)
+router.post('/notify', (req, res) => {
+  const { storeId, message } = req.body;
+  const io = req.app.get('io');
+  io?.to('admin').emit('new_support_message', { storeId, message });
+  io?.to(`support_${storeId}`).emit('new_support_message', { storeId, message });
+  res.json({ ok: true });
+});
+
 // POST /api/support/:storeId/upload — upload image, returns { url }
 router.post('/:storeId/upload', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });

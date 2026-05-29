@@ -37,6 +37,8 @@ export async function GET(
   return NextResponse.json(rows)
 }
 
+const BACKEND = process.env.BACKEND_URL ?? 'http://localhost:3001'
+
 // POST /api/support/:storeId — send message (text and/or image)
 export async function POST(
   req: NextRequest,
@@ -52,7 +54,16 @@ export async function POST(
     [storeId, storeName ?? senderName ?? null, senderRole, senderName ?? null, (message ?? '').trim(), imageUrl ?? null]
   )
   const [rows]: any = await pool.query('SELECT * FROM support_messages WHERE id = ?', [result.insertId])
-  return NextResponse.json(rows[0])
+  const msg = rows[0]
+
+  // notify backend to emit socket event
+  fetch(`${BACKEND}/api/support/notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+    body: JSON.stringify({ storeId, message: msg }),
+  }).catch(() => {})
+
+  return NextResponse.json(msg)
 }
 
 // PUT /api/support/:storeId — mark thread as read (admin)
