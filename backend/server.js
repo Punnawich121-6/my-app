@@ -28,6 +28,8 @@ app.use(express.json({
 }));
 app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
 
+app.get('/', (_req, res) => res.json({ status: 'ok' }));
+
 app.use('/api/otp',      require('./routes/user/otp'));
 app.use('/api/rider',    require('./routes/user/rider'));
 app.use('/api/customer', require('./routes/user/customer'));
