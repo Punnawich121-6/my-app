@@ -14,8 +14,9 @@ class SocketService {
     _socket = IO.io(
       _url,
       IO.OptionBuilder()
-        .setTransports(['websocket'])
+        .setTransports(['websocket', 'polling'])
         .disableAutoConnect()
+        .setExtraHeaders({'ngrok-skip-browser-warning': 'true'})
         .build(),
     );
     _socket!.connect();

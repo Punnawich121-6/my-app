@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/socket_service.dart';
@@ -29,6 +29,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   bool _loading = true;
   bool _sending = false;
   XFile? _pickedImage;
+  Timer? _pollTimer;
 
   String get _threadId => 'customer_${widget.customerId}';
 
@@ -39,15 +40,34 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     SocketService.instance.connect();
     SocketService.instance.joinSupport(_threadId);
     SocketService.instance.on('new_support_message', _onSocketMessage);
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollMessages());
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     SocketService.instance.off('new_support_message');
     SocketService.instance.leaveSupport(_threadId);
     _ctrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pollMessages() async {
+    if (!mounted || _sending) return;
+    try {
+      final res = await apiGet('$_base/$_threadId');
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
+        final fetched = data.map((e) => Map<String, dynamic>.from(e)).toList();
+        final existingIds = _messages.map((m) => m['id']?.toString()).toSet();
+        final newMsgs = fetched.where((m) => !existingIds.contains(m['id']?.toString())).toList();
+        if (newMsgs.isNotEmpty && mounted) {
+          setState(() => _messages.addAll(newMsgs));
+          _scrollToBottom();
+        }
+      }
+    } catch (_) {}
   }
 
   void _onSocketMessage(dynamic data) {
@@ -89,19 +109,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   Future<String?> _uploadImage(XFile file) async {
     try {
-      final uri = Uri.parse('$_base/$_threadId/upload');
-      final request = http.MultipartRequest('POST', uri);
       final bytes = await file.readAsBytes();
-      request.files.add(http.MultipartFile.fromBytes(
-        'image',
-        bytes,
-        filename: file.name,
-      ));
-      final response = await request.send();
-      if (response.statusCode == 200) {
-        final body = jsonDecode(await response.stream.bytesToString());
-        return body['url'] as String?;
-      }
+      final ext = file.name.split('.').last.toLowerCase();
+      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+      return 'data:$mime;base64,${base64Encode(bytes)}';
     } catch (_) {}
     return null;
   }
@@ -354,6 +365,26 @@ class _SupportBubble extends StatelessWidget {
     this.imageUrl,
   });
 
+  Widget _buildImage(String url) {
+    final broken = Container(
+      width: 160, height: 120,
+      color: CColors.orangeLight,
+      child: const Icon(Icons.broken_image_rounded, color: CColors.orange),
+    );
+    if (url.startsWith('data:')) {
+      try {
+        final bytes = base64Decode(url.split(',').last);
+        return Image.memory(bytes, fit: BoxFit.cover,
+            errorBuilder: (_, e, s) => broken);
+      } catch (_) {
+        return broken;
+      }
+    }
+    final fullUrl = url.startsWith('http') ? url : '$kBackendUrl$url';
+    return Image.network(fullUrl, fit: BoxFit.cover,
+        errorBuilder: (_, e, s) => broken);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -410,15 +441,7 @@ class _SupportBubble extends StatelessWidget {
                         if (imageUrl != null)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              '$kBackendUrl$imageUrl',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, e, stack) => Container(
-                                width: 160, height: 120,
-                                color: CColors.orangeLight,
-                                child: const Icon(Icons.broken_image_rounded, color: CColors.orange),
-                              ),
-                            ),
+                            child: _buildImage(imageUrl!),
                           ),
                         if (imageUrl != null && message.isNotEmpty)
                           const SizedBox(height: 6),
