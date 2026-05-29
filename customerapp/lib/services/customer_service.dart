@@ -254,9 +254,11 @@ class CustomerService {
     } catch (_) { return null; }
   }
 
-  static Future<bool> updateProfile(String customerId, String name) async {
+  static Future<bool> updateProfile(String customerId, String name, {String? profileImage}) async {
     try {
-      final res = await apiPut('$_base/profile/$customerId', jsonEncode({'name': name}));
+      final body = <String, dynamic>{'name': name};
+      if (profileImage != null) body['profileImage'] = profileImage;
+      final res = await apiPut('$_base/profile/$customerId', jsonEncode(body));
       return res.statusCode == 200;
     } catch (_) { return false; }
   }

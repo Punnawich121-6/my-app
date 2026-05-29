@@ -93,7 +93,7 @@ router.get('/stores/:storeId/reviews', async (req, res) => {
 router.get('/by-phone/:phone', async (req, res) => {
   try {
     const [[user]] = await db.query(
-      'SELECT id, name, phone, address FROM customer WHERE phone = ?',
+      'SELECT id, name, phone, address, profile_image FROM customer WHERE phone = ?',
       [req.params.phone]
     );
     res.json(user || null);
@@ -234,9 +234,15 @@ router.get('/orders/:customerId', async (req, res) => {
 
 // ─── PUT update profile ───────────────────────────────────────────────────────
 router.put('/profile/:id', async (req, res) => {
-  const { name } = req.body;
+  const { name, profileImage } = req.body;
   try {
-    await db.query('UPDATE customer SET name = ? WHERE id = ?', [name, req.params.id]);
+    // ensure column exists
+    await db.query(`ALTER TABLE customer ADD COLUMN IF NOT EXISTS profile_image LONGTEXT`).catch(() => {});
+    if (profileImage !== undefined) {
+      await db.query('UPDATE customer SET name = ?, profile_image = ? WHERE id = ?', [name, profileImage, req.params.id]);
+    } else {
+      await db.query('UPDATE customer SET name = ? WHERE id = ?', [name, req.params.id]);
+    }
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
