@@ -3,7 +3,7 @@
 import { logout } from '@/app/actions/auth'
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ExportModal from "./ExportModal";
 import SearchBar from "./SearchBar";
 import NotificationBell from "./NotificationBell";
@@ -22,6 +22,7 @@ const navItems = [
 
 export default function Navbar() {
   const pathname    = usePathname();
+  const router      = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [dark, setDark]             = useState(false);
@@ -169,25 +170,24 @@ export default function Navbar() {
             </button>
 
             {userOpen && (
-              <div className="absolute right-0 top-full mt-2 w-52 bg-surface-container-lowest rounded-2xl shadow-xl border border-surface-container-highest z-50 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-52 bg-surface-container-lowest rounded-2xl shadow-xl border border-surface-container-highest overflow-hidden" style={{ zIndex: 9999 }}>
                 <div className="px-4 py-3 border-b border-surface-container-highest">
                   <p className="text-sm font-semibold text-on-background">Admin</p>
                   <p className="text-xs text-on-surface-variant mt-0.5">Zest &amp; Savory Portal</p>
                 </div>
                 <ul className="py-1">
                   <li>
-                    <Link
-                      href="/settings"
-                      onClick={() => setUserOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
+                    <button
+                      onClick={() => { setUserOpen(false); router.push('/settings') }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
                     >
                       <span className="material-symbols-outlined text-[18px]">settings</span>
                       Settings
-                    </Link>
+                    </button>
                   </li>
                   <li>
                     <button
-                      onClick={toggleDark}
+                      onClick={() => { setUserOpen(false); toggleDark() }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
                     >
                       <span className="material-symbols-outlined text-[18px]">{dark ? 'light_mode' : 'dark_mode'}</span>
@@ -195,15 +195,13 @@ export default function Navbar() {
                     </button>
                   </li>
                   <li className="border-t border-surface-container-highest mt-1">
-                    <form action={logout}>
-                      <button
-                        type="submit"
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container/30 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">logout</span>
-                        Sign out
-                      </button>
-                    </form>
+                    <button
+                      onClick={async () => { setUserOpen(false); await logout() }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container/30 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      Sign out
+                    </button>
                   </li>
                 </ul>
               </div>

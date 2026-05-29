@@ -10,18 +10,32 @@ function timeAgo(date: Date | string): string {
 }
 
 export async function GET() {
-    const [delayed]: any = await pool.query(
-        `SELECT id, orderNumber, createdAt FROM \`Order\` WHERE LOWER(status) = 'delayed' ORDER BY createdAt DESC LIMIT 3`
-    )
-    const [pending]: any = await pool.query(
-        `SELECT id, orderNumber, createdAt FROM \`Order\` WHERE LOWER(status) = 'pending' ORDER BY createdAt DESC LIMIT 5`
-    )
-    const [restaurants]: any = await pool.query(
-        `SELECT id, name, createdAt FROM Restaurant WHERE LOWER(status) = 'pending' ORDER BY createdAt DESC LIMIT 3`
-    )
-
-    // Unread support messages from stores (one per store, latest)
+    let delayed: any[] = []
+    let pending: any[] = []
+    let restaurants: any[] = []
     let supportMsgs: any[] = []
+
+    try {
+        const [rows]: any = await pool.query(
+            `SELECT id, orderNumber, createdAt FROM \`Order\` WHERE LOWER(status) = 'delayed' ORDER BY createdAt DESC LIMIT 3`
+        )
+        delayed = rows
+    } catch (e) { console.error('[notifications] delayed query failed:', e) }
+
+    try {
+        const [rows]: any = await pool.query(
+            `SELECT id, orderNumber, createdAt FROM \`Order\` WHERE LOWER(status) = 'pending' ORDER BY createdAt DESC LIMIT 5`
+        )
+        pending = rows
+    } catch (e) { console.error('[notifications] pending query failed:', e) }
+
+    try {
+        const [rows]: any = await pool.query(
+            `SELECT id, name, createdAt FROM Restaurant WHERE LOWER(status) = 'pending' ORDER BY createdAt DESC LIMIT 3`
+        )
+        restaurants = rows
+    } catch (e) { console.error('[notifications] restaurants query failed:', e) }
+
     try {
         const [rows]: any = await pool.query(`
             SELECT
@@ -37,7 +51,7 @@ export async function GET() {
             LIMIT 5
         `)
         supportMsgs = rows
-    } catch (_) {}
+    } catch (e) { console.error('[notifications] support_messages query failed:', e) }
 
     const notifications = [
         ...delayed.map((o: any) => ({

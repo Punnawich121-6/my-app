@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../main.dart';
 import '../../l10n/strings.dart';
 import '../../cart_manager.dart';
+import '../../utils/responsive.dart';
 import 'checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
@@ -102,13 +103,13 @@ class _CartScreenState extends State<CartScreen> {
       backgroundColor: context.bg,
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: context.fg),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: context.wp(20), color: context.fg),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(S.myCart, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: context.fg)),
+          Text(S.myCart, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700, color: context.fg)),
           if (storeName.isNotEmpty)
-            Text(storeName, style: TextStyle(fontSize: 12, color: context.muted, fontWeight: FontWeight.w400)),
+            Text(storeName, style: TextStyle(fontSize: context.sp(12), color: context.muted, fontWeight: FontWeight.w400)),
         ]),
         centerTitle: true,
       ),
@@ -117,7 +118,7 @@ class _CartScreenState extends State<CartScreen> {
           : Column(children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(16), context.wp(20), 0),
                   children: [
                     ..._items.map((item) => _CartItemRow(
                       item: item,
@@ -125,9 +126,9 @@ class _CartScreenState extends State<CartScreen> {
                       onAdd: () => _updateItem(item['id'], (item['qty'] as int) + 1),
                       onRemove: () => _updateItem(item['id'], (item['qty'] as int) - 1),
                     )),
-                    const SizedBox(height: 20),
+                    SizedBox(height: context.wp(20)),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(context.wp(16)),
                       decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(16)),
                       child: Column(children: [
                         _SummaryRow(label: S.foodCost, value: '฿${fmt.format(_subtotal)}'),
@@ -177,14 +178,14 @@ class _EmptyCart extends StatelessWidget {
   Widget build(BuildContext context) => Center(
     child: Column(mainAxisSize: MainAxisSize.min, children: [
       Container(
-        width: 90, height: 90,
+        width: context.wp(90), height: context.wp(90),
         decoration: BoxDecoration(color: context.orangeLight, shape: BoxShape.circle),
-        child: const Icon(Icons.shopping_basket_rounded, color: CColors.orange, size: 44),
+        child: Icon(Icons.shopping_basket_rounded, color: CColors.orange, size: context.wp(44)),
       ),
-      const SizedBox(height: 20),
-      Text(S.emptyCart, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.fg)),
-      const SizedBox(height: 8),
-      Text(S.emptyCartSub, style: TextStyle(fontSize: 14, color: context.muted)),
+      SizedBox(height: context.wp(20)),
+      Text(S.emptyCart, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w700, color: context.fg)),
+      SizedBox(height: context.wp(8)),
+      Text(S.emptyCartSub, style: TextStyle(fontSize: context.sp(14), color: context.muted)),
     ]),
   );
 }
@@ -200,41 +201,41 @@ class _CartItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final price = double.tryParse(item['price'].toString()) ?? 0;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: context.wp(12)),
       child: Row(children: [
         Expanded(
-          child: Text(item['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.fg)),
+          child: Text(item['name'] ?? '', style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: context.fg)),
         ),
         Row(children: [
           GestureDetector(
             onTap: onRemove,
             child: Container(
-              width: 28, height: 28,
+              width: context.wp(28), height: context.wp(28),
               decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.remove_rounded, color: CColors.orange, size: 16),
+              child: Icon(Icons.remove_rounded, color: CColors.orange, size: context.wp(16)),
             ),
           ),
           SizedBox(
-            width: 28,
+            width: context.wp(28),
             child: Center(
-              child: Text('${item['qty']}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.fg)),
+              child: Text('${item['qty']}', style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: context.fg)),
             ),
           ),
           GestureDetector(
             onTap: onAdd,
             child: Container(
-              width: 28, height: 28,
+              width: context.wp(28), height: context.wp(28),
               decoration: BoxDecoration(color: CColors.orange, borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 16),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(16)),
             ),
           ),
         ]),
-        const SizedBox(width: 12),
+        SizedBox(width: context.wp(12)),
         SizedBox(
-          width: 64,
+          width: context.wp(64),
           child: Text('฿${fmt.format(price * (item['qty'] as int))}',
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: CColors.orange)),
+              style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700, color: CColors.orange)),
         ),
       ]),
     );

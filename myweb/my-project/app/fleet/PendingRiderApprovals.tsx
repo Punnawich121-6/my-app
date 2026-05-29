@@ -61,7 +61,7 @@ function ApprovalRow({ rider }: { rider: PendingRider }) {
     }
 
     return (
-        <div className={`px-6 py-4 flex items-center gap-4 transition-opacity ${isPending ? 'opacity-40 pointer-events-none' : ''}`}>
+        <div className={`px-4 sm:px-6 py-4 flex items-center gap-3 sm:gap-4 transition-opacity ${isPending ? 'opacity-40 pointer-events-none' : ''}`}>
             {/* Avatar */}
             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 font-bold text-sm shrink-0">
                 {rider.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
@@ -101,18 +101,18 @@ function ApprovalRow({ rider }: { rider: PendingRider }) {
                 <button
                     onClick={handleReject}
                     disabled={isPending}
-                    className="border border-error text-error px-4 py-1.5 rounded-full text-label-sm hover:bg-error-container transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="border border-error text-error px-3 sm:px-4 py-1.5 rounded-full text-label-sm hover:bg-error-container transition-colors disabled:opacity-50 flex items-center gap-1"
                 >
                     <span className="material-symbols-outlined text-[15px]">close</span>
-                    ปฏิเสธ
+                    <span className="hidden sm:inline">ปฏิเสธ</span>
                 </button>
                 <button
                     onClick={handleApprove}
                     disabled={isPending}
-                    className="bg-green-600 text-white px-4 py-1.5 rounded-full text-label-sm hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="bg-green-600 text-white px-3 sm:px-4 py-1.5 rounded-full text-label-sm hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
                 >
                     <span className="material-symbols-outlined text-[15px]">check</span>
-                    อนุมัติ
+                    <span className="hidden sm:inline">อนุมัติ</span>
                 </button>
             </div>
         </div>

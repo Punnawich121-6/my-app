@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_settings.dart';
@@ -11,7 +11,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (kDebugMode) {
-    await FirebaseAuth.instance.useAuthEmulator('10.0.2.2', 9099);
+    final host = kIsWeb ? 'localhost' : '10.0.2.2';
+    await FirebaseAuth.instance.useAuthEmulator(host, 9099);
   }
   runApp(const CustomerApp());
 }

@@ -240,12 +240,19 @@ class _OtpScreenState extends State<OtpScreen> {
                     ]),
                   ),
                   const SizedBox(height: 36),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, (i) => _OtpBox(
-                      controller: _controllers[i], focusNode: _focusNodes[i],
-                      onChanged: (v) => _onDigitChanged(i, v),
-                    )),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final boxW = ((constraints.maxWidth - 20) / 6).clamp(36.0, 52.0);
+                      final boxH = (boxW * 1.2).clamp(44.0, 62.0);
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(6, (i) => _OtpBox(
+                          controller: _controllers[i], focusNode: _focusNodes[i],
+                          onChanged: (v) => _onDigitChanged(i, v),
+                          width: boxW, height: boxH,
+                        )),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   Container(
@@ -331,17 +338,19 @@ class _OtpBox extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
-  const _OtpBox({required this.controller, required this.focusNode, required this.onChanged});
+  final double width;
+  final double height;
+  const _OtpBox({required this.controller, required this.focusNode, required this.onChanged, this.width = 46, this.height = 56});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 46, height: 56,
+      width: width, height: height,
       child: TextField(
         controller: controller, focusNode: focusNode,
         maxLength: 1, keyboardType: TextInputType.number, textAlign: TextAlign.center,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.text),
+        style: TextStyle(fontSize: (width * 0.47).clamp(16.0, 22.0), fontWeight: FontWeight.w700, color: AppColors.text),
         decoration: InputDecoration(
           counterText: '', filled: true,
           fillColor: controller.text.isNotEmpty ? AppColors.orangeLight : AppColors.bg,

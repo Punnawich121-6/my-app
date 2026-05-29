@@ -310,8 +310,64 @@ export default function RiderWalletClient({
         </button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* Mobile card view */}
+      <div className="md:hidden divide-y divide-surface-container -mx-4">
+        {rows.length === 0 ? (
+          <div className="py-12 text-center text-on-surface-variant text-body-md">
+            ยังไม่มีประวัติการออกเงินล่วงหน้า
+          </div>
+        ) : rows.map(r => {
+          const riderRef: Rider = { id: r.id, name: r.name, phone: r.phone }
+          const isNegative = r.balance < 0
+          return (
+            <div key={r.id} className="px-4 py-4 hover:bg-surface-bright transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface font-bold text-sm shrink-0">
+                  {r.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-label-lg text-on-background truncate">{r.name}</p>
+                  <p className="text-body-sm text-on-surface-variant">{r.phone || '—'}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className={`text-label-lg font-semibold ${isNegative ? 'text-orange-500' : 'text-on-surface'}`}>
+                    {isNegative ? '-' : '+'}฿{Math.abs(r.balance).toFixed(2)}
+                  </span>
+                  {isNegative && (
+                    <span className="text-label-sm text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full">ติดหนี้</span>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2.5 flex items-center justify-between pl-12">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label-sm text-on-surface-variant">
+                  <span>ออก: ฿{r.total_advanced.toFixed(2)}</span>
+                  <span>เติม: ฿{r.total_topup.toFixed(2)}</span>
+                  {r.last_transaction_at && (
+                    <span>{new Date(r.last_transaction_at).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => setModal({ type: 'advance', rider: riderRef })}
+                    className="p-1.5 rounded-lg hover:bg-orange-50 text-orange-500 transition-colors" title="ออกเงินล่วงหน้า">
+                    <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+                  </button>
+                  <button onClick={() => setModal({ type: 'topup', rider: riderRef })}
+                    className="p-1.5 rounded-lg hover:bg-orange-50 text-orange-500 transition-colors" title="เติมเงิน">
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                  </button>
+                  <button onClick={() => setModal({ type: 'history', rider: riderRef })}
+                    className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors" title="ประวัติ">
+                    <span className="material-symbols-outlined text-[18px]">history</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-180">
           <thead>
             <tr className="border-b border-surface-container bg-surface-bright">

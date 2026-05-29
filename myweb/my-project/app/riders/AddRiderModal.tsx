@@ -64,7 +64,7 @@ export default function AddRiderModal() {
                     <input type="hidden" name="vehicle" value={selectedVehicle} />
                     <input type="hidden" name="status"  value={selectedStatus} />
 
-                    <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto max-h-[60vh]">
+                    <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(100dvh-14rem)] sm:max-h-[60vh]">
                         {state.error && (
                             <div className="flex items-center gap-2 bg-error-container text-on-error-container text-body-sm px-4 py-3 rounded-xl">
                                 <span className="material-symbols-outlined text-[18px] shrink-0">error</span>
@@ -122,7 +122,7 @@ export default function AddRiderModal() {
                         {/* สถานะเริ่มต้น */}
                         <section>
                             <p className="text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">สถานะเริ่มต้น</p>
-                            <div className="flex gap-3">
+                            <div className="grid grid-cols-3 gap-2">
                                 {[
                                     { value: 'Pending',   label: 'Pending',   desc: 'รอการยืนยัน' },
                                     { value: 'Available', label: 'Available', desc: 'พร้อมรับงาน' },
@@ -132,7 +132,7 @@ export default function AddRiderModal() {
                                         key={opt.value}
                                         type="button"
                                         onClick={() => setSelectedStatus(opt.value as typeof selectedStatus)}
-                                        className={`flex-1 border-2 rounded-xl p-3 text-center transition-colors ${
+                                        className={`border-2 rounded-xl p-3 text-center transition-colors ${
                                             selectedStatus === opt.value
                                                 ? 'border-primary-container bg-primary-container/10'
                                                 : 'border-outline-variant hover:bg-surface-container'

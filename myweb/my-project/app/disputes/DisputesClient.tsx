@@ -413,8 +413,8 @@ export default function DisputesClient() {
                           <p className="text-label-sm text-on-surface-variant mb-2">หลักฐานที่แนบมา ({urls.length} รูป)</p>
                           <div className="flex gap-2 flex-wrap">
                             {urls.map((u, i) => (
-                              <a key={i} href={`http://localhost:3001${u}`} target="_blank" rel="noreferrer">
-                                <img src={`http://localhost:3001${u}`} alt={`evidence-${i}`}
+                              <a key={i} href={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'}${u}`} target="_blank" rel="noreferrer">
+                                <img src={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'}${u}`} alt={`evidence-${i}`}
                                   className="w-20 h-20 object-cover rounded-xl border border-surface-container-highest hover:opacity-80 transition-opacity" />
                               </a>
                             ))}

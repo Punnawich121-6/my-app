@@ -8,8 +8,11 @@ let consumers = 0
 export function getAdminSocket(): Socket {
   if (!socket) {
     socket = io(BACKEND_URL, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       autoConnect: false,
+      extraHeaders: {
+        'ngrok-skip-browser-warning': 'true',
+      },
     })
   }
   if (!socket.connected) {

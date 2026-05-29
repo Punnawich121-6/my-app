@@ -711,7 +711,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         iconTheme: const IconThemeData(color: AppColors.text),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
+        padding: EdgeInsets.fromLTRB(
+          MediaQuery.of(context).size.width < 380 ? 16.0 : 28.0,
+          8,
+          MediaQuery.of(context).size.width < 380 ? 16.0 : 28.0,
+          32,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

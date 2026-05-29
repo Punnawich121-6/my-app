@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../../l10n/strings.dart';
 import '../../cart_manager.dart';
 import '../../services/customer_service.dart';
+import '../../utils/responsive.dart';
 import '../location/location_picker_screen.dart';
 import '../order/payment_screen.dart';
 
@@ -122,24 +123,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       backgroundColor: context.bg,
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: context.fg),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: context.wp(20), color: context.fg),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(S.checkoutTitle, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: context.fg)),
+        title: Text(S.checkoutTitle, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700, color: context.fg)),
         centerTitle: true,
       ),
       body: Column(children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(16), context.wp(20), 0),
             children: [
               // Delivery address
-              Text(S.deliveryAddress, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.fg)),
-              const SizedBox(height: 8),
+              Text(S.deliveryAddress, style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w500, color: context.fg)),
+              SizedBox(height: context.wp(8)),
               GestureDetector(
                 onTap: _pickLocation,
                 child: Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(context.wp(14)),
                   decoration: BoxDecoration(
                     color: _locationError ? const Color(0xFFFFEEEE) : context.orangeLight,
                     borderRadius: BorderRadius.circular(14),
@@ -154,77 +155,77 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   child: _deliveryLat == null
                       ? Row(children: [
-                          const Icon(Icons.add_location_alt_rounded, color: CColors.orange, size: 20),
-                          const SizedBox(width: 10),
+                          Icon(Icons.add_location_alt_rounded, color: CColors.orange, size: context.wp(20)),
+                          SizedBox(width: context.wp(10)),
                           Expanded(
                             child: Text(
                               _locationError ? S.addressRequired : S.tapToSetAddress,
-                              style: TextStyle(fontSize: 14, color: _locationError ? Colors.red : context.muted),
+                              style: TextStyle(fontSize: context.sp(14), color: _locationError ? Colors.red : context.muted),
                             ),
                           ),
                         ])
                       : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 2),
-                            child: Icon(Icons.location_on_rounded, color: CColors.orange, size: 18),
+                          Padding(
+                            padding: EdgeInsets.only(top: context.wp(2)),
+                            child: Icon(Icons.location_on_rounded, color: CColors.orange, size: context.wp(18)),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: context.wp(8)),
                           Expanded(
                             child: Text(
                               _deliveryAddress ?? '',
-                              style: TextStyle(fontSize: 13, color: context.fg, height: 1.5),
+                              style: TextStyle(fontSize: context.sp(13), color: context.fg, height: 1.5),
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(S.change, style: const TextStyle(fontSize: 12, color: CColors.orange, fontWeight: FontWeight.w600)),
+                          SizedBox(width: context.wp(8)),
+                          Text(S.change, style: TextStyle(fontSize: context.sp(12), color: CColors.orange, fontWeight: FontWeight.w600)),
                         ]),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: context.wp(12)),
 
               // Note
-              Text(S.noteLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.fg)),
-              const SizedBox(height: 8),
+              Text(S.noteLabel, style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w500, color: context.fg)),
+              SizedBox(height: context.wp(8)),
               TextField(
                 controller: _noteCtrl,
-                style: TextStyle(fontSize: 14, color: context.fg),
+                style: TextStyle(fontSize: context.sp(14), color: context.fg),
                 decoration: InputDecoration(
                   hintText: S.noteHint,
-                  hintStyle: TextStyle(color: context.muted, fontSize: 14),
+                  hintStyle: TextStyle(color: context.muted, fontSize: context.sp(14)),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.wp(20)),
 
               // Summary
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(context.wp(16)),
                 decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(16)),
                 child: Column(children: [
                   _SummaryRow(label: S.foodCost, value: '฿${fmt.format(widget.subtotal)}'),
                   if (widget.discountAmount > 0) ...[
-                    const SizedBox(height: 6),
+                    SizedBox(height: context.wp(6)),
                     _SummaryRow(label: widget.discountLabel, value: '-฿${fmt.format(widget.discountAmount)}', isDiscount: true),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: context.wp(6)),
                   _SummaryRow(label: S.deliveryFee, value: widget.deliveryFee == 0 ? S.free : '฿${widget.deliveryFee}'),
-                  Divider(height: 16, color: CColors.orangeMid),
+                  Divider(height: context.wp(16), color: CColors.orangeMid),
                   _SummaryRow(label: S.totalLabel, value: '฿${fmt.format(widget.total)}', bold: true),
                 ]),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: context.wp(12)),
 
               // Split bill
               Container(
                 decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(16)),
                 child: Column(children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: context.wp(16), vertical: context.wp(12)),
                     child: Row(children: [
-                      const Icon(Icons.group_rounded, color: CColors.orange, size: 20),
-                      const SizedBox(width: 8),
-                      Text(S.splitBill, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.fg)),
+                      Icon(Icons.group_rounded, color: CColors.orange, size: context.wp(20)),
+                      SizedBox(width: context.wp(8)),
+                      Text(S.splitBill, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700, color: context.fg)),
                       const Spacer(),
                       Switch.adaptive(
                         value: _splitEnabled,
@@ -237,44 +238,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   if (_splitEnabled) ...[
                     Divider(height: 1, color: CColors.orangeMid),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(14), context.wp(16), context.wp(16)),
                       child: Column(children: [
                         Row(children: [
-                          Text(S.peopleCount, style: TextStyle(fontSize: 13, color: context.muted, fontWeight: FontWeight.w500)),
+                          Text(S.peopleCount, style: TextStyle(fontSize: context.sp(13), color: context.muted, fontWeight: FontWeight.w500)),
                           const Spacer(),
                           GestureDetector(
                             onTap: () { if (_splitPeople > 2) setState(() => _splitPeople--); },
                             child: Container(
-                              width: 32, height: 32,
+                              width: context.wp(32), height: context.wp(32),
                               decoration: BoxDecoration(color: context.card, borderRadius: BorderRadius.circular(8)),
-                              child: const Icon(Icons.remove_rounded, color: CColors.orange, size: 16),
+                              child: Icon(Icons.remove_rounded, color: CColors.orange, size: context.wp(16)),
                             ),
                           ),
                           SizedBox(
-                            width: 40,
+                            width: context.wp(40),
                             child: Center(
-                              child: Text('$_splitPeople', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.fg)),
+                              child: Text('$_splitPeople', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: context.fg)),
                             ),
                           ),
                           GestureDetector(
                             onTap: () => setState(() => _splitPeople++),
                             child: Container(
-                              width: 32, height: 32,
+                              width: context.wp(32), height: context.wp(32),
                               decoration: BoxDecoration(color: CColors.orange, borderRadius: BorderRadius.circular(8)),
-                              child: const Icon(Icons.add_rounded, color: Colors.white, size: 16),
+                              child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(16)),
                             ),
                           ),
                         ]),
-                        const SizedBox(height: 12),
+                        SizedBox(height: context.wp(12)),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: EdgeInsets.symmetric(horizontal: context.wp(16), vertical: context.wp(12)),
                           decoration: BoxDecoration(color: context.card, borderRadius: BorderRadius.circular(12)),
                           child: Row(children: [
-                            Text(S.perPerson, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.fg)),
+                            Text(S.perPerson, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: context.fg)),
                             const Spacer(),
                             Text('฿${fmt.format(_perPerson)}',
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CColors.orange)),
+                                style: TextStyle(fontSize: context.sp(22), fontWeight: FontWeight.w800, color: CColors.orange)),
                           ]),
                         ),
                       ]),
@@ -282,21 +283,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                 ]),
               ),
-              const SizedBox(height: 100),
+              SizedBox(height: context.wp(100)),
             ],
           ),
         ),
 
         // Pay button
         Container(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 16),
-          decoration: BoxDecoration(
-            color: context.card,
-            boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -4))],
+          padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(12), context.wp(20), MediaQuery.of(context).padding.bottom + context.wp(16)),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
+            boxShadow: [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -4))],
           ),
           child: SizedBox(
             width: double.infinity,
-            height: 54,
+            height: context.wp(54),
             child: ElevatedButton(
               onPressed: _goToPayment,
               style: ElevatedButton.styleFrom(
@@ -306,7 +307,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(S.selectPaymentBtn(fmt.format(widget.total)),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700)),
             ),
           ),
         ),
@@ -324,7 +325,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseColor = bold ? context.fg : context.muted;
     final style = TextStyle(
-        fontSize: bold ? 15 : 13,
+        fontSize: bold ? context.sp(15) : context.sp(13),
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
         color: baseColor);
     final valueColor = isDiscount ? const Color(0xFFD32F2F) : (bold ? CColors.orange : context.muted);

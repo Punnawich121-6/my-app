@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../config.dart';
 import '../../main.dart';
 import '../../l10n/strings.dart';
+import '../../utils/responsive.dart';
 import '../store/store_screen.dart';
 import '../order/orders_screen.dart';
 import '../profile/profile_screen.dart';
@@ -198,7 +199,7 @@ class _StoreListTabState extends State<_StoreListTab> {
   Widget _buildTopBar(BuildContext context) {
     final cartCount = CartManager.instance.count;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+      padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(14), context.wp(20), context.wp(8)),
       child: Row(children: [
         const Spacer(),
         GestureDetector(
@@ -212,22 +213,22 @@ class _StoreListTabState extends State<_StoreListTab> {
           ),
           child: Stack(clipBehavior: Clip.none, children: [
             Container(
-              width: 40, height: 40,
+              width: context.wp(40), height: context.wp(40),
               decoration: BoxDecoration(
                 color: context.isDark ? const Color(0xFF2A2A2A) : const Color(0xFF1A1A1A),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 20),
+              child: Icon(Icons.shopping_bag_rounded, color: Colors.white, size: context.wp(20)),
             ),
             if (cartCount > 0)
               Positioned(
                 top: -4, right: -4,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(context.wp(4)),
                   decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle),
                   child: Text(
                     cartCount > 99 ? '99+' : '$cartCount',
-                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                    style: TextStyle(color: Colors.white, fontSize: context.sp(9), fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -241,10 +242,10 @@ class _StoreListTabState extends State<_StoreListTab> {
     final hour = DateTime.now().hour;
     final name = widget.customerName.split(' ').first;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+      padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(6), context.wp(20), context.wp(14)),
       child: Text(
         S.greeting(name, hour),
-        style: TextStyle(fontSize: 20, color: context.fg, fontWeight: FontWeight.w800),
+        style: TextStyle(fontSize: context.sp(20), color: context.fg, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -260,16 +261,16 @@ class _StoreListTabState extends State<_StoreListTab> {
         ),
       )),
       child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 22),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(22)),
+        padding: EdgeInsets.symmetric(horizontal: context.wp(16), vertical: context.wp(14)),
         decoration: BoxDecoration(
           color: context.subtleBg,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(children: [
-          Icon(Icons.search_rounded, color: context.muted, size: 20),
-          const SizedBox(width: 10),
-          Text(S.searchHint, style: TextStyle(color: context.muted, fontSize: 14)),
+          Icon(Icons.search_rounded, color: context.muted, size: context.wp(20)),
+          SizedBox(width: context.wp(10)),
+          Text(S.searchHint, style: TextStyle(color: context.muted, fontSize: context.sp(14))),
         ]),
       ),
     );
@@ -277,7 +278,7 @@ class _StoreListTabState extends State<_StoreListTab> {
 
   Widget _buildScanFoodBanner(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+      padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(22)),
       child: Row(
         children: [
           Expanded(
@@ -294,7 +295,7 @@ class _StoreListTabState extends State<_StoreListTab> {
               )),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: context.wp(12)),
           Expanded(
             child: _AIFeatureCard(
               icon: Icons.casino_rounded,
@@ -319,24 +320,24 @@ class _StoreListTabState extends State<_StoreListTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+          padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(14)),
           child: Row(children: [
-            Text(S.allCategories, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.fg)),
+            Text(S.allCategories, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
             const Spacer(),
             GestureDetector(
               onTap: () => setState(() => _selectedType = _kAllTypes),
               child: Row(children: [
-                Text(S.seeAll, style: const TextStyle(fontSize: 13, color: CColors.orange, fontWeight: FontWeight.w600)),
-                const Icon(Icons.chevron_right_rounded, size: 18, color: CColors.orange),
+                Text(S.seeAll, style: TextStyle(fontSize: context.sp(13), color: CColors.orange, fontWeight: FontWeight.w600)),
+                Icon(Icons.chevron_right_rounded, size: context.wp(18), color: CColors.orange),
               ]),
             ),
           ]),
         ),
         SizedBox(
-          height: 88,
+          height: context.wp(88),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: context.wp(16)),
             itemCount: _types.length,
             itemBuilder: (_, i) {
               final type = _types[i];
@@ -345,15 +346,15 @@ class _StoreListTabState extends State<_StoreListTab> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedType = type),
                 child: Container(
-                  margin: const EdgeInsets.only(right: 12),
+                  margin: EdgeInsets.only(right: context.wp(12)),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      width: 52,
-                      height: 52,
+                      width: context.wp(52),
+                      height: context.wp(52),
                       decoration: BoxDecoration(
                         color: selected ? CColors.orange : context.card,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(context.wp(14)),
                         boxShadow: [
                           BoxShadow(
                             color: selected
@@ -367,16 +368,16 @@ class _StoreListTabState extends State<_StoreListTab> {
                       child: Center(
                         child: FaIcon(
                           _faIcon(type),
-                          size: 20,
+                          size: context.wp(20),
                           color: selected ? Colors.white : CColors.orange,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 7),
+                    SizedBox(height: context.wp(7)),
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: context.sp(11),
                         color: selected ? CColors.orange : context.muted,
                         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       ),
@@ -389,7 +390,7 @@ class _StoreListTabState extends State<_StoreListTab> {
             },
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.wp(24)),
       ],
     );
   }
@@ -397,12 +398,12 @@ class _StoreListTabState extends State<_StoreListTab> {
   Widget _buildRestaurantsHeader(BuildContext context) {
     final openCount = _filtered.where((s) => s['is_open'] == 1).length;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(14)),
       child: Row(children: [
-        Text(S.openRestaurants, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.fg)),
+        Text(S.openRestaurants, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
         const Spacer(),
-        Text('$openCount ${S.stores}', style: TextStyle(fontSize: 13, color: context.muted)),
-        Icon(Icons.chevron_right_rounded, size: 18, color: context.muted),
+        Text('$openCount ${S.stores}', style: TextStyle(fontSize: context.sp(13), color: context.muted)),
+        Icon(Icons.chevron_right_rounded, size: context.wp(18), color: context.muted),
       ]),
     );
   }
@@ -429,17 +430,17 @@ class _AIFeatureCard extends StatelessWidget {
       splashColor: CColors.orange.withValues(alpha: 0.15),
       highlightColor: CColors.orange.withValues(alpha: 0.08),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(context.wp(14)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: CColors.orange, size: 18),
+            width: context.wp(36), height: context.wp(36),
+            decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(context.wp(10))),
+            child: Icon(icon, color: CColors.orange, size: context.wp(18)),
           ),
-          const SizedBox(height: 10),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: CColors.text)),
+          SizedBox(height: context.wp(10)),
+          Text(title, style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w800, color: CColors.text)),
           const SizedBox(height: 2),
-          Text(subtitle, style: const TextStyle(fontSize: 12, color: CColors.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(subtitle, style: TextStyle(fontSize: context.sp(12), color: CColors.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
         ]),
       ),
     ),
@@ -485,7 +486,7 @@ class _RestaurantCardState extends State<_RestaurantCard>
     return GestureDetector(
       onTap: isOpen ? widget.onTap : null,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        margin: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(16)),
         decoration: BoxDecoration(
           color: context.card,
           borderRadius: BorderRadius.circular(20),
@@ -529,7 +530,7 @@ class _RestaurantCardState extends State<_RestaurantCard>
                         setState(() {});
                       },
                       child: Container(
-                        width: 36, height: 36,
+                        width: context.wp(36), height: context.wp(36),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.35),
                           shape: BoxShape.circle,
@@ -539,7 +540,7 @@ class _RestaurantCardState extends State<_RestaurantCard>
                           child: Icon(
                             isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                             color: isFav ? Colors.red : Colors.white,
-                            size: 20,
+                            size: context.wp(20),
                           ),
                         ),
                       ),
@@ -566,26 +567,26 @@ class _RestaurantCardState extends State<_RestaurantCard>
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(context.wp(14)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(store['name'] ?? '', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.fg)),
-                  const SizedBox(height: 4),
-                  Text(store['type'] ?? '', style: TextStyle(fontSize: 13, color: context.muted)),
-                  const SizedBox(height: 10),
+                  Text(store['name'] ?? '', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: context.fg)),
+                  SizedBox(height: context.wp(4)),
+                  Text(store['type'] ?? '', style: TextStyle(fontSize: context.sp(13), color: context.muted)),
+                  SizedBox(height: context.wp(10)),
                   Row(children: [
-                    const Icon(Icons.star_rounded, size: 15, color: CColors.orange),
-                    const SizedBox(width: 4),
-                    Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.fg)),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.delivery_dining_rounded, size: 15, color: CColors.orange),
-                    const SizedBox(width: 4),
-                    Text(S.freeDelivery, style: TextStyle(fontSize: 13, color: context.fg)),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.access_time_rounded, size: 15, color: CColors.orange),
-                    const SizedBox(width: 4),
-                    Text(S.min30, style: TextStyle(fontSize: 13, color: context.fg)),
+                    Icon(Icons.star_rounded, size: context.wp(15), color: CColors.orange),
+                    SizedBox(width: context.wp(4)),
+                    Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600, color: context.fg)),
+                    SizedBox(width: context.wp(16)),
+                    Icon(Icons.delivery_dining_rounded, size: context.wp(15), color: CColors.orange),
+                    SizedBox(width: context.wp(4)),
+                    Text(S.freeDelivery, style: TextStyle(fontSize: context.sp(13), color: context.fg)),
+                    SizedBox(width: context.wp(16)),
+                    Icon(Icons.access_time_rounded, size: context.wp(15), color: CColors.orange),
+                    SizedBox(width: context.wp(4)),
+                    Text(S.min30, style: TextStyle(fontSize: context.sp(13), color: context.fg)),
                   ]),
                 ],
               ),

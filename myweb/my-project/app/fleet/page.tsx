@@ -75,9 +75,9 @@ export default async function Fleet({
             <p className="text-body-sm text-on-surface-variant mt-1">Monitor and manage your delivery network in real-time.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-highest border border-outline-variant text-on-surface text-label-lg rounded-full hover:bg-surface-container transition-colors shadow-sm">
+            <button className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-surface-container-highest border border-outline-variant text-on-surface text-label-lg rounded-full hover:bg-surface-container transition-colors shadow-sm">
               <span className="material-symbols-outlined text-sm">download</span>
-              Export Data
+              <span className="hidden sm:inline">Export Data</span>
             </button>
             <AddRiderModal />
           </div>
@@ -151,7 +151,77 @@ export default async function Fleet({
             <RiderFilters currentStatus={currentStatus} currentSearch={currentSearch} />
           </Suspense>
 
-          <div className="overflow-x-auto">
+          {/* Mobile card view */}
+          <div className="md:hidden divide-y divide-surface-container">
+            {riders.length === 0 ? (
+              <div className="py-12 text-center text-on-surface-variant text-body-md">
+                ไม่พบข้อมูลไรเดอร์
+              </div>
+            ) : riders.map(r => {
+              const sk = r.status as string
+              return (
+                <div key={r.id} className="p-4 hover:bg-surface-bright transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface font-bold text-sm shrink-0">
+                      {r.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-label-lg text-on-background truncate">{r.name}</p>
+                      <p className="text-body-sm text-on-surface-variant">{r.phone || '—'}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className={`inline-flex items-center gap-1 text-label-sm px-2 py-0.5 rounded-full border ${STATUS_STYLE[sk] ?? 'bg-surface-variant text-on-surface-variant border-outline-variant'}`}>
+                        {sk === 'Pending'
+                          ? <span className="material-symbols-outlined text-[11px]">schedule</span>
+                          : <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[sk] ?? 'bg-slate-400'}`} />}
+                        {r.status}
+                      </span>
+                      <EditRiderModal rider={{
+                        id:            r.id,
+                        name:          r.name,
+                        email:         r.email,
+                        phone:         r.phone,
+                        vehicle:       r.vehicle,
+                        status:        r.status,
+                        rating:        r.rating,
+                        runsCompleted: r.runsCompleted,
+                        isVerified:    r.isVerified,
+                      }} />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-13">
+                    <span className="inline-flex items-center gap-1.5 bg-surface-container px-2.5 py-1 rounded-full text-label-sm text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[15px]">{VEHICLE_ICON[r.vehicle] ?? 'two_wheeler'}</span>
+                      {r.vehicle}
+                    </span>
+                    {r.isVerified ? (
+                      <span className="inline-flex items-center gap-1 text-green-700 text-label-sm">
+                        <span className="material-symbols-outlined text-[15px] text-green-600">verified</span>
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-on-surface-variant text-label-sm">
+                        <span className="material-symbols-outlined text-[15px]">unpublished</span>
+                        Unverified
+                      </span>
+                    )}
+                    {r.rating !== null && Number(r.rating) > 0 ? (
+                      <span className="inline-flex items-center gap-1">
+                        <span className="material-symbols-outlined text-amber-500 text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                        <span className="text-label-md text-on-surface">{Number(r.rating).toFixed(1)}</span>
+                      </span>
+                    ) : (
+                      <span className="text-label-sm text-on-surface-variant italic">ใหม่</span>
+                    )}
+                    <span className="text-label-sm text-on-surface-variant">{r.runsCompleted.toLocaleString()} รอบ</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-180">
               <thead>
                 <tr className="border-b border-surface-container bg-surface-bright">

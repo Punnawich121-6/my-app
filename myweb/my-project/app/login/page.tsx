@@ -3,7 +3,7 @@ import { useActionState } from 'react'
 import { login } from '@/app/actions/auth'
 
 
-import { Mail, Lock, Eye, UtensilsCrossed } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, UtensilsCrossed } from "lucide-react"
 import { useState } from "react"
 
 export default function Login() {
@@ -47,15 +47,15 @@ export default function Login() {
                             <label className="text-label-md text-on-background" htmlFor="email">
                                 Administrator Email
                             </label>
+                            {state?.error && (
+                                <div className="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                                    {state.error}
+                                </div>
+                            )}
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                                     <Mail className="w-5 h-5 text-on-surface-variant" />
                                 </div>
-                                {state?.error && (
-                                <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                                {state.error}
-                                    </div>
-                                )}
                                 <input
                                     id="email" name="email" type="email" required
                                     placeholder="admin@zestandsavory.com"
@@ -77,14 +77,14 @@ export default function Login() {
                                     id="password" name="password"
                                     type={showPassword ? "text" : "password"} required
                                     placeholder="••••••••"
-                                    className="w-full pl-10 pr-10 py-3 border border-outline-variant rounded-lg bg-surface text-on-background focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-primary-container placeholder:text-on-surface-variant/50"
+                                    className="w-full pl-10 pr-10 py-3 border border-outline-variant rounded-lg bg-surface text-on-background focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-primary-container placeholder:text-on-surface-variant/50 [&::-ms-reveal]:hidden [&::-webkit-contacts-auto-fill-button]:hidden"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute inset-y-0 right-3 flex items-center text-on-surface-variant hover:text-primary transition-colors focus:outline-none"
                                 >
-                                    <Eye className="w-5 h-5" />
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                         </div>

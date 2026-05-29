@@ -134,6 +134,12 @@ class _OrangeBg extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenH = MediaQuery.of(context).size.height;
+    final isSmall = screenH < 680;
+    final logoSize = isSmall ? 64.0 : 80.0;
+    final iconSize = isSmall ? 34.0 : 42.0;
+    final titleSize = isSmall ? 20.0 : 24.0;
+    final topPad = isSmall ? 10.0 : 20.0;
+    final midPad = isSmall ? 10.0 : 14.0;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -165,10 +171,10 @@ class _OrangeBg extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 20),
+              SizedBox(height: topPad),
               Container(
-                width: 80,
-                height: 80,
+                width: logoSize,
+                height: logoSize,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -180,24 +186,24 @@ class _OrangeBg extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.storefront_rounded, size: 42, color: AppColors.orange),
+                child: Icon(Icons.storefront_rounded, size: iconSize, color: AppColors.orange),
               ),
-              const SizedBox(height: 14),
-              const Text(
+              SizedBox(height: midPad),
+              Text(
                 'Merchant Partner',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: 0.2,
-                  shadows: [Shadow(color: Color(0xAA000000), blurRadius: 12)],
+                  shadows: const [Shadow(color: Color(0xAA000000), blurRadius: 12)],
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 t('จัดการร้านค้าของคุณได้ทุกที่', 'Manage your store anywhere'),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: isSmall ? 12.0 : 13.0,
                   color: Colors.white.withValues(alpha: 0.92),
                   fontWeight: FontWeight.w400,
                   shadows: const [Shadow(color: Color(0x88000000), blurRadius: 8)],
@@ -219,12 +225,16 @@ class _FormSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+    final isSmall = screenH < 680;
+    final hPad = isSmall ? 20.0 : 28.0;
+    final vPad = isSmall ? 22.0 : 32.0;
     return Container(
       width: double.infinity,
       height: double.infinity,
       padding: EdgeInsets.only(
-        left: 28, right: 28,
-        top: 32, bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: hPad, right: hPad,
+        top: vPad, bottom: MediaQuery.of(context).viewInsets.bottom + vPad,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -243,17 +253,17 @@ class _FormSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: isSmall ? 16 : 28),
           Text(
             t('เข้าสู่ระบบ', 'Sign In'),
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
+            style: TextStyle(fontSize: isSmall ? 20.0 : 24.0, fontWeight: FontWeight.w800, color: const Color(0xFF1A1A1A)),
           ),
           const SizedBox(height: 6),
           Text(
             t('กรอกเบอร์โทรศัพท์เพื่อรับ OTP', 'Enter your phone number to receive OTP'),
             style: const TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: isSmall ? 16 : 28),
           // Phone field
           Container(
             decoration: BoxDecoration(
@@ -289,11 +299,11 @@ class _FormSheet extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isSmall ? 16 : 24),
           // OTP Button
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: isSmall ? 48 : 52,
             child: ElevatedButton(
               onPressed: loading ? null : onRequestOtp,
               style: ElevatedButton.styleFrom(

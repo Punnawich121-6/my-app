@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../main.dart';
 import '../../l10n/strings.dart';
+import '../../utils/responsive.dart';
 import '../../config.dart';
 import '../../services/customer_service.dart';
 import 'order_tracking_screen.dart';
@@ -93,15 +94,15 @@ class _OrdersScreenState extends State<OrdersScreen>
         child: Column(children: [
           // ── AppBar ────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(16), context.wp(20), context.wp(8)),
             child: Row(children: [
               Navigator.canPop(context)
                   ? _CircleBtn(icon: Icons.chevron_left_rounded, onTap: () => Navigator.pop(context))
-                  : const SizedBox(width: 40),
+                  : SizedBox(width: context.wp(40)),
               const Spacer(),
-              Text(S.myOrders, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.fg)),
+              Text(S.myOrders, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: context.fg)),
               const Spacer(),
-              const SizedBox(width: 40),
+              SizedBox(width: context.wp(40)),
             ]),
           ),
 
@@ -110,8 +111,8 @@ class _OrdersScreenState extends State<OrdersScreen>
             controller: _tab,
             labelColor: CColors.orange,
             unselectedLabelColor: CColors.muted,
-            labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            unselectedLabelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            labelStyle: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700),
+            unselectedLabelStyle: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w500),
             indicatorColor: CColors.orange,
             indicatorWeight: 2.5,
             indicatorSize: TabBarIndicatorSize.label,
@@ -162,14 +163,14 @@ class _OrderList extends StatelessWidget {
       return Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
-            width: 80, height: 80,
+            width: context.wp(80), height: context.wp(80),
             decoration: BoxDecoration(color: context.orangeLight, shape: BoxShape.circle),
-            child: const Icon(Icons.receipt_long_rounded, color: CColors.orange, size: 40),
+            child: Icon(Icons.receipt_long_rounded, color: CColors.orange, size: context.wp(40)),
           ),
-          const SizedBox(height: 16),
-          Text(emptyMsg, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.fg)),
-          const SizedBox(height: 8),
-          Text(S.orderFood, style: TextStyle(color: context.muted, fontSize: 13)),
+          SizedBox(height: context.wp(16)),
+          Text(emptyMsg, style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w600, color: context.fg)),
+          SizedBox(height: context.wp(8)),
+          Text(S.orderFood, style: TextStyle(color: context.muted, fontSize: context.sp(13))),
         ]),
       );
     }
@@ -177,7 +178,7 @@ class _OrderList extends StatelessWidget {
       color: CColors.orange,
       onRefresh: onRefresh,
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(16), context.wp(16), context.wp(16)),
         itemCount: orders.length,
         itemBuilder: (_, i) => _OrderCard(
           order: orders[i],
@@ -290,7 +291,7 @@ class _OrderCardState extends State<_OrderCard> {
             : '$kBackendUrl$rawImage';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: context.wp(16)),
       decoration: BoxDecoration(
         color: context.card,
         borderRadius: BorderRadius.circular(20),
@@ -303,50 +304,50 @@ class _OrderCardState extends State<_OrderCard> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // ── Status header ─────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(14), context.wp(16), context.wp(10)),
           child: Row(children: [
-            Text('Food', style: TextStyle(fontSize: 13, color: context.muted, fontWeight: FontWeight.w500)),
-            const SizedBox(width: 8),
+            Text('Food', style: TextStyle(fontSize: context.sp(13), color: context.muted, fontWeight: FontWeight.w500)),
+            SizedBox(width: context.wp(8)),
             Text(_statusLabel[status] ?? status,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: sColor)),
+                style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w700, color: sColor)),
           ]),
         ),
         Divider(height: 1, color: context.divider),
 
         // ── Main row ──────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(context.wp(14)),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(context.wp(14)),
               child: imageUrl != null
-                  ? Image.network(imageUrl, width: 72, height: 72, fit: BoxFit.cover,
+                  ? Image.network(imageUrl, width: context.wp(72), height: context.wp(72), fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => _Thumb())
                   : _Thumb(),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: context.wp(12)),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   Expanded(
                     child: Text(order['store_name'] ?? '-',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.fg),
+                        style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: context.fg),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
-                  const SizedBox(width: 6),
-                  Text(orderId, style: TextStyle(fontSize: 11, color: context.muted)),
+                  SizedBox(width: context.wp(6)),
+                  Text(orderId, style: TextStyle(fontSize: context.sp(11), color: context.muted)),
                 ]),
-                const SizedBox(height: 4),
+                SizedBox(height: context.wp(4)),
                 Text('฿${fmt.format(total)}',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: context.fg)),
-                const SizedBox(height: 3),
+                    style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w800, color: context.fg)),
+                SizedBox(height: context.wp(3)),
                 if (summary.isNotEmpty)
                   Text(summary,
-                      style: TextStyle(fontSize: 12, color: context.muted),
+                      style: TextStyle(fontSize: context.sp(12), color: context.muted),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 if (dateStr.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(dateStr, style: TextStyle(fontSize: 11, color: context.muted)),
+                  SizedBox(height: context.wp(2)),
+                  Text(dateStr, style: TextStyle(fontSize: context.sp(11), color: context.muted)),
                 ],
               ]),
             ),
@@ -355,7 +356,7 @@ class _OrderCardState extends State<_OrderCard> {
 
         // ── Buttons ────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          padding: EdgeInsets.fromLTRB(context.wp(14), 0, context.wp(14), context.wp(14)),
           child: Row(children: [
             Builder(builder: (ctx) {
               final oid = order['id']?.toString() ?? '';
@@ -370,16 +371,16 @@ class _OrderCardState extends State<_OrderCard> {
                     chatType: 'store',
                   ))),
                 child: Container(
-                  width: 42, height: 42,
+                  width: context.wp(42), height: context.wp(42),
                   decoration: BoxDecoration(
                     color: context.orangeLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.store_rounded, color: CColors.orange, size: 20),
+                  child: Icon(Icons.store_rounded, color: CColors.orange, size: context.wp(20)),
                 ),
               );
             }),
-            const SizedBox(width: 8),
+            SizedBox(width: context.wp(8)),
             if ({'delivering', 'at_store', 'picking_up'}.contains(rawStatus))
               Builder(builder: (ctx) {
                 final oid = order['id']?.toString() ?? '';
@@ -394,32 +395,32 @@ class _OrderCardState extends State<_OrderCard> {
                       chatType: 'rider',
                     ))),
                   child: Container(
-                    width: 42, height: 42,
+                    width: context.wp(42), height: context.wp(42),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.directions_bike_rounded, color: Color(0xFF1976D2), size: 20),
+                    child: Icon(Icons.directions_bike_rounded, color: const Color(0xFF1976D2), size: context.wp(20)),
                   ),
                 );
               }),
             if ({'delivering', 'at_store', 'picking_up'}.contains(rawStatus))
-              const SizedBox(width: 8),
+              SizedBox(width: context.wp(8)),
             Expanded(child: Builder(builder: (ctx) {
               final isCompleted = status == 'completed';
               final isReviewed = (order['is_reviewed'] == 1 || order['is_reviewed'] == true);
               if (isCompleted && isReviewed) {
                 return Container(
-                  height: 42,
+                  height: context.wp(42),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF0FFF4),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: CColors.green.withValues(alpha: 0.4)),
                   ),
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Icon(Icons.check_circle_rounded, color: CColors.green, size: 15),
-                    const SizedBox(width: 4),
-                    Text(S.rated, style: const TextStyle(color: CColors.green, fontWeight: FontWeight.w600, fontSize: 13)),
+                    Icon(Icons.check_circle_rounded, color: CColors.green, size: context.wp(15)),
+                    SizedBox(width: context.wp(4)),
+                    Text(S.rated, style: TextStyle(color: CColors.green, fontWeight: FontWeight.w600, fontSize: context.sp(13))),
                   ]),
                 );
               }
@@ -429,10 +430,10 @@ class _OrderCardState extends State<_OrderCard> {
                   foregroundColor: CColors.orange,
                   side: const BorderSide(color: CColors.orange),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: EdgeInsets.symmetric(vertical: context.wp(10)),
                 ),
                 child: Text(isCompleted ? S.rate : S.track,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(14))),
               );
             })),
             const SizedBox(width: 10),
@@ -445,12 +446,12 @@ class _OrderCardState extends State<_OrderCard> {
                         foregroundColor: Colors.red,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: EdgeInsets.symmetric(vertical: context.wp(10)),
                       ),
                       child: _cancelling
-                          ? const SizedBox(width: 16, height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
-                          : Text(S.cancelOrder, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                          ? SizedBox(width: context.wp(16), height: context.wp(16),
+                              child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
+                          : Text(S.cancelOrder, style: TextStyle(fontWeight: FontWeight.w700, fontSize: context.sp(14))),
                     )
                   : ElevatedButton(
                       onPressed: widget.onTap,
@@ -459,16 +460,16 @@ class _OrderCardState extends State<_OrderCard> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: EdgeInsets.symmetric(vertical: context.wp(10)),
                       ),
-                      child: Text(S.reorder, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      child: Text(S.reorder, style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(14))),
                     ),
             ),
           ]),
         ),
         if (status == 'completed')
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            padding: EdgeInsets.fromLTRB(context.wp(14), 0, context.wp(14), context.wp(14)),
             child: GestureDetector(
               onTap: () {
                 final oid  = order['id']?.toString() ?? '';
@@ -483,16 +484,16 @@ class _OrderCardState extends State<_OrderCard> {
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 11),
+                padding: EdgeInsets.symmetric(vertical: context.wp(11)),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFEBEE),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Icon(Icons.report_problem_rounded, size: 15, color: Colors.red),
-                  const SizedBox(width: 6),
+                  Icon(Icons.report_problem_rounded, size: context.wp(15), color: Colors.red),
+                  SizedBox(width: context.wp(6)),
                   Text(S.reportOrder,
-                      style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: Colors.red, fontSize: context.sp(13), fontWeight: FontWeight.w600)),
                 ]),
               ),
             ),
@@ -505,9 +506,9 @@ class _OrderCardState extends State<_OrderCard> {
 class _Thumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-    width: 72, height: 72,
+    width: context.wp(72), height: context.wp(72),
     color: context.orangeLight,
-    child: const Center(child: Icon(Icons.restaurant_rounded, color: CColors.orange, size: 30)),
+    child: Center(child: Icon(Icons.restaurant_rounded, color: CColors.orange, size: context.wp(30))),
   );
 }
 
@@ -519,9 +520,9 @@ class _CircleBtn extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Container(
-      width: 40, height: 40,
+      width: context.wp(40), height: context.wp(40),
       decoration: BoxDecoration(color: context.subtleBg, shape: BoxShape.circle),
-      child: Icon(icon, color: context.fg, size: 22),
+      child: Icon(icon, color: context.fg, size: context.wp(22)),
     ),
   );
 }

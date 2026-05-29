@@ -529,12 +529,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildItemGrid() {
     final items = _popularItems.take(4).toList();
+    final screenW = MediaQuery.of(context).size.width;
+    final itemH = ((screenW - 44) / 2 * 0.9).clamp(120.0, 160.0);
     final rows = <Widget>[];
     for (int i = 0; i < items.length; i += 2) {
       rows.add(Row(
         children: [
           Expanded(child: SizedBox(
-            height: 140,
+            height: itemH,
             child: _PopularItemCard(
               name: items[i]['name'] as String,
               imgUrl: items[i]['image_url'] as String?,
@@ -544,7 +546,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 12),
           if (i + 1 < items.length)
             Expanded(child: SizedBox(
-              height: 140,
+              height: itemH,
               child: _PopularItemCard(
                 name: items[i + 1]['name'] as String,
                 imgUrl: items[i + 1]['image_url'] as String?,
@@ -640,13 +642,17 @@ class _StatCard extends StatelessWidget {
               child: Icon(icon, color: accentColor, size: 20),
             ),
             const SizedBox(height: 14),
-            Text(
-              value.toString().padLeft(2, '0'),
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                color: accentColor,
-                height: 1,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value.toString().padLeft(2, '0'),
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                  color: accentColor,
+                  height: 1,
+                ),
               ),
             ),
             const SizedBox(height: 6),

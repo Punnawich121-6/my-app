@@ -79,7 +79,7 @@ export default function EditRiderModal({ rider }: { rider: RiderData }) {
                     <input type="hidden" name="status"      value={selectedStatus} />
                     <input type="hidden" name="isVerified"  value={isVerified ? '1' : '0'} />
 
-                    <div className="px-6 py-5 flex flex-col gap-6 overflow-y-auto max-h-[65vh]">
+                    <div className="px-6 py-5 flex flex-col gap-6 overflow-y-auto max-h-[calc(100dvh-14rem)] sm:max-h-[65vh]">
                         {state.error && (
                             <div className="flex items-center gap-2 bg-error-container text-on-error-container text-body-sm px-4 py-3 rounded-xl">
                                 <span className="material-symbols-outlined text-[18px] shrink-0">error</span>

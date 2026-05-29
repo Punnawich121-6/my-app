@@ -53,7 +53,9 @@ export default function NotificationBell() {
                 setTimeout(() => { document.title = orig }, 4000)
             }
             prevIdsRef.current = newIds
-        } catch {}
+        } catch (e) {
+            console.error('[NotificationBell] fetch failed:', e)
+        }
     }, [])
 
     useEffect(() => {

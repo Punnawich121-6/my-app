@@ -641,7 +641,8 @@ export default function Settings() {
       {/* Add / Edit Admin Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-surface-container-lowest rounded-3xl p-6 w-full max-w-md shadow-2xl border border-outline-variant overflow-y-auto max-h-[90vh]">
+          <div className="bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant" style={{ width: 'min(calc(100vw - 2rem), 32rem)' }}>
+            <div className="overflow-y-auto max-h-[90vh] p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-on-surface">
                 {editingAdmin ? 'Edit Admin User' : 'Add Admin User'}
@@ -725,6 +726,7 @@ export default function Settings() {
                 {modalSaving && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
                 {editingAdmin ? 'Save Changes' : 'Add User'}
               </button>
+            </div>
             </div>
           </div>
         </div>

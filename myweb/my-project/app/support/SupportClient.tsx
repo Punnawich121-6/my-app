@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { mountAdminSocket, unmountAdminSocket } from "@/app/lib/socket";
 
 const API = "/api/support";
-const BACKEND = "http://localhost:3001";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const UPLOAD_API = "/api/support";
 
 type Thread = {
   store_id: string;
@@ -194,7 +195,7 @@ export default function SupportClient() {
       if (imageFile) {
         const form = new FormData();
         form.append("image", imageFile);
-        const upRes = await fetch(`${BACKEND}/api/support/${selected}/upload`, { method: "POST", body: form });
+        const upRes = await fetch(`${UPLOAD_API}/${selected}/upload`, { method: "POST", body: form });
         if (upRes.ok) {
           const { url } = await upRes.json();
           imageUrl = url;

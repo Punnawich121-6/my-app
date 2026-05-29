@@ -129,25 +129,24 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
           border: Border(top: BorderSide(color: borderColor, width: 1)),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Icons.grid_view_rounded, index: 0, currentIndex: _currentIndex, onTap: setTab),
-            _NavItem(
+            Expanded(child: _NavItem(icon: Icons.grid_view_rounded, index: 0, currentIndex: _currentIndex, onTap: setTab)),
+            Expanded(child: _NavItem(
               icon: Icons.receipt_long_rounded,
               index: 1,
               currentIndex: _currentIndex,
               onTap: setTab,
               badge: _pendingOrders,
-            ),
+            )),
             const SizedBox(width: 58),
-            _NavItem(
+            Expanded(child: _NavItem(
               icon: Icons.auto_awesome_rounded,
               index: 3,
               currentIndex: _currentIndex,
               onTap: (i) { setTab(i); _refreshPromoBadge(); },
               badge: _pendingPromos,
-            ),
-            _NavItem(icon: Icons.person_outline_rounded, index: 5, currentIndex: _currentIndex, onTap: setTab),
+            )),
+            Expanded(child: _NavItem(icon: Icons.person_outline_rounded, index: 5, currentIndex: _currentIndex, onTap: setTab)),
           ],
         ),
       ),
@@ -177,7 +176,6 @@ class _NavItem extends StatelessWidget {
       onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 60,
         height: 62,
         child: Center(
           child: Column(

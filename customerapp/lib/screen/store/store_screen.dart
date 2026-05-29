@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter/services.dart';
 import '../../main.dart';
+import '../../utils/responsive.dart';
 import '../../cart_manager.dart';
 import '../../services/customer_service.dart';
 import '../location/location_picker_screen.dart';
@@ -323,26 +324,26 @@ class _StoreScreenState extends State<StoreScreen> {
         automaticallyImplyLeading: false,
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: context.wp(16)),
           child: Row(children: [
             GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                width: 38, height: 38,
+                width: context.wp(38), height: context.wp(38),
                 decoration: const BoxDecoration(color: Color(0xFFF5F5F5), shape: BoxShape.circle),
-                child: const Icon(Icons.chevron_left_rounded, color: CColors.text, size: 22),
+                child: Icon(Icons.chevron_left_rounded, color: CColors.text, size: context.wp(22)),
               ),
             ),
             const Spacer(),
             Text(widget.store['name'] ?? 'Restaurant',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: CColors.text)),
+                style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700, color: CColors.text)),
             const Spacer(),
             GestureDetector(
               onTap: _showStoreMenu,
               child: Container(
-                width: 38, height: 38,
+                width: context.wp(38), height: context.wp(38),
                 decoration: const BoxDecoration(color: Color(0xFFF5F5F5), shape: BoxShape.circle),
-                child: const Icon(Icons.more_horiz_rounded, color: CColors.text, size: 20),
+                child: Icon(Icons.more_horiz_rounded, color: CColors.text, size: context.wp(20)),
               ),
             ),
           ]),
@@ -357,8 +358,8 @@ class _StoreScreenState extends State<StoreScreen> {
                   SliverToBoxAdapter(
                     child: Stack(children: [
                       Container(
-                        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                        height: 160,
+                        margin: EdgeInsets.fromLTRB(context.wp(16), context.wp(8), context.wp(16), 0),
+                        height: context.wp(160),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: widget.store['image_url'] != null
@@ -375,35 +376,35 @@ class _StoreScreenState extends State<StoreScreen> {
                   // Store info
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(12), context.wp(16), 0),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           Expanded(
                             child: Text(widget.store['name'] ?? '',
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: CColors.text)),
+                              style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: CColors.text)),
                           ),
                         ]),
-                        const SizedBox(height: 6),
+                        SizedBox(height: context.wp(6)),
                         Row(children: [
-                          const Icon(Icons.star_rounded, color: CColors.orange, size: 15),
-                          const SizedBox(width: 3),
-                          Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CColors.text)),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.delivery_dining_rounded, color: CColors.orange, size: 15),
-                          const SizedBox(width: 3),
-                          const Text('ส่งฟรี', style: TextStyle(fontSize: 13, color: CColors.muted)),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.access_time_rounded, color: CColors.orange, size: 15),
-                          const SizedBox(width: 3),
-                          const Text('30 นาที', style: TextStyle(fontSize: 13, color: CColors.muted)),
-                          const SizedBox(width: 12),
+                          Icon(Icons.star_rounded, color: CColors.orange, size: context.wp(15)),
+                          SizedBox(width: context.wp(3)),
+                          Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600, color: CColors.text)),
+                          SizedBox(width: context.wp(12)),
+                          Icon(Icons.delivery_dining_rounded, color: CColors.orange, size: context.wp(15)),
+                          SizedBox(width: context.wp(3)),
+                          Text('ส่งฟรี', style: TextStyle(fontSize: context.sp(13), color: CColors.muted)),
+                          SizedBox(width: context.wp(12)),
+                          Icon(Icons.access_time_rounded, color: CColors.orange, size: context.wp(15)),
+                          SizedBox(width: context.wp(3)),
+                          Text('30 นาที', style: TextStyle(fontSize: context.sp(13), color: CColors.muted)),
+                          SizedBox(width: context.wp(12)),
                           Expanded(
                             child: Text(widget.store['address'] ?? '',
-                              style: const TextStyle(fontSize: 12, color: CColors.muted),
+                              style: TextStyle(fontSize: context.sp(12), color: CColors.muted),
                               maxLines: 1, overflow: TextOverflow.ellipsis),
                           ),
                         ]),
-                        const SizedBox(height: 10),
+                        SizedBox(height: context.wp(10)),
                       ]),
                     ),
                   ),
@@ -432,23 +433,23 @@ class _StoreScreenState extends State<StoreScreen> {
                   // Section title
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                      padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(8), context.wp(16), context.wp(6)),
                       child: Text(
                         _selectedCat == -1
                             ? 'เมนูทั้งหมด (${_filteredItems.length})'
                             : '${_categories.firstWhere((c) => c['id'] == _selectedCat, orElse: () => {'name': ''})['name']} (${_filteredItems.length})',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: CColors.text),
+                        style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: CColors.text),
                       ),
                     ),
                   ),
 
                   // Food grid
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+                    padding: EdgeInsets.fromLTRB(context.wp(16), 0, context.wp(16), context.wp(110)),
                     sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2, childAspectRatio: 0.72,
-                        crossAxisSpacing: 12, mainAxisSpacing: 12,
+                        crossAxisSpacing: context.wp(12), mainAxisSpacing: context.wp(12),
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (_, i) => _MenuGridCard(
@@ -475,12 +476,12 @@ class _StoreScreenState extends State<StoreScreen> {
               // Floating cart button
               if (_cartCount > 0)
                 Positioned(
-                  bottom: 24, left: 20, right: 20,
+                  bottom: context.wp(24), left: context.wp(20), right: context.wp(20),
                   child: GestureDetector(
                     onTap: _openCart,
                     child: Container(
                       key: _cartBtnKey,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: EdgeInsets.symmetric(horizontal: context.wp(20), vertical: context.wp(16)),
                       decoration: BoxDecoration(
                         color: CColors.orange,
                         borderRadius: BorderRadius.circular(20),
@@ -488,13 +489,13 @@ class _StoreScreenState extends State<StoreScreen> {
                       ),
                       child: Row(children: [
                         Container(
-                          width: 28, height: 28,
+                          width: context.wp(28), height: context.wp(28),
                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(8)),
-                          child: Center(child: Text('$_cartCount', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))),
+                          child: Center(child: Text('$_cartCount', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: context.sp(13)))),
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(child: Text('ดูตะกร้า', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16))),
-                        Text('฿${fmt.format(_cartTotal)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                        SizedBox(width: context.wp(12)),
+                        Expanded(child: Text('ดูตะกร้า', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: context.sp(16)))),
+                        Text('฿${fmt.format(_cartTotal)}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: context.sp(16))),
                       ]),
                     ),
                   ),
@@ -702,33 +703,33 @@ class _MenuGridCard extends StatelessWidget {
         Expanded(
           flex: 4,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            padding: EdgeInsets.fromLTRB(context.wp(10), context.wp(8), context.wp(10), context.wp(10)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(item['name'] ?? '',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                  style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w700, color: const Color(0xFF1A1A1A)),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(storeName,
-                  style: const TextStyle(fontSize: 11, color: CColors.muted),
+                  style: TextStyle(fontSize: context.sp(11), color: CColors.muted),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               ]),
               Row(children: [
                 Text('฿${fmt.format(price)}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+                  style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w800, color: const Color(0xFF1A1A1A))),
                 const Spacer(),
                 if (qty == 0)
                   Builder(builder: (btnCtx) => GestureDetector(
                     onTap: () => onAdd(btnCtx),
-                    child: Container(width: 30, height: 30,
+                    child: Container(width: context.wp(30), height: context.wp(30),
                       decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 18)),
+                      child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(18))),
                   ))
                 else
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    GestureDetector(onTap: onRemove, child: Container(width: 26, height: 26, decoration: BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle), child: const Icon(Icons.remove_rounded, color: CColors.orange, size: 14))),
-                    SizedBox(width: 22, child: Center(child: Text('$qty', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)))),
-                    Builder(builder: (btnCtx) => GestureDetector(onTap: () => onAdd(btnCtx), child: Container(width: 26, height: 26, decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle), child: const Icon(Icons.add_rounded, color: Colors.white, size: 14)))),
+                    GestureDetector(onTap: onRemove, child: Container(width: context.wp(26), height: context.wp(26), decoration: BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle), child: Icon(Icons.remove_rounded, color: CColors.orange, size: context.wp(14)))),
+                    SizedBox(width: context.wp(22), child: Center(child: Text('$qty', style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w700)))),
+                    Builder(builder: (btnCtx) => GestureDetector(onTap: () => onAdd(btnCtx), child: Container(width: context.wp(26), height: context.wp(26), decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle), child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(14))))),
                   ]),
               ]),
             ]),

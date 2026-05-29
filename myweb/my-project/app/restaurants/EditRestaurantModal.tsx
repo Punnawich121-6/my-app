@@ -75,7 +75,7 @@ export default function EditRestaurantModal({ restaurant }: { restaurant: Restau
         setCropSrc(null)
         setUploading(true)
         try {
-            const res = await fetch(`http://localhost:3001/api/store/${restaurant.id}/image`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'}/api/store/${restaurant.id}/image`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: croppedDataUrl }),
