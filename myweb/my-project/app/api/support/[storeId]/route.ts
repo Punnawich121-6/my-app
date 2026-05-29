@@ -12,14 +12,15 @@ async function ensureTable() {
       sender_role ENUM('store','admin') NOT NULL DEFAULT 'store',
       sender_name VARCHAR(255),
       message     TEXT NOT NULL,
-      image_url   VARCHAR(500),
+      image_url   LONGTEXT,
       is_read     TINYINT(1) NOT NULL DEFAULT 0,
       created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_store   (store_id),
       INDEX idx_created (created_at)
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `)
-  try { await pool.query(`ALTER TABLE support_messages ADD COLUMN image_url VARCHAR(500) AFTER message`) } catch (_) {}
+  try { await pool.query(`ALTER TABLE support_messages ADD COLUMN image_url LONGTEXT AFTER message`) } catch (_) {}
+  try { await pool.query(`ALTER TABLE support_messages MODIFY COLUMN image_url LONGTEXT`) } catch (_) {}
   _tableReady = true
 }
 
