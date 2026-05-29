@@ -195,7 +195,7 @@ export default function SupportClient() {
       if (imageFile) {
         const form = new FormData();
         form.append("image", imageFile);
-        const upRes = await fetch(`${UPLOAD_API}/${selected}/upload`, { method: "POST", body: form });
+        const upRes = await fetch(`${BACKEND}/api/support/${selected}/upload`, { method: "POST", body: form });
         if (upRes.ok) {
           const { url } = await upRes.json();
           imageUrl = url;
