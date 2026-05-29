@@ -25,11 +25,12 @@ const reviewUpload = multer({
   },
 });
 
-// Ensure reviews table has all required columns
-db.query(`ALTER TABLE reviews ADD COLUMN images TEXT DEFAULT NULL`).catch(() => {});
-db.query(`ALTER TABLE reviews ADD COLUMN customer_name VARCHAR(255) DEFAULT 'Customer'`).catch(() => {});
-db.query(`ALTER TABLE reviews ADD COLUMN order_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
-db.query(`ALTER TABLE reviews ADD COLUMN reply TEXT DEFAULT NULL`).catch(() => {});
+// Ensure columns exist on startup
+db.query(`ALTER TABLE customer ADD COLUMN IF NOT EXISTS profile_image LONGTEXT`).catch(() => {});
+db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS images TEXT DEFAULT NULL`).catch(() => {});
+db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255) DEFAULT 'Customer'`).catch(() => {});
+db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
+db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reply TEXT DEFAULT NULL`).catch(() => {});
 
 // ─── GET stores (restaurant table) ───────────────────────────────────────────
 router.get('/stores', async (req, res) => {
