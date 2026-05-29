@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -44,7 +45,6 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     if (SocketService.instance.connected) {
       SocketService.instance.joinSupport(_threadId);
     }
-    // re-join room on every reconnect
     SocketService.instance.on('connect', (_) {
       SocketService.instance.joinSupport(_threadId);
     });
@@ -93,18 +93,9 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   Future<void> _loadMessages() async {
     try {
-      debugPrint('[Chat] loading messages from: $_base/$_threadId');
       final res = await apiGet('$_base/$_threadId');
-      debugPrint('[Chat] load status: ${res.statusCode}');
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
-        debugPrint('[Chat] loaded ${data.length} messages');
-        for (final m in data) {
-          final imgUrl = m['image_url'];
-          if (imgUrl != null) {
-            debugPrint('[Chat] msg id=${m['id']} image_url length=${imgUrl.toString().length} prefix=${imgUrl.toString().substring(0, imgUrl.toString().length.clamp(0, 30))}');
-          }
-        }
         setState(() {
           _messages
             ..clear()
@@ -113,18 +104,32 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
         });
         _scrollToBottom();
       } else {
-        debugPrint('[Chat] load failed: ${res.statusCode} ${res.body}');
         if (mounted) setState(() => _loading = false);
       }
     } catch (e) {
-      debugPrint('[Chat] _loadMessages exception: $e');
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  Future<void> _pickImage() async {
+  // Show bottom sheet to choose camera or gallery
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ImageSourceSheet(
+        onGallery: () => _pickImage(ImageSource.gallery),
+        onCamera: () => _pickImage(ImageSource.camera),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final file = await picker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1200,
+    );
     if (file != null && mounted) {
       setState(() => _pickedImage = file);
     }
@@ -135,7 +140,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
       final uri = Uri.parse('$_base/$_threadId/upload');
       final request = http.MultipartRequest('POST', uri);
       final bytes = await file.readAsBytes();
-      request.files.add(http.MultipartFile.fromBytes('image', bytes, filename: file.name));
+      request.files.add(http.MultipartFile.fromBytes(
+        'image', bytes,
+        filename: file.name,
+      ));
       final response = await request.send();
       if (response.statusCode == 200) {
         final body = jsonDecode(await response.stream.bytesToString());
@@ -276,11 +284,14 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                       },
                     ),
         ),
+
+        // Image preview bar (shows when image is picked)
         if (_pickedImage != null)
           _ImagePreviewBar(
             file: _pickedImage!,
             onRemove: () => setState(() => _pickedImage = null),
           ),
+
         _buildInputBar(),
       ]),
     );
@@ -297,18 +308,29 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
         )],
       ),
       child: Row(children: [
+        // Image attach button
         GestureDetector(
-          onTap: _pickImage,
+          onTap: _showImageSourceSheet,
           child: Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: context.subtleBg, shape: BoxShape.circle),
-            child: Icon(Icons.image_rounded, color: context.muted, size: 20),
+            decoration: BoxDecoration(
+              color: _pickedImage != null ? CColors.orangeLight : context.subtleBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _pickedImage != null
+                  ? Icons.image_rounded
+                  : Icons.add_photo_alternate_rounded,
+              color: _pickedImage != null ? CColors.orange : context.muted,
+              size: 22,
+            ),
           ),
         ),
         const SizedBox(width: 8),
+        // Text input
         Expanded(
           child: Container(
-            height: 44,
+            constraints: const BoxConstraints(minHeight: 44, maxHeight: 120),
             decoration: BoxDecoration(
               color: context.subtleBg,
               borderRadius: BorderRadius.circular(22),
@@ -316,17 +338,19 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
             child: TextField(
               controller: _ctrl,
               style: TextStyle(fontSize: 14, color: context.fg),
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
               decoration: InputDecoration(
                 hintText: 'พิมพ์ข้อความ...',
                 hintStyle: TextStyle(color: context.muted, fontSize: 14),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              onSubmitted: (_) => _send(),
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
+        // Send button
         GestureDetector(
           onTap: _send,
           child: Container(
@@ -344,6 +368,80 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   }
 }
 
+// ─── Image Source Bottom Sheet ───────────────────────────────────────────────
+
+class _ImageSourceSheet extends StatelessWidget {
+  final VoidCallback onGallery;
+  final VoidCallback onCamera;
+  const _ImageSourceSheet({required this.onGallery, required this.onCamera});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 20),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 40, height: 4,
+          decoration: BoxDecoration(color: context.divider, borderRadius: BorderRadius.circular(2)),
+        ),
+        const SizedBox(height: 16),
+        Text('แนบรูปภาพ',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.fg)),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(
+            child: _SourceButton(
+              icon: Icons.photo_library_rounded,
+              label: 'คลังภาพ',
+              onTap: () { Navigator.pop(context); onGallery(); },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SourceButton(
+              icon: Icons.camera_alt_rounded,
+              label: 'ถ่ายรูป',
+              onTap: () { Navigator.pop(context); onCamera(); },
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _SourceButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _SourceButton({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: CColors.orangeLight,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: CColors.orange, size: 32),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CColors.orange)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─── Image Preview Bar ───────────────────────────────────────────────────────
+
 class _ImagePreviewBar extends StatelessWidget {
   final XFile file;
   final VoidCallback onRemove;
@@ -354,31 +452,55 @@ class _ImagePreviewBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: context.card,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Row(children: [
+        // Preview thumbnail (use File for local path)
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(file.path, width: 64, height: 64, fit: BoxFit.cover,
-            errorBuilder: (_, e, stack) => Container(
-              width: 64, height: 64, color: CColors.orangeLight,
-              child: const Icon(Icons.image_rounded, color: CColors.orange),
+          borderRadius: BorderRadius.circular(10),
+          child: Image.file(
+            File(file.path),
+            width: 64, height: 64,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(
+                color: CColors.orangeLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.image_rounded, color: CColors.orange, size: 28),
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(file.name, style: TextStyle(fontSize: 12, color: context.muted), overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('รูปภาพที่เลือก',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.fg)),
+              const SizedBox(height: 2),
+              Text(file.name,
+                style: TextStyle(fontSize: 11, color: context.muted),
+                overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: onRemove,
           child: Container(
-            width: 24, height: 24,
+            width: 28, height: 28,
             decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-            child: const Icon(Icons.close, color: Colors.white, size: 14),
+            child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
           ),
         ),
       ]),
     );
   }
 }
+
+// ─── Chat Bubble ─────────────────────────────────────────────────────────────
 
 class _SupportBubble extends StatelessWidget {
   final String message;
@@ -393,53 +515,81 @@ class _SupportBubble extends StatelessWidget {
     this.imageUrl,
   });
 
-  Widget _buildImage(String url) {
-    debugPrint('[Chat] _buildImage url length=${url.length} prefix=${url.substring(0, url.length.clamp(0, 40))}');
-    final broken = Container(
-      width: 160, height: 120,
-      color: CColors.orangeLight,
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.broken_image_rounded, color: CColors.orange),
-        const SizedBox(height: 4),
-        Text('โหลดไม่ได้', style: TextStyle(fontSize: 10, color: CColors.orange)),
+  Widget _buildNetworkImage(BuildContext context, String url) {
+    final Widget broken = Container(
+      width: double.infinity, height: 180,
+      decoration: BoxDecoration(
+        color: CColors.orangeLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(Icons.broken_image_rounded, color: CColors.orange, size: 32),
+        SizedBox(height: 6),
+        Text('โหลดไม่ได้', style: TextStyle(fontSize: 11, color: CColors.orange)),
       ]),
     );
+
+    // base64 data URI
     if (url.startsWith('data:')) {
       try {
         final parts = url.split(',');
-        if (parts.length < 2) {
-          debugPrint('[Chat] base64 format invalid, parts: ${parts.length}');
-          return broken;
-        }
+        if (parts.length < 2) return broken;
         final bytes = base64Decode(parts.last);
-        debugPrint('[Chat] base64 decoded OK, bytes: ${bytes.length}');
-        return Image.memory(bytes, fit: BoxFit.cover,
-            errorBuilder: (_, e, s) {
-              debugPrint('[Chat] Image.memory error: $e');
-              return broken;
-            });
-      } catch (e) {
-        debugPrint('[Chat] base64 decode error: $e, url_length=${url.length}');
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(bytes,
+            width: double.infinity, height: 200,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => broken,
+          ),
+        );
+      } catch (_) {
         return broken;
       }
     }
+
     final fullUrl = url.startsWith('http') ? url : '$kBackendUrl$url';
-    debugPrint('[Chat] Image.network url: $fullUrl');
-    return Image.network(fullUrl, fit: BoxFit.cover,
-        errorBuilder: (_, e, s) {
-          debugPrint('[Chat] Image.network error: $e url: $fullUrl');
-          return broken;
-        });
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        fullUrl,
+        width: double.infinity, height: 200,
+        fit: BoxFit.cover,
+        loadingBuilder: (_, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: double.infinity, height: 200,
+            decoration: BoxDecoration(
+              color: CColors.orangeLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: CircularProgressIndicator(
+                value: progress.expectedTotalBytes != null
+                    ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                    : null,
+                color: CColors.orange,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (_, _, _) => broken,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Admin avatar
           if (!isMe) ...[
             Container(
               width: 32, height: 32,
@@ -448,6 +598,7 @@ class _SupportBubble extends StatelessWidget {
               child: const Icon(Icons.support_agent_rounded, color: CColors.orange, size: 16),
             ),
           ],
+
           Expanded(
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -456,58 +607,65 @@ class _SupportBubble extends StatelessWidget {
                   const Padding(
                     padding: EdgeInsets.only(bottom: 3, left: 2),
                     child: Text('Admin',
-                      style: TextStyle(
-                        fontSize: 11, color: CColors.orange, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 11, color: CColors.orange, fontWeight: FontWeight.w600)),
                   ),
                 ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.65),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: imageUrl != null ? 6 : 14,
-                      vertical: imageUrl != null ? 6 : 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isMe ? CColors.orange : Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(18),
-                        topRight: const Radius.circular(18),
-                        bottomLeft: Radius.circular(isMe ? 18 : 4),
-                        bottomRight: Radius.circular(isMe ? 4 : 18),
+                    maxWidth: MediaQuery.of(context).size.width * 0.68,
+                  ),
+                  child: GestureDetector(
+                    onTap: hasImage
+                        ? () => _viewFullImage(context, imageUrl!)
+                        : null,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: hasImage ? 6 : 14,
+                        vertical: hasImage ? 6 : 10,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 4)
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (imageUrl != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: _buildImage(imageUrl!),
-                          ),
-                        if (imageUrl != null && message.isNotEmpty)
-                          const SizedBox(height: 6),
-                        if (message.isNotEmpty)
-                          Text(message,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isMe ? Colors.white : CColors.text,
-                              height: 1.4)),
-                      ],
+                      decoration: BoxDecoration(
+                        color: isMe ? CColors.orange : context.card,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(18),
+                          topRight: const Radius.circular(18),
+                          bottomLeft: Radius.circular(isMe ? 18 : 4),
+                          bottomRight: Radius.circular(isMe ? 4 : 18),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.07),
+                            blurRadius: 6),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hasImage)
+                            _buildNetworkImage(context, imageUrl!),
+                          if (hasImage && message.isNotEmpty)
+                            const SizedBox(height: 6),
+                          if (message.isNotEmpty)
+                            Text(message,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isMe ? Colors.white : context.fg,
+                                height: 1.4)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(time,
-                  style: const TextStyle(fontSize: 11, color: CColors.muted)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(time,
+                    style: TextStyle(fontSize: 11, color: context.muted)),
+                ),
               ],
             ),
           ),
+
+          // My avatar
           if (isMe) ...[
             Container(
               width: 28, height: 28,
@@ -518,6 +676,59 @@ class _SupportBubble extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  void _viewFullImage(BuildContext context, String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _FullImageViewer(url: url),
+      ),
+    );
+  }
+}
+
+// ─── Full Image Viewer ────────────────────────────────────────────────────────
+
+class _FullImageViewer extends StatelessWidget {
+  final String url;
+  const _FullImageViewer({required this.url});
+
+  Widget _buildImage() {
+    if (url.startsWith('data:')) {
+      try {
+        final bytes = base64Decode(url.split(',').last);
+        return InteractiveViewer(
+          child: Image.memory(bytes, fit: BoxFit.contain),
+        );
+      } catch (_) {}
+    }
+    final fullUrl = url.startsWith('http') ? url : '$kBackendUrl$url';
+    return InteractiveViewer(
+      child: Image.network(
+        fullUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.broken_image_rounded, color: Colors.white60, size: 48),
+          SizedBox(height: 12),
+          Text('โหลดรูปไม่ได้', style: TextStyle(color: Colors.white60)),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Center(child: _buildImage()),
     );
   }
 }
