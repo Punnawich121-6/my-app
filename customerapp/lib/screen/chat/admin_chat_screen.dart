@@ -38,10 +38,14 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
-    SocketService.instance.connect();
-    SocketService.instance.joinSupport(_threadId);
+    SocketService.instance.connect(onConnect: () {
+      SocketService.instance.joinSupport(_threadId);
+    });
+    if (SocketService.instance.connected) {
+      SocketService.instance.joinSupport(_threadId);
+    }
     SocketService.instance.on('new_support_message', _onSocketMessage);
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollMessages());
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _pollMessages());
   }
 
   @override

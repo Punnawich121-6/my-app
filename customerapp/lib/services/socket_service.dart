@@ -9,17 +9,27 @@ class SocketService {
   IO.Socket? _socket;
   static final _url = kBackendUrl;
 
-  void connect() {
-    if (_socket?.connected == true) return;
-    _socket = IO.io(
-      _url,
-      IO.OptionBuilder()
-        .setTransports(['websocket', 'polling'])
-        .disableAutoConnect()
-        .setExtraHeaders({'ngrok-skip-browser-warning': 'true'})
-        .build(),
-    );
-    _socket!.connect();
+  bool get connected => _socket?.connected == true;
+
+  void connect({void Function()? onConnect}) {
+    if (_socket?.connected == true) {
+      onConnect?.call();
+      return;
+    }
+    if (_socket == null) {
+      _socket = IO.io(
+        _url,
+        IO.OptionBuilder()
+          .setTransports(['websocket', 'polling'])
+          .disableAutoConnect()
+          .setExtraHeaders({'ngrok-skip-browser-warning': 'true'})
+          .build(),
+      );
+    }
+    if (onConnect != null) {
+      _socket!.once('connect', (_) => onConnect());
+    }
+    if (_socket!.disconnected) _socket!.connect();
   }
 
   void joinOrder(String orderId) => _socket?.emit('join_order', orderId);
