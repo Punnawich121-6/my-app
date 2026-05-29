@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../config.dart';
 import '../../main.dart';
@@ -109,10 +110,15 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   Future<String?> _uploadImage(XFile file) async {
     try {
+      final uri = Uri.parse('$_base/$_threadId/upload');
+      final request = http.MultipartRequest('POST', uri);
       final bytes = await file.readAsBytes();
-      final ext = file.name.split('.').last.toLowerCase();
-      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
-      return 'data:$mime;base64,${base64Encode(bytes)}';
+      request.files.add(http.MultipartFile.fromBytes('image', bytes, filename: file.name));
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final body = jsonDecode(await response.stream.bytesToString());
+        return body['url'] as String?;
+      }
     } catch (_) {}
     return null;
   }
