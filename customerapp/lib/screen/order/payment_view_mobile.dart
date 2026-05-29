@@ -25,10 +25,16 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent(
+        'Mozilla/5.0 (Linux; Android 13; Pixel 7) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/120.0.0.0 Mobile Safari/537.36',
+      )
       ..setNavigationDelegate(NavigationDelegate(
         onPageStarted: widget.onPageStarted,
         onPageFinished: (_) => widget.onPageFinished(),
         onWebResourceError: (_) => widget.onPageFinished(),
+        onNavigationRequest: (req) => NavigationDecision.navigate,
       ))
       ..loadRequest(Uri.parse(widget.formUrl));
   }

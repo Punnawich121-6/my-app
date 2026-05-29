@@ -73,40 +73,62 @@ class _CardWebViewScreenState extends State<CardWebViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: CColors.text,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Container(
+            width: 36, height: 36,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5F5F5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.close_rounded, size: 18, color: CColors.text),
+          ),
           onPressed: () => Navigator.of(context).pop(null),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            const Text('ชำระเงินด้วยบัตร',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            Text('${widget.amount} THB',
-                style: const TextStyle(fontSize: 12, color: CColors.orange)),
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: CColors.orangeLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.lock_rounded, color: CColors.orange, size: 16),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('ชำระเงิน',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                Text('${widget.amount} THB',
+                    style: const TextStyle(fontSize: 11, color: CColors.orange, fontWeight: FontWeight.w600)),
+              ],
+            ),
           ],
         ),
+        bottom: _isLoading
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(3),
+                child: LinearProgressIndicator(
+                  backgroundColor: Colors.transparent,
+                  color: CColors.orange,
+                  minHeight: 3,
+                ),
+              )
+            : null,
       ),
-      body: Stack(
-        children: [
-          PaymentWebView(
-            formUrl: widget.formUrl,
-            onPageStarted: _onPageStarted,
-            onPageFinished: _onPageFinished,
-          ),
-          if (_isLoading)
-            Container(
-              color: Colors.white,
-              child: const Center(
-                child: CircularProgressIndicator(color: CColors.orange),
-              ),
-            ),
-        ],
+      body: PaymentWebView(
+        formUrl: widget.formUrl,
+        onPageStarted: _onPageStarted,
+        onPageFinished: _onPageFinished,
       ),
     );
   }
