@@ -193,13 +193,11 @@ export default function SupportClient() {
       let imageUrl: string | null = null;
 
       if (imageFile) {
-        const form = new FormData();
-        form.append("image", imageFile);
-        const upRes = await fetch(`${BACKEND}/api/support/${selected}/upload`, { method: "POST", body: form });
-        if (upRes.ok) {
-          const { url } = await upRes.json();
-          imageUrl = url;
-        }
+        imageUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(imageFile);
+        });
         clearImage();
       }
 
@@ -341,10 +339,13 @@ export default function SupportClient() {
                           }`}
                         >
                           {msg.image_url && (
-                            <a href={`${BACKEND}${msg.image_url}`} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={msg.image_url.startsWith('data:') ? msg.image_url : `${BACKEND}${msg.image_url}`}
+                              target="_blank" rel="noopener noreferrer"
+                            >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                src={`${BACKEND}${msg.image_url}`}
+                                src={msg.image_url.startsWith('data:') ? msg.image_url : `${BACKEND}${msg.image_url}`}
                                 alt="รูปภาพ"
                                 className="max-w-full rounded-xl mb-1 cursor-pointer hover:opacity-90 transition-opacity"
                                 style={{ maxHeight: 260 }}
