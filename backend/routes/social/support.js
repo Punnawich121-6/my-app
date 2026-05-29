@@ -2,21 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Upload dir
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'support');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+// Use memoryStorage — store image as base64 in DB instead of disk
+// (Render.com has ephemeral filesystem; files disappear on restart)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 let _tableReady = false;
 async function ensureTable() {
@@ -94,10 +83,12 @@ router.post('/notify', (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/support/:storeId/upload — upload image, returns { url }
+// POST /api/support/:storeId/upload — upload image, returns base64 data URI
 router.post('/:storeId/upload', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const url = `/uploads/support/${req.file.filename}`;
+  const mime = req.file.mimetype || 'image/jpeg';
+  const b64 = req.file.buffer.toString('base64');
+  const url = `data:${mime};base64,${b64}`;
   res.json({ url });
 });
 
