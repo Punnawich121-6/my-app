@@ -87,6 +87,11 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     final msg = Map<String, dynamic>.from(payload['message'] as Map);
     final id = msg['id']?.toString();
     if (id != null && _messages.any((m) => m['id']?.toString() == id)) return;
+    // if image is stripped from socket payload, poll DB for full message
+    if (msg['image_url']?.toString() == '[image]') {
+      _pollMessages();
+      return;
+    }
     setState(() => _messages.add(msg));
     _scrollToBottom();
   }

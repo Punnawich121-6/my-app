@@ -192,26 +192,36 @@ export default function SupportClient() {
     try {
       let imageUrl: string | null = null;
 
-      // ── Step 1: convert image to base64 ──
+      // ── Step 1: compress + convert image to base64 ──
       if (imageFile) {
         try {
           imageUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
+            reader.onerror = (e) => reject(e);
             reader.onload = (e) => {
-              const result = e.target?.result as string;
-              console.log('[Support] base64 length:', result?.length, 'preview:', result?.slice(0, 50));
-              resolve(result);
-            };
-            reader.onerror = (e) => {
-              console.error('[Support] FileReader error:', e);
-              reject(e);
+              const img = new window.Image();
+              img.onerror = reject;
+              img.onload = () => {
+                const MAX = 800;
+                let { width, height } = img;
+                if (width > MAX || height > MAX) {
+                  if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+                  else { width = Math.round(width * MAX / height); height = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+                const compressed = canvas.toDataURL('image/jpeg', 0.6);
+                console.log('[Support] compressed base64 length:', compressed.length);
+                resolve(compressed);
+              };
+              img.src = e.target?.result as string;
             };
             reader.readAsDataURL(imageFile);
           });
           clearImage();
-          console.log('[Support] image converted to base64 OK, length:', imageUrl?.length);
         } catch (e) {
-          console.error('[Support] base64 conversion failed:', e);
+          console.error('[Support] image compression failed:', e);
           alert('ไม่สามารถแปลงรูปได้: ' + String(e));
           setSending(false);
           return;

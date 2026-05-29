@@ -57,11 +57,12 @@ export async function POST(
   const [rows]: any = await pool.query('SELECT * FROM support_messages WHERE id = ?', [result.insertId])
   const msg = rows[0]
 
-  // notify backend to emit socket event
+  // notify backend to emit socket event — strip image_url to reduce payload size
+  const msgForSocket = { ...msg, image_url: msg.image_url ? '[image]' : null }
   fetch(`${BACKEND}/api/support/notify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-    body: JSON.stringify({ storeId, message: msg }),
+    body: JSON.stringify({ storeId, message: msgForSocket }),
   }).catch(() => {})
 
   return NextResponse.json(msg)
