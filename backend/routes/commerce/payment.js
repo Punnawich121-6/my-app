@@ -101,47 +101,23 @@ router.post('/qr', async (req, res) => {
   }
 });
 
-// POST /api/payment/card  — create card payment via v2 API
-router.post('/card', async (req, res) => {
+// POST /api/payment/card  — create card payment session (v1 redirect form)
+router.post('/card', (req, res) => {
   try {
     const { order_id, amount, description } = req.body;
     if (!order_id || !amount) {
       return res.status(400).json({ error: 'order_id and amount are required' });
     }
 
-    const body = {
-      mid: CARD_MERCHANT_ID,
+    const token = crypto.randomBytes(16).toString('hex');
+    _cardSessions.set(token, {
       order_id: `ORD${order_id}`,
-      description: description || 'Food Order',
       amount: Number(parseFloat(amount).toFixed(2)),
-      url_notify:   `${BACKEND_URL}/api/payment/notify`,
-      url_redirect: `${BACKEND_URL}/api/payment/callback`,
-    };
-    const bodyString = JSON.stringify(body);
-    const signature = sign(body);
-    console.log('[Card Body]', bodyString);
-
-    const response = await fetch(DIGIPAY_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-ID': API_ID,
-        'X-API-Key': API_KEY,
-        'X-Partner-ID': PARTNER_ID,
-        'X-Content-Signature': signature,
-        'Accept-Language': 'th',
-      },
-      body: bodyString,
+      description: description || 'Food Order',
+      createdAt: Date.now(),
     });
 
-    const data = await response.json();
-    console.log('[Card response]', JSON.stringify(data, null, 2));
-
-    if (!data.redirect_url) {
-      return res.status(500).json({ error: data.res_desc || 'No redirect URL' });
-    }
-
-    res.json({ form_url: data.redirect_url });
+    res.json({ form_url: `${BACKEND_URL}/api/payment/card-form/${token}` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
