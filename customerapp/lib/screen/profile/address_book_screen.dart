@@ -1,59 +1,111 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
+import '../location/location_picker_screen.dart';
 
-// In-memory address store (session-only)
+// ─── Persistent AddressManager ────────────────────────────────────────────────
 class AddressManager {
-  static final List<Map<String, String>> _addresses = [
-    {'label': 'บ้าน', 'address': '123 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กทม.', 'icon': 'home'},
-    {'label': 'ที่ทำงาน', 'address': '88 ถ.รัชดาภิเษก แขวงห้วยขวาง เขตห้วยขวาง กทม.', 'icon': 'work'},
-  ];
+  static const _key = 'saved_addresses';
+  static List<Map<String, String>> _addresses = [];
+  static bool _loaded = false;
 
   static List<Map<String, String>> get addresses => List.from(_addresses);
-  static void add(Map<String, String> addr) => _addresses.add(addr);
-  static void remove(int idx) => _addresses.removeAt(idx);
-  static void update(int idx, Map<String, String> addr) => _addresses[idx] = addr;
+
+  static Future<void> load() async {
+    if (_loaded) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw != null) {
+      final list = jsonDecode(raw) as List;
+      _addresses = list.map((e) => Map<String, String>.from(e as Map)).toList();
+    } else {
+      _addresses = [
+        {'label': 'บ้าน', 'address': '123 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กทม.', 'icon': 'home'},
+        {'label': 'ที่ทำงาน', 'address': '88 ถ.รัชดาภิเษก แขวงห้วยขวาง เขตห้วยขวาง กทม.', 'icon': 'work'},
+      ];
+    }
+    _loaded = true;
+  }
+
+  static Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(_addresses));
+  }
+
+  static Future<void> add(Map<String, String> addr) async {
+    _addresses.add(addr);
+    await _save();
+  }
+
+  static Future<void> remove(int idx) async {
+    _addresses.removeAt(idx);
+    await _save();
+  }
+
+  static Future<void> update(int idx, Map<String, String> addr) async {
+    _addresses[idx] = addr;
+    await _save();
+  }
 }
 
 class AddressBookScreen extends StatefulWidget {
-  final bool pickMode; // true = selecting address, false = managing
+  final bool pickMode;
   const AddressBookScreen({super.key, this.pickMode = false});
   @override
   State<AddressBookScreen> createState() => _AddressBookScreenState();
 }
 
 class _AddressBookScreenState extends State<AddressBookScreen> {
-  List<Map<String, String>> get _addresses => AddressManager.addresses;
+  bool _loadingData = true;
 
   static const _icons = {
-    'home': Icons.home_rounded,
-    'work': Icons.work_rounded,
+    'home':  Icons.home_rounded,
+    'work':  Icons.work_rounded,
     'other': Icons.location_on_rounded,
   };
 
+  @override
+  void initState() {
+    super.initState();
+    AddressManager.load().then((_) {
+      if (mounted) setState(() => _loadingData = false);
+    });
+  }
+
   void _addOrEdit({int? index}) {
     final editing = index != null;
-    final labelCtrl = TextEditingController(text: editing ? _addresses[index]['label'] : '');
-    final addrCtrl = TextEditingController(text: editing ? _addresses[index]['address'] : '');
-    String iconKey = editing ? (_addresses[index]['icon'] ?? 'other') : 'other';
+    final addresses = AddressManager.addresses;
+    final labelCtrl = TextEditingController(text: editing ? addresses[index]['label'] : '');
+    final addrCtrl  = TextEditingController(text: editing ? addresses[index]['address'] : '');
+    String iconKey  = editing ? (addresses[index]['icon'] ?? 'other') : 'other';
+    double? lat = editing ? double.tryParse(addresses[index]['lat'] ?? '') : null;
+    double? lng = editing ? double.tryParse(addresses[index]['lng'] ?? '') : null;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
+        builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
-            decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
             padding: const EdgeInsets.all(24),
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: CColors.orangeMid, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 20),
-              Text(editing ? 'แก้ไขที่อยู่' : 'เพิ่มที่อยู่', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: CColors.text)),
+              Text(editing ? 'แก้ไขที่อยู่' : 'เพิ่มที่อยู่',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: CColors.text)),
               const SizedBox(height: 20),
+
               // Icon picker
               Row(children: ['home', 'work', 'other'].map((k) => GestureDetector(
-                onTap: () => setSheetState(() => iconKey = k),
+                onTap: () => setSheet(() => iconKey = k),
                 child: Container(
                   margin: const EdgeInsets.only(right: 10),
                   padding: const EdgeInsets.all(12),
@@ -65,6 +117,8 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                 ),
               )).toList()),
               const SizedBox(height: 16),
+
+              // Label field
               TextField(
                 controller: labelCtrl,
                 decoration: InputDecoration(
@@ -75,32 +129,93 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: addrCtrl,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'ที่อยู่เต็ม',
-                  filled: true, fillColor: const Color(0xFFF5F5F5),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: CColors.orange)),
+
+              // Address field + map button
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(
+                  child: TextField(
+                    controller: addrCtrl,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      labelText: 'ที่อยู่เต็ม',
+                      filled: true, fillColor: const Color(0xFFF5F5F5),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: CColors.orange)),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () async {
+                    final result = await Navigator.push<Map<String, dynamic>>(
+                      ctx,
+                      MaterialPageRoute(
+                        builder: (_) => LocationPickerScreen(
+                          initial: lat != null && lng != null ? LatLng(lat!, lng!) : null,
+                        ),
+                      ),
+                    );
+                    if (result != null) {
+                      setSheet(() {
+                        addrCtrl.text = result['address'] as String;
+                        lat = result['lat'] as double;
+                        lng = result['lng'] as double;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: 52, height: 56,
+                    decoration: BoxDecoration(
+                      color: CColors.orangeLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: lat != null ? Border.all(color: CColors.orange, width: 2) : null,
+                    ),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.location_on_rounded, color: CColors.orange, size: 22),
+                      Text('ปักหมุด', style: TextStyle(fontSize: 9, color: CColors.orange, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                ),
+              ]),
+
+              if (lat != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(children: [
+                    const Icon(Icons.check_circle_rounded, color: CColors.orange, size: 14),
+                    const SizedBox(width: 4),
+                    Text('ปักหมุดแล้ว (${lat!.toStringAsFixed(4)}, ${lng!.toStringAsFixed(4)})',
+                      style: const TextStyle(fontSize: 11, color: CColors.orange)),
+                  ]),
+                ),
+
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity, height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (addrCtrl.text.trim().isEmpty) return;
-                    final entry = {'label': labelCtrl.text.trim().isEmpty ? 'ที่อยู่ใหม่' : labelCtrl.text.trim(), 'address': addrCtrl.text.trim(), 'icon': iconKey};
+                    final entry = <String, String>{
+                      'label': labelCtrl.text.trim().isEmpty ? 'ที่อยู่ใหม่' : labelCtrl.text.trim(),
+                      'address': addrCtrl.text.trim(),
+                      'icon': iconKey,
+                      if (lat != null) 'lat': lat.toString(),
+                      if (lng != null) 'lng': lng.toString(),
+                    };
                     if (editing) {
-                      AddressManager.update(index, entry);
+                      await AddressManager.update(index, entry);
                     } else {
-                      AddressManager.add(entry);
+                      await AddressManager.add(entry);
                     }
-                    Navigator.pop(ctx);
-                    setState(() {});
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      setState(() {});
+                    }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: CColors.orange, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CColors.orange, foregroundColor: Colors.white,
+                    elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
                   child: const Text('บันทึก', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                 ),
               ),
@@ -113,12 +228,20 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingData) {
+      return Scaffold(
+        backgroundColor: CColors.bg,
+        body: const Center(child: CircularProgressIndicator(color: CColors.orange)),
+      );
+    }
+    final addresses = AddressManager.addresses;
     return Scaffold(
       backgroundColor: CColors.bg,
       appBar: AppBar(
         backgroundColor: CColors.bg,
         elevation: 0,
-        title: Text(widget.pickMode ? 'เลือกที่อยู่' : 'สมุดที่อยู่', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: CColors.text)),
+        title: Text(widget.pickMode ? 'เลือกที่อยู่' : 'สมุดที่อยู่',
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: CColors.text)),
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Container(
@@ -130,28 +253,26 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addOrEdit(),
-        backgroundColor: CColors.orange,
-        foregroundColor: Colors.white,
+        backgroundColor: CColors.orange, foregroundColor: Colors.white,
         child: const Icon(Icons.add_rounded),
       ),
-      body: _addresses.isEmpty
-          ? Center(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Container(width: 80, height: 80, decoration: const BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle),
-                    child: const Icon(Icons.location_on_rounded, color: CColors.orange, size: 40)),
-                const SizedBox(height: 16),
-                const Text('ยังไม่มีที่อยู่', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: CColors.text)),
-                const SizedBox(height: 8),
-                const Text('กด + เพื่อเพิ่มที่อยู่ใหม่', style: TextStyle(color: CColors.muted)),
-              ]),
-            )
+      body: addresses.isEmpty
+          ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Container(width: 80, height: 80, decoration: const BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle),
+                  child: const Icon(Icons.location_on_rounded, color: CColors.orange, size: 40)),
+              const SizedBox(height: 16),
+              const Text('ยังไม่มีที่อยู่', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: CColors.text)),
+              const SizedBox(height: 8),
+              const Text('กด + เพื่อเพิ่มที่อยู่ใหม่', style: TextStyle(color: CColors.muted)),
+            ]))
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: _addresses.length,
+              itemCount: addresses.length,
               itemBuilder: (_, i) {
-                final addr = _addresses[i];
+                final addr = addresses[i];
+                final hasPin = addr['lat'] != null;
                 return GestureDetector(
-                  onTap: widget.pickMode ? () => Navigator.pop(context, addr['address']) : null,
+                  onTap: widget.pickMode ? () => Navigator.pop(context, addr) : null,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
@@ -167,16 +288,26 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                       ),
                       const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(addr['label'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: CColors.text)),
+                        Row(children: [
+                          Text(addr['label'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: CColors.text)),
+                          if (hasPin) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(6)),
+                              child: const Text('📍 ปักหมุด', style: TextStyle(fontSize: 10, color: CColors.orange, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ]),
                         const SizedBox(height: 3),
                         Text(addr['address'] ?? '', style: const TextStyle(fontSize: 12, color: CColors.muted), maxLines: 2, overflow: TextOverflow.ellipsis),
                       ])),
                       if (!widget.pickMode) Row(children: [
                         IconButton(icon: const Icon(Icons.edit_rounded, size: 18, color: CColors.muted), onPressed: () => _addOrEdit(index: i)),
-                        IconButton(icon: const Icon(Icons.delete_rounded, size: 18, color: CColors.red), onPressed: () {
-                          AddressManager.remove(i);
-                          setState(() {});
-                        }),
+                        IconButton(
+                          icon: const Icon(Icons.delete_rounded, size: 18, color: CColors.red),
+                          onPressed: () async { await AddressManager.remove(i); setState(() {}); },
+                        ),
                       ]) else const Icon(Icons.chevron_right_rounded, color: CColors.muted),
                     ]),
                   ),
