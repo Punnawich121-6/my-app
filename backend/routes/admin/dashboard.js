@@ -44,7 +44,7 @@ router.get('/:storeId', async (req, res) => {
 
     const [recentOrders] = await db.query(
       `SELECT o.id, o.orderNumber, o.status, o.totalAmount, o.notes, o.createdAt,
-              c.name AS customer_name, c.phone AS customer_phone,
+              ANY_VALUE(c.name) AS customer_name, ANY_VALUE(c.phone) AS customer_phone,
               GROUP_CONCAT(oi.name SEPARATOR ', ') as items_summary
        FROM \`order\` o
        LEFT JOIN customer c ON o.customerId = c.id

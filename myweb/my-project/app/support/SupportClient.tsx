@@ -378,20 +378,30 @@ export default function SupportClient() {
                             : "bg-surface-container-lowest text-on-surface rounded-bl-sm border border-surface-container-highest"
                           }`}
                         >
-                          {msg.image_url && (
-                            <a
-                              href={msg.image_url.startsWith('data:') ? msg.image_url : `${BACKEND}${msg.image_url}`}
-                              target="_blank" rel="noopener noreferrer"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={msg.image_url.startsWith('data:') ? msg.image_url : `${BACKEND}${msg.image_url}`}
-                                alt="รูปภาพ"
-                                className="max-w-full rounded-xl mb-1 cursor-pointer hover:opacity-90 transition-opacity"
-                                style={{ maxHeight: 260 }}
-                              />
-                            </a>
-                          )}
+                          {msg.image_url && (() => {
+                            const src = msg.image_url.startsWith('data:')
+                              ? msg.image_url
+                              : `${BACKEND}${msg.image_url}`;
+                            return (
+                              <a href={src} target="_blank" rel="noopener noreferrer">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={src}
+                                  alt="รูปภาพ"
+                                  className="max-w-full rounded-xl mb-1 cursor-pointer hover:opacity-90 transition-opacity"
+                                  style={{ maxHeight: 260 }}
+                                  onError={(e) => {
+                                    const t = e.currentTarget;
+                                    t.style.display = 'none';
+                                    const p = document.createElement('div');
+                                    p.className = 'text-xs text-on-surface-variant bg-surface-container px-3 py-2 rounded-xl mb-1';
+                                    p.textContent = '📷 รูปภาพหมดอายุ';
+                                    t.parentElement?.appendChild(p);
+                                  }}
+                                />
+                              </a>
+                            );
+                          })()}
                           {msg.message && <span>{msg.message}</span>}
                         </div>
                         <span className="text-body-xs text-secondary mt-1 px-1">

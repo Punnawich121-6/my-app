@@ -189,10 +189,10 @@ router.get('/orders/available', async (req, res) => {
               o.createdAt   AS created_at,
               o.deliveryLatitude  AS delivery_lat,
               o.deliveryLongitude AS delivery_lng,
-              r.name        AS store_name,
-              r.address     AS store_address,
-              c.name        AS customer_name,
-              c.phone       AS customer_phone,
+              ANY_VALUE(r.name)    AS store_name,
+              ANY_VALUE(r.address) AS store_address,
+              ANY_VALUE(c.name)    AS customer_name,
+              ANY_VALUE(c.phone)   AS customer_phone,
               CASE WHEN o.notes LIKE '% | %'
                    THEN TRIM(SUBSTRING_INDEX(o.notes, ' | ', 1))
                    ELSE TRIM(o.notes) END AS address,
@@ -327,12 +327,12 @@ router.get('/orders/active/:riderId', async (req, res) => {
               o.createdAt   AS created_at,
               o.deliveryLatitude  AS delivery_lat,
               o.deliveryLongitude AS delivery_lng,
-              r.name        AS store_name,
-              r.address     AS store_address,
-              r.lat         AS store_lat,
-              r.lng         AS store_lng,
-              c.name        AS customer_name,
-              c.phone       AS customer_phone,
+              ANY_VALUE(r.name)    AS store_name,
+              ANY_VALUE(r.address) AS store_address,
+              ANY_VALUE(r.lat)     AS store_lat,
+              ANY_VALUE(r.lng)     AS store_lng,
+              ANY_VALUE(c.name)    AS customer_name,
+              ANY_VALUE(c.phone)   AS customer_phone,
               CASE WHEN o.notes LIKE '% | %'
                    THEN TRIM(SUBSTRING_INDEX(o.notes, ' | ', 1))
                    ELSE TRIM(o.notes) END AS address,

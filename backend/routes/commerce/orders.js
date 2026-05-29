@@ -22,7 +22,10 @@ router.get('/:storeId', async (req, res) => {
 
     const [orders] = await db.query(
       `SELECT o.id, o.orderNumber, o.status, o.totalAmount, o.serviceFee, o.notes, o.createdAt,
-              c.name AS customer_name, c.phone AS customer_phone, c.address,
+              ANY_VALUE(c.name) AS customer_name, ANY_VALUE(c.phone) AS customer_phone,
+              CASE WHEN o.notes LIKE '% | %'
+                   THEN TRIM(SUBSTRING_INDEX(o.notes, ' | ', 1))
+                   ELSE TRIM(o.notes) END AS address,
               GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name) SEPARATOR ', ') as items_summary
        FROM \`order\` o
        LEFT JOIN customer c ON o.customerId = c.id
@@ -43,7 +46,7 @@ router.get('/customer/:customerId', async (req, res) => {
       `SELECT o.id, o.orderNumber, o.status,
               o.totalAmount AS total_amount, o.serviceFee AS service_fee,
               o.notes, o.createdAt AS created_at,
-              r.name AS restaurant_name, r.imageUrl AS restaurant_image,
+              ANY_VALUE(r.name) AS restaurant_name, ANY_VALUE(r.imageUrl) AS restaurant_image,
               GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name) SEPARATOR ', ') AS items_summary,
               EXISTS(SELECT 1 FROM reviews WHERE order_id = o.id) AS is_reviewed
        FROM \`order\` o
@@ -64,7 +67,11 @@ router.get('/detail/:orderId', async (req, res) => {
   const { orderId } = req.params;
   try {
     const [[order]] = await db.query(
-      `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, c.address,
+      `SELECT o.*,
+              c.name AS customer_name, c.phone AS customer_phone,
+              CASE WHEN o.notes LIKE '% | %'
+                   THEN TRIM(SUBSTRING_INDEX(o.notes, ' | ', 1))
+                   ELSE TRIM(o.notes) END AS address,
               r.id AS rider_id, r.name AS rider_name, r.phone AS rider_phone,
               r.latitude AS rider_lat, r.longitude AS rider_lng,
               r.profile_photo AS rider_photo

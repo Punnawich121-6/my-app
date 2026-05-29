@@ -522,7 +522,8 @@ class _SupportBubble extends StatelessWidget {
 
   Widget _buildNetworkImage(BuildContext context, String url) {
     // Old file-path uploads (Render ephemeral disk) — never try to fetch
-    if (url.startsWith('/uploads/')) {
+    // Catches both '/uploads/support/...' and 'https://.../uploads/support/...'
+    if (url.contains('/uploads/')) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
