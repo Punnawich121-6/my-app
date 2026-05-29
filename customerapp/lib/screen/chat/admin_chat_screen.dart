@@ -521,16 +521,32 @@ class _SupportBubble extends StatelessWidget {
   });
 
   Widget _buildNetworkImage(BuildContext context, String url) {
+    // Old file-path uploads (Render ephemeral disk) — never try to fetch
+    if (url.startsWith('/uploads/')) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: const [
+          Icon(Icons.image_not_supported_rounded, size: 14, color: CColors.muted),
+          SizedBox(width: 6),
+          Text('รูปภาพหมดอายุ', style: TextStyle(fontSize: 12, color: CColors.muted)),
+        ]),
+      );
+    }
+
     final Widget broken = Container(
-      width: double.infinity, height: 180,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: CColors.orangeLight,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.black.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.broken_image_rounded, color: CColors.orange, size: 32),
-        SizedBox(height: 6),
-        Text('โหลดไม่ได้', style: TextStyle(fontSize: 11, color: CColors.orange)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: const [
+        Icon(Icons.image_not_supported_rounded, size: 14, color: CColors.muted),
+        SizedBox(width: 6),
+        Text('โหลดรูปไม่ได้', style: TextStyle(fontSize: 12, color: CColors.muted)),
       ]),
     );
 
