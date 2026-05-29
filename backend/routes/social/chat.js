@@ -17,19 +17,39 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-let _colAdded = false;
-async function ensureImageCol() {
-  if (_colAdded) return;
+let _migrated = false;
+async function ensureCols() {
+  if (_migrated) return;
   try {
-    await db.query(`ALTER TABLE messages ADD COLUMN image_url VARCHAR(500) AFTER message`);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id VARCHAR(100) NOT NULL,
+        sender_id VARCHAR(100) NOT NULL,
+        sender_role ENUM('customer','store','rider') NOT NULL,
+        sender_name VARCHAR(100) NOT NULL,
+        message TEXT NOT NULL DEFAULT '',
+        image_url VARCHAR(500),
+        chat_type ENUM('store','rider') NOT NULL DEFAULT 'store',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
   } catch (_) {}
-  _colAdded = true;
+  try { await db.query(`ALTER TABLE messages ADD COLUMN image_url VARCHAR(500) AFTER message`); } catch (_) {}
+  try { await db.query(`ALTER TABLE messages ADD COLUMN chat_type ENUM('store','rider') NOT NULL DEFAULT 'store' AFTER image_url`); } catch (_) {}
+  try { await db.query(`ALTER TABLE messages MODIFY COLUMN order_id VARCHAR(100) NOT NULL`); } catch (_) {}
+  try { await db.query(`ALTER TABLE messages MODIFY COLUMN sender_id VARCHAR(100) NOT NULL`); } catch (_) {}
+  _migrated = true;
+}
+
+async function ensureImageCol() {
+  return ensureCols();
 }
 
 async function hasAccess(orderId, userId, userRole) {
   try {
     const [rows] = await db.query(
-      'SELECT customerId, restaurantId, riderId FROM `Order` WHERE id = ?',
+      'SELECT customerId, restaurantId, riderId FROM `order` WHERE id = ?',
       [orderId]
     );
     if (!rows.length) return false;
@@ -55,6 +75,7 @@ router.get('/conversations/:userRole/:userId', async (req, res) => {
   else return res.status(400).json({ error: 'invalid role' });
 
   try {
+    await ensureCols();
     const [rows] = await db.query(
       `SELECT o.id as order_id, o.status, o.riderId,
               c.name as customer_name,
@@ -67,7 +88,7 @@ router.get('/conversations/:userRole/:userId', async (req, res) => {
                ORDER BY m3.created_at DESC LIMIT 1) as last_sender,
               (SELECT m4.created_at FROM messages m4 WHERE m4.order_id = o.id AND m4.chat_type = ?
                ORDER BY m4.created_at DESC LIMIT 1) as last_msg_at
-       FROM \`Order\` o
+       FROM \`order\` o
        JOIN restaurant r ON r.id = o.restaurantId
        LEFT JOIN customer c ON c.id = o.customerId
        WHERE ${where}

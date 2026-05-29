@@ -301,7 +301,8 @@ router.post('/review/store', reviewUpload.array('images', 5), async (req, res) =
     }
     if (existing) return res.json({ success: true, alreadyReviewed: true });
 
-    const baseUrl = `http://${req.get('host')}`;
+    const proto = req.get('x-forwarded-proto') || req.protocol;
+    const baseUrl = `${proto}://${req.get('host')}`;
     const imageUrls = (req.files || []).map(f => `${baseUrl}/uploads/reviews/${f.filename}`);
     const imagesJson = imageUrls.length ? JSON.stringify(imageUrls) : null;
 
