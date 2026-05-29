@@ -65,11 +65,13 @@ export default function NotificationBell() {
         const socket = mountAdminSocket()
         socket.on('new_order', fetchNotifs)
         socket.on('order_status_changed', fetchNotifs)
+        socket.on('new_support_message', fetchNotifs)
 
         return () => {
             clearInterval(id)
             socket.off('new_order', fetchNotifs)
             socket.off('order_status_changed', fetchNotifs)
+            socket.off('new_support_message', fetchNotifs)
             unmountAdminSocket()
         }
     }, [fetchNotifs])

@@ -45,7 +45,7 @@ export async function GET() {
                 MAX(created_at) AS last_at,
                 COUNT(*)        AS unread_count
             FROM support_messages
-            WHERE sender_role = 'store' AND is_read = 0
+            WHERE sender_role IN ('store', 'customer') AND is_read = 0
             GROUP BY store_id
             ORDER BY last_at DESC
             LIMIT 5
