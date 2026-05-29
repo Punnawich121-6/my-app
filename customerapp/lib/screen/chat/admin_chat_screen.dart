@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/socket_service.dart';
@@ -26,6 +28,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   final List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
   bool _sending = false;
+  XFile? _pickedImage;
 
   String get _threadId => 'customer_${widget.customerId}';
 
@@ -76,12 +79,48 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (file != null && mounted) {
+      setState(() => _pickedImage = file);
+    }
+  }
+
+  Future<String?> _uploadImage(XFile file) async {
+    try {
+      final uri = Uri.parse('$_base/$_threadId/upload');
+      final request = http.MultipartRequest('POST', uri);
+      final bytes = await file.readAsBytes();
+      request.files.add(http.MultipartFile.fromBytes(
+        'image',
+        bytes,
+        filename: file.name,
+      ));
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final body = jsonDecode(await response.stream.bytesToString());
+        return body['url'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _send() async {
     final text = _ctrl.text.trim();
-    if (text.isEmpty || _sending) return;
+    if ((text.isEmpty && _pickedImage == null) || _sending) return;
     setState(() => _sending = true);
     _ctrl.clear();
+
+    final imageToUpload = _pickedImage;
+    setState(() => _pickedImage = null);
+
     try {
+      String? imageUrl;
+      if (imageToUpload != null) {
+        imageUrl = await _uploadImage(imageToUpload);
+      }
+
       await apiPost(
         '$_base/$_threadId',
         jsonEncode({
@@ -89,6 +128,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           'senderName': widget.customerName,
           'storeName': widget.customerName,
           'message': text,
+          'imageUrl': imageUrl,
         }),
       );
       await _loadMessages();
@@ -190,12 +230,18 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         final isMe = msg['sender_role'] == 'customer';
                         return _SupportBubble(
                           message: msg['message'] ?? '',
+                          imageUrl: msg['image_url'] as String?,
                           time: _formatTime(msg['created_at']),
                           isMe: isMe,
                         );
                       },
                     ),
         ),
+        if (_pickedImage != null)
+          _ImagePreviewBar(
+            file: _pickedImage!,
+            onRemove: () => setState(() => _pickedImage = null),
+          ),
         _buildInputBar(),
       ]),
     );
@@ -212,6 +258,15 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
         )],
       ),
       child: Row(children: [
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: context.subtleBg, shape: BoxShape.circle),
+            child: Icon(Icons.image_rounded, color: context.muted, size: 20),
+          ),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Container(
             height: 44,
@@ -250,8 +305,45 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   }
 }
 
+class _ImagePreviewBar extends StatelessWidget {
+  final XFile file;
+  final VoidCallback onRemove;
+
+  const _ImagePreviewBar({required this.file, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: context.card,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(file.path, width: 64, height: 64, fit: BoxFit.cover,
+            errorBuilder: (_, e, stack) => Container(
+              width: 64, height: 64, color: CColors.orangeLight,
+              child: const Icon(Icons.image_rounded, color: CColors.orange),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(file.name, style: TextStyle(fontSize: 12, color: context.muted), overflow: TextOverflow.ellipsis)),
+        GestureDetector(
+          onTap: onRemove,
+          child: Container(
+            width: 24, height: 24,
+            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+            child: const Icon(Icons.close, color: Colors.white, size: 14),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
 class _SupportBubble extends StatelessWidget {
   final String message;
+  final String? imageUrl;
   final String time;
   final bool isMe;
 
@@ -259,6 +351,7 @@ class _SupportBubble extends StatelessWidget {
     required this.message,
     required this.time,
     required this.isMe,
+    this.imageUrl,
   });
 
   @override
@@ -292,7 +385,10 @@ class _SupportBubble extends StatelessWidget {
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.65),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: imageUrl != null ? 6 : 14,
+                      vertical: imageUrl != null ? 6 : 10,
+                    ),
                     decoration: BoxDecoration(
                       color: isMe ? CColors.orange : Colors.white,
                       borderRadius: BorderRadius.only(
@@ -307,11 +403,33 @@ class _SupportBubble extends StatelessWidget {
                           blurRadius: 4)
                       ],
                     ),
-                    child: Text(message,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isMe ? Colors.white : CColors.text,
-                        height: 1.4)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (imageUrl != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              '$kBackendUrl$imageUrl',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, e, stack) => Container(
+                                width: 160, height: 120,
+                                color: CColors.orangeLight,
+                                child: const Icon(Icons.broken_image_rounded, color: CColors.orange),
+                              ),
+                            ),
+                          ),
+                        if (imageUrl != null && message.isNotEmpty)
+                          const SizedBox(height: 6),
+                        if (message.isNotEmpty)
+                          Text(message,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isMe ? Colors.white : CColors.text,
+                              height: 1.4)),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 3),
