@@ -1,4 +1,5 @@
 import 'dart:html' as html;
+import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 
 class PaymentWebView extends StatefulWidget {
@@ -18,38 +19,44 @@ class PaymentWebView extends StatefulWidget {
 }
 
 class _PaymentWebViewState extends State<PaymentWebView> {
+  late final String _viewType;
+  bool _loaded = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      html.window.open(
-        widget.formUrl,
-        'payment',
-        'width=480,height=680,scrollbars=yes,resizable=yes',
-      );
+    _viewType = 'payment-iframe-${DateTime.now().microsecondsSinceEpoch}';
+
+    final iframe = html.IFrameElement()
+      ..src = widget.formUrl
+      ..style.border = 'none'
+      ..style.width = '100%'
+      ..style.height = '100%'
+      ..allow = 'payment'
+      ..setAttribute('allowfullscreen', 'true');
+
+    iframe.onLoad.listen((_) {
+      if (!mounted) return;
+      setState(() => _loaded = true);
+      widget.onPageFinished();
     });
+
+    // ignore: undefined_prefixed_name
+    ui.platformViewRegistry.registerViewFactory(_viewType, (_) => iframe);
+
+    widget.onPageStarted(widget.formUrl);
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: Color(0xFFFF6B35)),
-          SizedBox(height: 20),
-          Text(
-            'กำลังรอผลการชำระเงิน...',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    return Stack(
+      children: [
+        HtmlElementView(viewType: _viewType),
+        if (!_loaded)
+          const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
           ),
-          SizedBox(height: 8),
-          Text(
-            'กรุณาชำระเงินในหน้าต่าง Popup ที่เปิดขึ้น',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 13),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
