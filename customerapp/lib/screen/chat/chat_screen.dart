@@ -181,6 +181,29 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) setState(() => _sending = false);
   }
 
+  void _confirmClearChat() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('ลบแชท', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text('ต้องการลบข้อความทั้งหมดในหน้าจอนี้ใช่ไหม?\n(ข้อมูลยังคงอยู่ในระบบ)'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ยกเลิก', style: TextStyle(color: CColors.muted)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _messages.clear());
+            },
+            child: const Text('ลบ', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 150), () {
       if (_scrollCtrl.hasClients) {
@@ -260,6 +283,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   Text(widget.chatType == 'rider' ? 'แชทกับไรเดอร์' : 'แชทกับร้านค้า',
                     style: const TextStyle(fontSize: 11, color: CColors.muted)),
                 ],
+              ),
+            ),
+            GestureDetector(
+              onTap: _confirmClearChat,
+              child: Container(
+                width: 36, height: 36,
+                decoration: const BoxDecoration(color: Color(0xFFF5F5F5), shape: BoxShape.circle),
+                child: const Icon(Icons.delete_outline_rounded, color: CColors.muted, size: 18),
               ),
             ),
           ]),
