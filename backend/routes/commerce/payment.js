@@ -11,13 +11,16 @@ const MERCHANT_ID  = process.env.DIGIPAY_MERCHANT_ID;
 const SIGN_KEY     = Buffer.from(process.env.DIGIPAY_SIGN_KEY, 'base64');
 
 // ── Credit Card / Bank (v1 Redirect API) ───────────────────────────────────
-const CARD_API_ID      = process.env.CARD_API_ID     ;
-const CARD_API_KEY     = process.env.CARD_API_KEY     ;
-const CARD_MERCHANT_ID = process.env.CARD_MERCHANT_ID ;
-const CARD_SIGN_KEY    = process.env.CARD_SIGN_KEY;
-const BACKEND_URL      = process.env.BACKEND_URL      || 'http://localhost:3001';
+// Use CARD_* env vars if set, otherwise fall back to the same credentials used by QR
+const CARD_API_ID      = process.env.CARD_API_ID      || process.env.DIGIPAY_API_ID;
+const CARD_API_KEY     = process.env.CARD_API_KEY      || process.env.DIGIPAY_API_KEY;
+const CARD_MERCHANT_ID = process.env.CARD_MERCHANT_ID  || process.env.DIGIPAY_MERCHANT_ID;
+// v1 sign key is the raw string from the portal (same value stored in DIGIPAY_SIGN_KEY env)
+const CARD_SIGN_KEY    = process.env.CARD_SIGN_KEY     || process.env.DIGIPAY_SIGN_KEY;
+const BACKEND_URL      = process.env.BACKEND_URL       || 'http://localhost:3001';
 
-// SHA256(data + sign_key) as specified in DigiPay v1 spec
+// SHA256(merchant_id.order_id.amount.card_masking.term_month.card_issuer + sign_key)
+// Per DigiPay v1 spec — amount must be the same string sent in the form field
 function cardSign(merchantId, orderId, amount, cardMasking = '', termMonth = '', cardIssuer = '') {
   const data = `${merchantId}.${orderId}.${amount}.${cardMasking}.${termMonth}.${cardIssuer}`;
   return crypto.createHash('sha256').update(data + CARD_SIGN_KEY).digest('hex');
@@ -129,7 +132,10 @@ router.get('/card-form/:token', (req, res) => {
   if (!session) {
     return res.status(404).send('<h3>Session not found or expired. Please try again in the app.</h3>');
   }
-  const { order_id, amount, description } = session;
+  const { order_id, description } = session;
+  // Format amount as 2-decimal string — spec requires "5000.00" format
+  // and the sign must be computed with the exact same string sent in the form field
+  const amount = parseFloat(session.amount).toFixed(2);
   const sign = cardSign(CARD_MERCHANT_ID, order_id, amount);
 
   res.send(`<!DOCTYPE html>
