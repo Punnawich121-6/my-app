@@ -379,9 +379,16 @@ export default function SupportClient() {
                           }`}
                         >
                           {msg.image_url && (() => {
-                            const src = msg.image_url.startsWith('data:')
-                              ? msg.image_url
-                              : `${BACKEND}${msg.image_url}`;
+                            const url = msg.image_url;
+                            // Old file-path uploads from ephemeral disk — files are gone after restart
+                            if (url.includes('/uploads/')) {
+                              return (
+                                <div className="text-xs text-on-surface-variant bg-surface-container px-3 py-2 rounded-xl mb-1">
+                                  📷 รูปภาพหมดอายุ
+                                </div>
+                              );
+                            }
+                            const src = url.startsWith('data:') ? url : `${BACKEND}${url}`;
                             return (
                               <a href={src} target="_blank" rel="noopener noreferrer">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
