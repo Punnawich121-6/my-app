@@ -250,6 +250,14 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                 ],
               ),
             ),
+            GestureDetector(
+              onTap: _confirmClearChat,
+              child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(color: context.subtleBg, shape: BoxShape.circle),
+                child: Icon(Icons.delete_outline_rounded, color: context.muted, size: 18),
+              ),
+            ),
           ]),
         ),
       ),
