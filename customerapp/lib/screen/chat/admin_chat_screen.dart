@@ -44,6 +44,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     if (SocketService.instance.connected) {
       SocketService.instance.joinSupport(_threadId);
     }
+    // re-join room on every reconnect
+    SocketService.instance.on('connect', (_) {
+      SocketService.instance.joinSupport(_threadId);
+    });
     SocketService.instance.on('new_support_message', _onSocketMessage);
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _pollMessages());
   }
@@ -51,6 +55,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    SocketService.instance.off('connect');
     SocketService.instance.off('new_support_message');
     SocketService.instance.leaveSupport(_threadId);
     _ctrl.dispose();

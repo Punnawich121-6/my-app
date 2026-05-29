@@ -26,6 +26,7 @@ export function mountAdminSocket(): Socket {
   const s = getAdminSocket()
   if (consumers === 0) {
     s.emit('join_admin')
+    s.on('connect', () => s.emit('join_admin'))
   }
   consumers++
   return s
