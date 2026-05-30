@@ -78,33 +78,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
     return Stack(
       children: [
         // Background image — fills full screen, never compresses
         Positioned.fill(child: _CustomerBg()),
-        // White fill below form so background doesn't show through
-        Positioned(
-          left: 0, right: 0, bottom: 0,
-          top: screenH * 0.48,
-          child: const ColoredBox(color: Colors.white),
-        ),
-        // Scaffold — transparent, handles keyboard resize
+        // Scaffold — transparent, resizes body when keyboard shows
         Scaffold(
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: true,
-          body: SingleChildScrollView(
-            reverse: true,
-            child: Column(
-              children: [
-                SizedBox(height: screenH * 0.52),
-                _FormSheet(
-                  phoneController: _phoneCtrl,
-                  onRequestOtp: _requestOtp,
-                  loading: _loading,
-                ),
-              ],
-            ),
+          body: Column(
+            children: [
+              // Transparent area — shows background image
+              const Expanded(child: SizedBox()),
+              // Form card at bottom
+              _FormSheet(
+                phoneController: _phoneCtrl,
+                onRequestOtp: _requestOtp,
+                loading: _loading,
+              ),
+            ],
           ),
         ),
       ],
