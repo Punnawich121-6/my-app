@@ -513,12 +513,12 @@ class _RestaurantCardState extends State<_RestaurantCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Stack(fit: StackFit.expand, children: [
-                  store['image_url'] != null
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(fit: StackFit.expand, children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  child: store['image_url'] != null
                       ? Image.network(
                           store['image_url'].toString().startsWith('http')
                               ? store['image_url']
@@ -533,41 +533,42 @@ class _RestaurantCardState extends State<_RestaurantCard>
                           color: context.orangeLight,
                           child: const Center(child: Icon(Icons.restaurant_rounded, color: CColors.orange, size: 48)),
                         ),
-                  if (!isOpen)
-                    Container(
-                      color: Colors.black54,
-                      child: Center(child: Text(S.closed, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18))),
-                    ),
-                  Positioned(
-                    top: 10, right: 10,
-                    child: GestureDetector(
-                      onTap: () {
-                        FavoritesManager.toggle(storeId);
-                        _heartCtrl.forward(from: 0.0);
-                        _popCtrl.forward(from: 0.0);
-                        setState(() {});
-                      },
-                      child: Container(
-                        width: context.wp(36), height: context.wp(36),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          shape: BoxShape.circle,
-                        ),
-                        child: ScaleTransition(
-                          scale: _heartScale,
-                          child: Icon(
-                            isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: isFav ? Colors.red : Colors.white,
-                            size: context.wp(20),
-                          ),
+                ),
+                if (!isOpen)
+                  Container(
+                    color: Colors.black54,
+                    child: Center(child: Text(S.closed, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18))),
+                  ),
+                Positioned(
+                  top: 10, right: 10,
+                  child: GestureDetector(
+                    onTap: () {
+                      FavoritesManager.toggle(storeId);
+                      _heartCtrl.forward(from: 0.0);
+                      _popCtrl.forward(from: 0.0);
+                      setState(() {});
+                    },
+                    child: Container(
+                      width: context.wp(36), height: context.wp(36),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        shape: BoxShape.circle,
+                      ),
+                      child: ScaleTransition(
+                        scale: _heartScale,
+                        child: Icon(
+                          isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: isFav ? Colors.red : Colors.white,
+                          size: context.wp(20),
                         ),
                       ),
                     ),
                   ),
-                  AnimatedBuilder(
+                ),
+                IgnorePointer(
+                  child: AnimatedBuilder(
                     animation: _popCtrl,
                     builder: (context, _) {
-                      if (_popCtrl.value == 0) return const SizedBox.shrink();
                       return Center(
                         child: Opacity(
                           opacity: _popOpacity.value,
@@ -576,33 +577,33 @@ class _RestaurantCardState extends State<_RestaurantCard>
                             child: const Icon(
                               Icons.favorite_rounded,
                               color: Colors.red,
-                              size: 100,
-                              shadows: [Shadow(color: Colors.black26, blurRadius: 16)],
+                              size: 110,
+                              shadows: [Shadow(color: Colors.black38, blurRadius: 20)],
                             ),
                           ),
                         ),
                       );
                     },
                   ),
-                  if (CartManager.instance.storeId == storeId && !CartManager.instance.isEmpty)
-                    Positioned(
-                      bottom: 8, left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 12),
-                          const SizedBox(width: 4),
-                          Text('${CartManager.instance.count}',
-                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                        ]),
+                ),
+                if (CartManager.instance.storeId == storeId && !CartManager.instance.isEmpty)
+                  Positioned(
+                    bottom: 8, left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(20),
                       ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
+                        Text('${CartManager.instance.count}',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                      ]),
                     ),
-                ]),
-              ),
+                  ),
+              ]),
             ),
             Padding(
               padding: EdgeInsets.all(context.wp(14)),
