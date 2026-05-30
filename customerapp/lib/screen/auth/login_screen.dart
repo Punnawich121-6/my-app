@@ -80,18 +80,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CColors.orange,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Positioned.fill(child: _CustomerBg()),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.65,
-              child: _FormSheet(
-                phoneController: _phoneCtrl,
-                onRequestOtp: _requestOtp,
-                loading: _loading,
-              ),
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: _FormSheet(
+              phoneController: _phoneCtrl,
+              onRequestOtp: _requestOtp,
+              loading: _loading,
             ),
           ),
         ],
@@ -177,10 +175,9 @@ class _FormSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: double.infinity,
       padding: EdgeInsets.only(
         left: 28, right: 28,
-        top: 32, bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        top: 32, bottom: MediaQuery.of(context).padding.bottom + 32,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
