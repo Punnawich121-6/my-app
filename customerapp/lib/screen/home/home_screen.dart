@@ -469,26 +469,18 @@ class _RestaurantCardState extends State<_RestaurantCard>
     TweenSequenceItem(tween: Tween(begin: 0.88, end: 1.0), weight: 35),
   ]).animate(CurvedAnimation(parent: _heartCtrl, curve: Curves.easeOut));
 
-  late final AnimationController _popCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 750),
-  );
-  late final Animation<double> _popScale = TweenSequence([
-    TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.25), weight: 35),
-    TweenSequenceItem(tween: Tween(begin: 1.25, end: 1.0), weight: 20),
-    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 20),
-    TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 25),
-  ]).animate(CurvedAnimation(parent: _popCtrl, curve: Curves.easeOut));
-  late final Animation<double> _popOpacity = TweenSequence([
-    TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 20),
-    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 50),
-    TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
-  ]).animate(_popCtrl);
+  bool _showPopHeart = false;
+
+  void _triggerPopHeart() {
+    setState(() => _showPopHeart = true);
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) setState(() => _showPopHeart = false);
+    });
+  }
 
   @override
   void dispose() {
     _heartCtrl.dispose();
-    _popCtrl.dispose();
     super.dispose();
   }
 
@@ -545,8 +537,7 @@ class _RestaurantCardState extends State<_RestaurantCard>
                     onTap: () {
                       FavoritesManager.toggle(storeId);
                       _heartCtrl.forward(from: 0.0);
-                      _popCtrl.forward(from: 0.0);
-                      setState(() {});
+                      _triggerPopHeart();
                     },
                     child: Container(
                       width: context.wp(36), height: context.wp(36),
@@ -566,24 +557,22 @@ class _RestaurantCardState extends State<_RestaurantCard>
                   ),
                 ),
                 IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _popCtrl,
-                    builder: (context, _) {
-                      return Center(
-                        child: Opacity(
-                          opacity: _popOpacity.value,
-                          child: Transform.scale(
-                            scale: _popScale.value,
-                            child: const Icon(
-                              Icons.favorite_rounded,
-                              color: Colors.red,
-                              size: 110,
-                              shadows: [Shadow(color: Colors.black38, blurRadius: 20)],
-                            ),
-                          ),
+                  child: Center(
+                    child: AnimatedOpacity(
+                      opacity: _showPopHeart ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: AnimatedScale(
+                        scale: _showPopHeart ? 1.0 : 0.1,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.elasticOut,
+                        child: const Icon(
+                          Icons.favorite_rounded,
+                          color: Colors.red,
+                          size: 110,
+                          shadows: [Shadow(color: Colors.black38, blurRadius: 20)],
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
                 if (CartManager.instance.storeId == storeId && !CartManager.instance.isEmpty)
