@@ -78,24 +78,36 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: CColors.orange,
-      body: Stack(
-        children: [
-          Positioned.fill(child: _CustomerBg()),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.65,
-              child: _FormSheet(
-                phoneController: _phoneCtrl,
-                onRequestOtp: _requestOtp,
-                loading: _loading,
-              ),
+    final screenH = MediaQuery.of(context).size.height;
+    return Stack(
+      children: [
+        // Background image — fills full screen, never compresses
+        Positioned.fill(child: _CustomerBg()),
+        // White fill below form so background doesn't show through
+        Positioned(
+          left: 0, right: 0, bottom: 0,
+          top: screenH * 0.48,
+          child: const ColoredBox(color: Colors.white),
+        ),
+        // Scaffold — transparent, handles keyboard resize
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          resizeToAvoidBottomInset: true,
+          body: SingleChildScrollView(
+            reverse: true,
+            child: Column(
+              children: [
+                SizedBox(height: screenH * 0.52),
+                _FormSheet(
+                  phoneController: _phoneCtrl,
+                  onRequestOtp: _requestOtp,
+                  loading: _loading,
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -146,6 +158,7 @@ class _CustomerBg extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: 0.2,
+                  decoration: TextDecoration.none,
                   shadows: [Shadow(color: Color(0x88000000), blurRadius: 10)],
                 ),
               ),
@@ -156,6 +169,7 @@ class _CustomerBg extends StatelessWidget {
                   fontSize: 14,
                   color: Colors.white.withValues(alpha: 0.90),
                   fontWeight: FontWeight.w400,
+                  decoration: TextDecoration.none,
                   shadows: const [Shadow(color: Color(0x77000000), blurRadius: 8)],
                 ),
               ),
