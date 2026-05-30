@@ -458,7 +458,7 @@ class _RestaurantCard extends StatefulWidget {
 }
 
 class _RestaurantCardState extends State<_RestaurantCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _heartCtrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 380),
@@ -469,9 +469,26 @@ class _RestaurantCardState extends State<_RestaurantCard>
     TweenSequenceItem(tween: Tween(begin: 0.88, end: 1.0), weight: 35),
   ]).animate(CurvedAnimation(parent: _heartCtrl, curve: Curves.easeOut));
 
+  late final AnimationController _popCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 750),
+  );
+  late final Animation<double> _popScale = TweenSequence([
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.25), weight: 35),
+    TweenSequenceItem(tween: Tween(begin: 1.25, end: 1.0), weight: 20),
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 20),
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 25),
+  ]).animate(CurvedAnimation(parent: _popCtrl, curve: Curves.easeOut));
+  late final Animation<double> _popOpacity = TweenSequence([
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 20),
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 50),
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
+  ]).animate(_popCtrl);
+
   @override
   void dispose() {
     _heartCtrl.dispose();
+    _popCtrl.dispose();
     super.dispose();
   }
 
@@ -527,6 +544,7 @@ class _RestaurantCardState extends State<_RestaurantCard>
                       onTap: () {
                         FavoritesManager.toggle(storeId);
                         _heartCtrl.forward(from: 0.0);
+                        _popCtrl.forward(from: 0.0);
                         setState(() {});
                       },
                       child: Container(
@@ -545,6 +563,26 @@ class _RestaurantCardState extends State<_RestaurantCard>
                         ),
                       ),
                     ),
+                  ),
+                  AnimatedBuilder(
+                    animation: _popCtrl,
+                    builder: (context, _) {
+                      if (_popCtrl.value == 0) return const SizedBox.shrink();
+                      return Center(
+                        child: Opacity(
+                          opacity: _popOpacity.value,
+                          child: Transform.scale(
+                            scale: _popScale.value,
+                            child: const Icon(
+                              Icons.favorite_rounded,
+                              color: Colors.red,
+                              size: 100,
+                              shadows: [Shadow(color: Colors.black26, blurRadius: 16)],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   if (CartManager.instance.storeId == storeId && !CartManager.instance.isEmpty)
                     Positioned(
