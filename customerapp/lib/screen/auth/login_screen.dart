@@ -84,11 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           Positioned.fill(child: _CustomerBg()),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            left: 0, right: 0,
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+          Positioned(
+            left: 0, right: 0, bottom: 0,
             child: _FormSheet(
               phoneController: _phoneCtrl,
               onRequestOtp: _requestOtp,
@@ -176,133 +173,138 @@ class _FormSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.only(
-        left: 28, right: 28,
-        top: 32, bottom: MediaQuery.of(context).padding.bottom + 32,
-      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40, height: 4,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 28, right: 28,
+          top: 32,
+          bottom: keyboardHeight > 0 ? keyboardHeight + 16 : safeBottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0E0E0),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            const Text(
+              'เข้าสู่ระบบ',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'กรอกเบอร์โทรศัพท์เพื่อรับ OTP',
+              style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
+            ),
+            const SizedBox(height: 28),
+            Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.circular(99),
+                color: const Color(0xFFF7F7F7),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE8E8E8)),
               ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          const Text(
-            'เข้าสู่ระบบ',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'กรอกเบอร์โทรศัพท์เพื่อรับ OTP',
-            style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
-          ),
-          const SizedBox(height: 28),
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F7F7),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE8E8E8)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: const BoxDecoration(
-                    border: Border(right: BorderSide(color: Color(0xFFE8E8E8))),
-                  ),
-                  child: const Text(
-                    '🇹🇭 +66',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                  ),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                    decoration: const InputDecoration(
-                      hintText: '08x-xxx-xxxx',
-                      hintStyle: TextStyle(color: Color(0xFFBDBDBD), fontSize: 15),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: const BoxDecoration(
+                      border: Border(right: BorderSide(color: Color(0xFFE8E8E8))),
+                    ),
+                    child: const Text(
+                      '🇹🇭 +66',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: loading ? null : onRequestOtp,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: CColors.orange,
-                disabledBackgroundColor: CColors.orangeMid,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: loading
-                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text(
-                      'รับ OTP',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: GestureDetector(
-              onTap: () {
-                if (phoneController.text.length < 9) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('กรุณากรอกเบอร์โทรก่อน'),
-                      backgroundColor: CColors.orange,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                  return;
-                }
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => RegisterScreen(phone: phoneController.text),
-                ));
-              },
-              child: RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
-                  children: [
-                    TextSpan(text: 'ยังไม่มีบัญชี? '),
-                    TextSpan(
-                      text: 'สมัครสมาชิก',
-                      style: TextStyle(
-                        color: CColors.orange,
-                        fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                      decoration: const InputDecoration(
+                        hintText: '08x-xxx-xxxx',
+                        hintStyle: TextStyle(color: Color(0xFFBDBDBD), fontSize: 15),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: loading ? null : onRequestOtp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CColors.orange,
+                  disabledBackgroundColor: CColors.orangeMid,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: loading
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text(
+                        'รับ OTP',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: GestureDetector(
+                onTap: () {
+                  if (phoneController.text.length < 9) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('กรุณากรอกเบอร์โทรก่อน'),
+                        backgroundColor: CColors.orange,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => RegisterScreen(phone: phoneController.text),
+                  ));
+                },
+                child: RichText(
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 14, color: Color(0xFF9E9E9E)),
+                    children: [
+                      TextSpan(text: 'ยังไม่มีบัญชี? '),
+                      TextSpan(
+                        text: 'สมัครสมาชิก',
+                        style: TextStyle(
+                          color: CColors.orange,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
