@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Positioned.fill(child: _CustomerBg()),
         Scaffold(
           backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: false,
+          resizeToAvoidBottomInset: true,
           body: Stack(
             children: [
               Positioned(
