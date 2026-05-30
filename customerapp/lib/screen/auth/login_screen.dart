@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Scaffold transparent — body shrinks when keyboard shows
         Scaffold(
           backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: true,
+          resizeToAvoidBottomInset: false,
           body: Column(
             children: [
               const Expanded(child: SizedBox()),
