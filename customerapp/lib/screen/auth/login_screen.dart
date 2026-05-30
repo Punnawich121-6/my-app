@@ -84,8 +84,11 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           Positioned.fill(child: _CustomerBg()),
-          Positioned(
-            left: 0, right: 0, bottom: 0,
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            left: 0, right: 0,
+            bottom: MediaQuery.of(context).viewInsets.bottom,
             child: _FormSheet(
               phoneController: _phoneCtrl,
               onRequestOtp: _requestOtp,
