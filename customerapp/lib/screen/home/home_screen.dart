@@ -217,7 +217,7 @@ class _StoreListTabState extends State<_StoreListTab> {
               decoration: BoxDecoration(
                 color: context.isDark ? const Color(0xFF2A2A2A) : const Color(0xFF1A1A1A),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 18, offset: const Offset(0, 6))],
               ),
               child: Icon(Icons.shopping_bag_rounded, color: Colors.white, size: context.wp(20)),
             ),
@@ -267,7 +267,7 @@ class _StoreListTabState extends State<_StoreListTab> {
         decoration: BoxDecoration(
           color: context.subtleBg,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: Row(children: [
           Icon(Icons.search_rounded, color: context.muted, size: context.wp(20)),
@@ -360,10 +360,10 @@ class _StoreListTabState extends State<_StoreListTab> {
                         boxShadow: [
                           BoxShadow(
                             color: selected
-                                ? CColors.orange.withValues(alpha: 0.5)
-                                : Colors.black.withValues(alpha: 0.14),
-                            blurRadius: 14,
-                            offset: const Offset(0, 5),
+                                ? CColors.orange.withValues(alpha: 0.65)
+                                : Colors.black.withValues(alpha: 0.28),
+                            blurRadius: 18,
+                            offset: const Offset(0, 7),
                           ),
                         ],
                       ),
@@ -424,8 +424,8 @@ class _AIFeatureCard extends StatelessWidget {
   Widget build(BuildContext context) => Material(
     color: Colors.white,
     borderRadius: BorderRadius.circular(16),
-    shadowColor: Colors.black.withValues(alpha: 0.18),
-    elevation: 8,
+    shadowColor: Colors.black.withValues(alpha: 0.4),
+    elevation: 14,
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
