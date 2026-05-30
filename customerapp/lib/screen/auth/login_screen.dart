@@ -78,23 +78,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
     return Stack(
       children: [
         Positioned.fill(child: _CustomerBg()),
         Scaffold(
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: true,
-          body: Stack(
-            children: [
-              Positioned(
-                left: 0, right: 0, bottom: 0,
-                child: _FormSheet(
+          body: SingleChildScrollView(
+            reverse: true,
+            child: Column(
+              children: [
+                SizedBox(height: screenH * 0.52),
+                _FormSheet(
                   phoneController: _phoneCtrl,
                   onRequestOtp: _requestOtp,
                   loading: _loading,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -178,27 +180,21 @@ class _FormSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final safeBottom = MediaQuery.of(context).padding.bottom;
-    final screenH = MediaQuery.of(context).size.height;
-    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
-    final maxH = screenH - keyboardH - 120;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxH.clamp(200.0, screenH)),
-      child: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            left: 28, right: 28,
-            top: 32,
-            bottom: safeBottom + 32,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: EdgeInsets.only(
+        left: 28, right: 28,
+        top: 32,
+        bottom: safeBottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             Center(
               child: Container(
                 width: 40, height: 4,
@@ -313,8 +309,6 @@ class _FormSheet extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    ),
-  );
+    );
   }
 }
