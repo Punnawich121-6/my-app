@@ -88,11 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
           resizeToAvoidBottomInset: false,
           body: Column(
             children: [
-              const Expanded(child: SizedBox()),
-              _FormSheet(
-                phoneController: _phoneCtrl,
-                onRequestOtp: _requestOtp,
-                loading: _loading,
+              SizedBox(height: MediaQuery.of(context).size.height * 0.42),
+              Expanded(
+                child: _FormSheet(
+                  phoneController: _phoneCtrl,
+                  onRequestOtp: _requestOtp,
+                  loading: _loading,
+                ),
               ),
             ],
           ),
@@ -178,6 +180,7 @@ class _FormSheet extends StatelessWidget {
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Container(
       width: double.infinity,
+      height: double.infinity,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
