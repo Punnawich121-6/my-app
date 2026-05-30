@@ -217,6 +217,7 @@ class _StoreListTabState extends State<_StoreListTab> {
               decoration: BoxDecoration(
                 color: context.isDark ? const Color(0xFF2A2A2A) : const Color(0xFF1A1A1A),
                 shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
               ),
               child: Icon(Icons.shopping_bag_rounded, color: Colors.white, size: context.wp(20)),
             ),
@@ -266,6 +267,7 @@ class _StoreListTabState extends State<_StoreListTab> {
         decoration: BoxDecoration(
           color: context.subtleBg,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Row(children: [
           Icon(Icons.search_rounded, color: context.muted, size: context.wp(20)),
@@ -358,10 +360,10 @@ class _StoreListTabState extends State<_StoreListTab> {
                         boxShadow: [
                           BoxShadow(
                             color: selected
-                                ? CColors.orange.withValues(alpha: 0.4)
-                                : Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                                ? CColors.orange.withValues(alpha: 0.5)
+                                : Colors.black.withValues(alpha: 0.14),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
@@ -422,8 +424,8 @@ class _AIFeatureCard extends StatelessWidget {
   Widget build(BuildContext context) => Material(
     color: Colors.white,
     borderRadius: BorderRadius.circular(16),
-    shadowColor: Colors.black.withValues(alpha: 0.07),
-    elevation: 4,
+    shadowColor: Colors.black.withValues(alpha: 0.18),
+    elevation: 8,
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -469,18 +471,15 @@ class _RestaurantCardState extends State<_RestaurantCard>
     TweenSequenceItem(tween: Tween(begin: 0.88, end: 1.0), weight: 35),
   ]).animate(CurvedAnimation(parent: _heartCtrl, curve: Curves.easeOut));
 
-  bool _showPopHeart = false;
-
-  void _triggerPopHeart() {
-    setState(() => _showPopHeart = true);
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (mounted) setState(() => _showPopHeart = false);
-    });
-  }
+  late final AnimationController _popCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 800),
+  );
 
   @override
   void dispose() {
     _heartCtrl.dispose();
+    _popCtrl.dispose();
     super.dispose();
   }
 
@@ -535,9 +534,11 @@ class _RestaurantCardState extends State<_RestaurantCard>
                   top: 10, right: 10,
                   child: GestureDetector(
                     onTap: () {
+                      final wasLiked = FavoritesManager.isFav(storeId);
                       FavoritesManager.toggle(storeId);
                       _heartCtrl.forward(from: 0.0);
-                      _triggerPopHeart();
+                      if (!wasLiked) _popCtrl.forward(from: 0.0);
+                      setState(() {});
                     },
                     child: Container(
                       width: context.wp(36), height: context.wp(36),
@@ -556,14 +557,50 @@ class _RestaurantCardState extends State<_RestaurantCard>
                     ),
                   ),
                 ),
-                if (_showPopHeart)
-                  const Center(
-                    child: Icon(
+                AnimatedBuilder(
+                  animation: _popCtrl,
+                  builder: (context, child) {
+                    final v = _popCtrl.value;
+                    if (v == 0.0) return const SizedBox.shrink();
+                    final double scale;
+                    final double opacity;
+                    if (v < 0.35) {
+                      scale = (v / 0.35) * 1.3;
+                      opacity = v / 0.35;
+                    } else if (v < 0.55) {
+                      scale = 1.3 - ((v - 0.35) / 0.2) * 0.3;
+                      opacity = 1.0;
+                    } else if (v < 0.75) {
+                      scale = 1.0;
+                      opacity = 1.0;
+                    } else {
+                      scale = 1.0;
+                      opacity = 1.0 - (v - 0.75) / 0.25;
+                    }
+                    return Center(
+                      child: Opacity(
+                        opacity: opacity.clamp(0.0, 1.0),
+                        child: Transform.scale(
+                          scale: scale.clamp(0.0, 2.0),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
                       Icons.favorite_rounded,
                       color: Colors.red,
-                      size: 120,
+                      size: 100,
                     ),
                   ),
+                ),
                 if (CartManager.instance.storeId == storeId && !CartManager.instance.isEmpty)
                   Positioned(
                     bottom: 8, left: 10,
