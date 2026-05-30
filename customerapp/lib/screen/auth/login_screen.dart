@@ -177,7 +177,6 @@ class _FormSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Container(
       width: double.infinity,
@@ -189,7 +188,7 @@ class _FormSheet extends StatelessWidget {
         padding: EdgeInsets.only(
           left: 28, right: 28,
           top: 32,
-          bottom: keyboardHeight > 0 ? keyboardHeight + 16 : safeBottom + 32,
+          bottom: safeBottom + 32,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
