@@ -556,25 +556,14 @@ class _RestaurantCardState extends State<_RestaurantCard>
                     ),
                   ),
                 ),
-                IgnorePointer(
-                  child: Center(
-                    child: AnimatedOpacity(
-                      opacity: _showPopHeart ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: AnimatedScale(
-                        scale: _showPopHeart ? 1.0 : 0.1,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.elasticOut,
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          color: Colors.red,
-                          size: 110,
-                          shadows: [Shadow(color: Colors.black38, blurRadius: 20)],
-                        ),
-                      ),
+                if (_showPopHeart)
+                  const Center(
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      color: Colors.red,
+                      size: 120,
                     ),
                   ),
-                ),
                 if (CartManager.instance.storeId == storeId && !CartManager.instance.isEmpty)
                   Positioned(
                     bottom: 8, left: 10,
