@@ -53488,7 +53488,7 @@ l=A.b([A.B(s,A.b3(B.jT,s,s,B.j,s,s,s,s,s,s,s,20*B.b.A(A.n(a,B.f,q).w.a.a/390,0.8
 if(r>0){k=4*B.b.A(A.n(a,B.f,q).w.a.a/390,0.82,1.22)
 j=r>99?"99+":""+r
 l.push(A.e7(s,A.B(s,A.E(j,s,s,s,s,A.aa(s,s,B.j,s,s,s,s,s,s,s,s,9*B.b.A(A.n(a,B.f,q).w.a.a/390,0.85,1.18),s,s,B.W,s,s,!0,s,s,s,s,s,s,s,s),s,s),B.e,s,s,B.bs,s,s,s,s,new A.V(k,k,k,k),s,s,s),s,s,s,-4,-4,s))}return new A.am(new A.V(20*p,14*o,20*n,8*m),A.af(A.b([B.an,A.aQ(s,A.dy(B.aq,l,B.e,B.az,s),B.t,!1,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,new A.aQk(this,a),s,s,s,s,s,s,!1,B.w)],h),B.m,B.h,B.k,0),s)},
-aew(a){var s=null,r=t.w,q=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),p=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),o=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),n=16*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),m=14*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),l=t.J,k=t.o,j=k.a(A.p(a).c.h(0,A.W(l))).f,i=A.O(16),h=A.cF(B.j3,B.x,1.5),g=A.b([new A.bd(0,B.K,B.r.ap(0.22),B.ib,16)],t.V),f=A.b3(B.jS,s,s,k.a(A.p(a).c.h(0,A.W(l))).d,s,s,s,s,s,s,s,20*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),s,s),e=A.aN(s,s,10*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22)),d=$.ci().b?"Search dishes, restaurants":"\u0e04\u0e49\u0e19\u0e2b\u0e32\u0e2d\u0e32\u0e2b\u0e32\u0e23 \u0e23\u0e49\u0e32\u0e19\u0e2d\u0e32\u0e2b\u0e32\u0e23"
+aew(a){var s=null,r=t.w,q=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),p=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),o=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),n=16*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),m=14*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),l=t.J,k=t.o,j=k.a(A.p(a).c.h(0,A.W(l))).f,i=A.O(16),h=A.cF(B.j3,B.x,0.8),g=A.b([new A.bd(0,B.K,B.r.ap(0.22),B.ib,16)],t.V),f=A.b3(B.jS,s,s,k.a(A.p(a).c.h(0,A.W(l))).d,s,s,s,s,s,s,s,20*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),s,s),e=A.aN(s,s,10*B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22)),d=$.ci().b?"Search dishes, restaurants":"\u0e04\u0e49\u0e19\u0e2b\u0e32\u0e2d\u0e32\u0e2b\u0e32\u0e23 \u0e23\u0e49\u0e32\u0e19\u0e2d\u0e32\u0e2b\u0e32\u0e23"
 return A.aQ(s,A.B(s,A.af(A.b([f,e,A.E(d,s,s,s,s,A.aa(s,s,k.a(A.p(a).c.h(0,A.W(l))).d,s,s,s,s,s,s,s,s,14*B.b.A(A.n(a,B.f,r).w.a.a/390,0.85,1.18),s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s)],t.p),B.m,B.h,B.k,0),B.e,s,s,new A.X(j,s,h,i,g,s,B.p),s,s,s,new A.V(20*q,0,20*p,22*o),new A.V(n,m,n,m),s,s,s),B.t,!1,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,new A.aQi(this,a),s,s,s,s,s,s,!1,B.w)},
 aev(a){var s=null,r=t.w,q=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),p=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),o=B.b.A(A.n(a,B.f,r).w.a.a/390,0.82,1.22),n=$.ci(),m=n.b,l=m?"Scan to Find":"\u0e2a\u0e41\u0e01\u0e19\u0e2b\u0e32\u0e23\u0e49\u0e32\u0e19"
 m=m?"Photo food, AI finds store":"\u0e16\u0e48\u0e32\u0e22\u0e23\u0e39\u0e1b\u0e2d\u0e32\u0e2b\u0e32\u0e23 AI \u0e2b\u0e32\u0e23\u0e49\u0e32\u0e19\u0e43\u0e2b\u0e49"
@@ -53661,7 +53661,7 @@ l=t.J
 k=t.o
 j=k.a(A.p(b9).c.h(0,A.W(l))).b
 i=A.O(20)
-h=A.cF(B.j3,B.x,1.5)
+h=A.cF(B.j3,B.x,0.8)
 g=A.b([new A.bd(0,B.K,B.r.ap(0.1),B.bD,16)],t.V)
 if(b6.h(b5,b4)!=null){f=B.d.be(J.aw(b6.h(b5,b4)),"http")?b6.h(b5,b4):"https://backend-gqls.onrender.com"+A.k(b6.h(b5,b4))
 f=A.fo(f,B.J,new A.aOq(b9),B.aA,b3,b3,b3)}else f=A.B(b3,B.qs,B.e,k.a(A.p(b9).c.h(0,A.W(l))).r,b3,b3,b3,b3,b3,b3,b3,b3,b3,b3)
@@ -115771,7 +115771,7 @@ B.bN=new A.F(1,0.8823529411764706,0.7490196078431373,0.7098039215686275,B.n)
 B.HG=new A.bk(B.bN,1,B.x,-1)
 B.e3=new A.bk(B.i,1.5,B.x,-1)
 B.j3=new A.F(1,0.7529411764705882,0.7529411764705882,0.7529411764705882,B.n)
-B.HH=new A.bk(B.j3,1.5,B.x,-1)
+B.HH=new A.bk(B.j3,0.8,B.x,-1)
 B.ci=new A.F(1,0.9333333333333333,0.9333333333333333,0.9333333333333333,B.n)
 B.lL=new A.bk(B.ci,1,B.x,-1)
 B.cM=new A.F(1,0.7294117647058823,0.10196078431372549,0.10196078431372549,B.n)
