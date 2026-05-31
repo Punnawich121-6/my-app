@@ -107,9 +107,9 @@ class _CartScreenState extends State<CartScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(S.myCart, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700, color: context.fg)),
+          Text(S.myCart, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w700, color: context.fg)),
           if (storeName.isNotEmpty)
-            Text(storeName, style: TextStyle(fontSize: context.sp(12), color: context.muted, fontWeight: FontWeight.w400)),
+            Text(storeName, style: TextStyle(fontSize: context.sp(13), color: context.muted, fontWeight: FontWeight.w400)),
         ]),
         centerTitle: true,
       ),
@@ -183,9 +183,9 @@ class _EmptyCart extends StatelessWidget {
         child: Icon(Icons.shopping_basket_rounded, color: CColors.orange, size: context.wp(44)),
       ),
       SizedBox(height: context.wp(20)),
-      Text(S.emptyCart, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w700, color: context.fg)),
+      Text(S.emptyCart, style: TextStyle(fontSize: context.sp(19), fontWeight: FontWeight.w700, color: context.fg)),
       SizedBox(height: context.wp(8)),
-      Text(S.emptyCartSub, style: TextStyle(fontSize: context.sp(14), color: context.muted)),
+      Text(S.emptyCartSub, style: TextStyle(fontSize: context.sp(15), color: context.muted)),
     ]),
   );
 }
@@ -204,7 +204,7 @@ class _CartItemRow extends StatelessWidget {
       padding: EdgeInsets.only(bottom: context.wp(12)),
       child: Row(children: [
         Expanded(
-          child: Text(item['name'] ?? '', style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: context.fg)),
+          child: Text(item['name'] ?? '', style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w600, color: context.fg)),
         ),
         Row(children: [
           GestureDetector(
@@ -218,7 +218,7 @@ class _CartItemRow extends StatelessWidget {
           SizedBox(
             width: context.wp(28),
             child: Center(
-              child: Text('${item['qty']}', style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: context.fg)),
+              child: Text('${item['qty']}', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700, color: context.fg)),
             ),
           ),
           GestureDetector(
@@ -235,7 +235,7 @@ class _CartItemRow extends StatelessWidget {
           width: context.wp(64),
           child: Text('฿${fmt.format(price * (item['qty'] as int))}',
               textAlign: TextAlign.right,
-              style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700, color: CColors.orange)),
+              style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: CColors.orange)),
         ),
       ]),
     );

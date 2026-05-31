@@ -126,7 +126,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, size: context.wp(20), color: context.fg),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(S.checkoutTitle, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700, color: context.fg)),
+        title: Text(S.checkoutTitle, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w700, color: context.fg)),
         centerTitle: true,
       ),
       body: Column(children: [
@@ -135,7 +135,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(16), context.wp(20), 0),
             children: [
               // Delivery address
-              Text(S.deliveryAddress, style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w500, color: context.fg)),
+              Text(S.deliveryAddress, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w500, color: context.fg)),
               SizedBox(height: context.wp(8)),
               GestureDetector(
                 onTap: _pickLocation,
@@ -160,7 +160,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           Expanded(
                             child: Text(
                               _locationError ? S.addressRequired : S.tapToSetAddress,
-                              style: TextStyle(fontSize: context.sp(14), color: _locationError ? Colors.red : context.muted),
+                              style: TextStyle(fontSize: context.sp(15), color: _locationError ? Colors.red : context.muted),
                             ),
                           ),
                         ])
@@ -173,27 +173,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           Expanded(
                             child: Text(
                               _deliveryAddress ?? '',
-                              style: TextStyle(fontSize: context.sp(13), color: context.fg, height: 1.5),
+                              style: TextStyle(fontSize: context.sp(14), color: context.fg, height: 1.5),
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           SizedBox(width: context.wp(8)),
-                          Text(S.change, style: TextStyle(fontSize: context.sp(12), color: CColors.orange, fontWeight: FontWeight.w600)),
+                          Text(S.change, style: TextStyle(fontSize: context.sp(13), color: CColors.orange, fontWeight: FontWeight.w600)),
                         ]),
                 ),
               ),
               SizedBox(height: context.wp(12)),
 
               // Note
-              Text(S.noteLabel, style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w500, color: context.fg)),
+              Text(S.noteLabel, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w500, color: context.fg)),
               SizedBox(height: context.wp(8)),
               TextField(
                 controller: _noteCtrl,
-                style: TextStyle(fontSize: context.sp(14), color: context.fg),
+                style: TextStyle(fontSize: context.sp(15), color: context.fg),
                 decoration: InputDecoration(
                   hintText: S.noteHint,
-                  hintStyle: TextStyle(color: context.muted, fontSize: context.sp(14)),
+                  hintStyle: TextStyle(color: context.muted, fontSize: context.sp(15)),
                 ),
               ),
               SizedBox(height: context.wp(20)),
@@ -225,7 +225,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: Row(children: [
                       Icon(Icons.group_rounded, color: CColors.orange, size: context.wp(20)),
                       SizedBox(width: context.wp(8)),
-                      Text(S.splitBill, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700, color: context.fg)),
+                      Text(S.splitBill, style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: context.fg)),
                       const Spacer(),
                       Switch.adaptive(
                         value: _splitEnabled,
@@ -241,7 +241,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(14), context.wp(16), context.wp(16)),
                       child: Column(children: [
                         Row(children: [
-                          Text(S.peopleCount, style: TextStyle(fontSize: context.sp(13), color: context.muted, fontWeight: FontWeight.w500)),
+                          Text(S.peopleCount, style: TextStyle(fontSize: context.sp(14), color: context.muted, fontWeight: FontWeight.w500)),
                           const Spacer(),
                           GestureDetector(
                             onTap: () { if (_splitPeople > 2) setState(() => _splitPeople--); },
@@ -254,7 +254,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           SizedBox(
                             width: context.wp(40),
                             child: Center(
-                              child: Text('$_splitPeople', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: context.fg)),
+                              child: Text('$_splitPeople', style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
                             ),
                           ),
                           GestureDetector(
@@ -272,10 +272,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           padding: EdgeInsets.symmetric(horizontal: context.wp(16), vertical: context.wp(12)),
                           decoration: BoxDecoration(color: context.card, borderRadius: BorderRadius.circular(12)),
                           child: Row(children: [
-                            Text(S.perPerson, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: context.fg)),
+                            Text(S.perPerson, style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w600, color: context.fg)),
                             const Spacer(),
                             Text('฿${fmt.format(_perPerson)}',
-                                style: TextStyle(fontSize: context.sp(22), fontWeight: FontWeight.w800, color: CColors.orange)),
+                                style: TextStyle(fontSize: context.sp(23), fontWeight: FontWeight.w800, color: CColors.orange)),
                           ]),
                         ),
                       ]),
@@ -307,7 +307,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(S.selectPaymentBtn(fmt.format(widget.total)),
-                  style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700)),
             ),
           ),
         ),
@@ -325,7 +325,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseColor = bold ? context.fg : context.muted;
     final style = TextStyle(
-        fontSize: bold ? context.sp(15) : context.sp(13),
+        fontSize: bold ? context.sp(16) : context.sp(14),
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
         color: baseColor);
     final valueColor = isDiscount ? const Color(0xFFD32F2F) : (bold ? CColors.orange : context.muted);

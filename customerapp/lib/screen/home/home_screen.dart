@@ -229,7 +229,7 @@ class _StoreListTabState extends State<_StoreListTab> {
                   decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle),
                   child: Text(
                     cartCount > 99 ? '99+' : '$cartCount',
-                    style: TextStyle(color: Colors.white, fontSize: context.sp(9), fontWeight: FontWeight.w800),
+                    style: TextStyle(color: Colors.white, fontSize: context.sp(10), fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -246,7 +246,7 @@ class _StoreListTabState extends State<_StoreListTab> {
       padding: EdgeInsets.fromLTRB(context.wp(20), context.wp(6), context.wp(20), context.wp(14)),
       child: Text(
         S.greeting(name, hour),
-        style: TextStyle(fontSize: context.sp(20), color: context.fg, fontWeight: FontWeight.w800),
+        style: TextStyle(fontSize: context.sp(21), color: context.fg, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -273,7 +273,7 @@ class _StoreListTabState extends State<_StoreListTab> {
         child: Row(children: [
           Icon(Icons.search_rounded, color: context.muted, size: context.wp(20)),
           SizedBox(width: context.wp(10)),
-          Text(S.searchHint, style: TextStyle(color: context.muted, fontSize: context.sp(14))),
+          Text(S.searchHint, style: TextStyle(color: context.muted, fontSize: context.sp(15))),
         ]),
       ),
     );
@@ -325,12 +325,12 @@ class _StoreListTabState extends State<_StoreListTab> {
         Padding(
           padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(14)),
           child: Row(children: [
-            Text(S.allCategories, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
+            Text(S.allCategories, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: context.fg)),
             const Spacer(),
             GestureDetector(
               onTap: () => setState(() => _selectedType = _kAllTypes),
               child: Row(children: [
-                Text(S.seeAll, style: TextStyle(fontSize: context.sp(13), color: CColors.orange, fontWeight: FontWeight.w600)),
+                Text(S.seeAll, style: TextStyle(fontSize: context.sp(14), color: CColors.orange, fontWeight: FontWeight.w600)),
                 Icon(Icons.chevron_right_rounded, size: context.wp(18), color: CColors.orange),
               ]),
             ),
@@ -384,7 +384,7 @@ class _StoreListTabState extends State<_StoreListTab> {
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: context.sp(11),
+                        fontSize: context.sp(12),
                         color: selected ? CColors.orange : context.muted,
                         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       ),
@@ -407,9 +407,9 @@ class _StoreListTabState extends State<_StoreListTab> {
     return Padding(
       padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(14)),
       child: Row(children: [
-        Text(S.openRestaurants, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
+        Text(S.openRestaurants, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: context.fg)),
         const Spacer(),
-        Text('$openCount ${S.stores}', style: TextStyle(fontSize: context.sp(13), color: context.muted)),
+        Text('$openCount ${S.stores}', style: TextStyle(fontSize: context.sp(14), color: context.muted)),
         Icon(Icons.chevron_right_rounded, size: context.wp(18), color: context.muted),
       ]),
     );
@@ -449,9 +449,9 @@ class _AIFeatureCard extends StatelessWidget {
             child: Icon(icon, color: CColors.orange, size: context.wp(18)),
           ),
           SizedBox(height: context.wp(10)),
-          Text(title, style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w800, color: CColors.text)),
+          Text(title, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w800, color: CColors.text)),
           const SizedBox(height: 2),
-          Text(subtitle, style: TextStyle(fontSize: context.sp(12), color: CColors.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(subtitle, style: TextStyle(fontSize: context.sp(13), color: CColors.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
         ]),
       ),
     ),
@@ -634,22 +634,22 @@ class _RestaurantCardState extends State<_RestaurantCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(store['name'] ?? '', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: context.fg)),
+                  Text(store['name'] ?? '', style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
                   SizedBox(height: context.wp(4)),
-                  Text(store['type'] ?? '', style: TextStyle(fontSize: context.sp(13), color: context.muted)),
+                  Text(store['type'] ?? '', style: TextStyle(fontSize: context.sp(14), color: context.muted)),
                   SizedBox(height: context.wp(10)),
                   Row(children: [
                     Icon(Icons.star_rounded, size: context.wp(15), color: CColors.orange),
                     SizedBox(width: context.wp(4)),
-                    Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600, color: context.fg)),
+                    Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: context.fg)),
                     SizedBox(width: context.wp(16)),
                     Icon(Icons.delivery_dining_rounded, size: context.wp(15), color: CColors.orange),
                     SizedBox(width: context.wp(4)),
-                    Text(S.freeDelivery, style: TextStyle(fontSize: context.sp(13), color: context.fg)),
+                    Text(S.freeDelivery, style: TextStyle(fontSize: context.sp(14), color: context.fg)),
                     SizedBox(width: context.wp(16)),
                     Icon(Icons.access_time_rounded, size: context.wp(15), color: CColors.orange),
                     SizedBox(width: context.wp(4)),
-                    Text(S.min30, style: TextStyle(fontSize: context.sp(13), color: context.fg)),
+                    Text(S.min30, style: TextStyle(fontSize: context.sp(14), color: context.fg)),
                   ]),
                 ],
               ),

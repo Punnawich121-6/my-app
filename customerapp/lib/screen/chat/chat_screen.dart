@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -37,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _sending = false;
   int _lastCount = 0;
   XFile? _pickedImage;
+  Uint8List? _pickedImageBytes;
 
   @override
   void initState() {
@@ -132,7 +133,10 @@ class _ChatScreenState extends State<ChatScreen> {
       imageQuality: 80,
       maxWidth: 1200,
     );
-    if (file != null && mounted) setState(() => _pickedImage = file);
+    if (file != null && mounted) {
+      final bytes = await file.readAsBytes();
+      setState(() { _pickedImage = file; _pickedImageBytes = bytes; });
+    }
   }
 
   Future<String?> _uploadImage(XFile file) async {
@@ -159,13 +163,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _ctrl.clear();
 
     final imageToUpload = _pickedImage;
-    setState(() => _pickedImage = null);
+    setState(() { _pickedImage = null; _pickedImageBytes = null; });
 
     try {
       String? imageUrl;
       if (imageToUpload != null) imageUrl = await _uploadImage(imageToUpload);
 
-      await apiPost(
+      final res = await apiPost(
         '$_base/${widget.orderId}',
         jsonEncode({
           'userId': widget.customerId,
@@ -176,8 +180,20 @@ class _ChatScreenState extends State<ChatScreen> {
           'imageUrl': imageUrl,
         }),
       );
-      await _loadMessages();
-    } catch (_) {}
+      if (res.statusCode == 200) {
+        await _loadMessages();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ส่งไม่สำเร็จ: ${res.body}'), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
     if (mounted) setState(() => _sending = false);
   }
 
@@ -185,17 +201,18 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('ลบแชท', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text('ต้องการลบข้อความทั้งหมดในหน้าจอนี้ใช่ไหม?\n(ข้อมูลยังคงอยู่ในระบบ)'),
+        content: const Text('ข้อความจะหายไปจากหน้าจอคุณเท่านั้น\nฝั่งร้านยังคงเห็นข้อความเดิม'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('ยกเลิก', style: TextStyle(color: CColors.muted)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() => _messages.clear());
+              await _deleteChat();
             },
             child: const Text('ลบ', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
           ),
@@ -203,6 +220,23 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
+
+  Future<void> _deleteChat() async {
+    try {
+      await apiDelete(
+        '$_base/${widget.orderId}?userId=${widget.customerId}&userRole=customer&chatType=${widget.chatType}',
+      );
+      if (mounted) setState(() => _messages.clear());
+    } catch (_) {
+      if (mounted) setState(() => _messages.clear());
+    }
+  }
+
+  Widget _imgFallback() => Container(
+    width: 64, height: 64,
+    decoration: BoxDecoration(color: CColors.orangeLight, borderRadius: BorderRadius.circular(10)),
+    child: const Icon(Icons.image_rounded, color: CColors.orange, size: 28),
+  );
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 150), () {
@@ -346,19 +380,14 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.file(
-                  File(_pickedImage!.path),
-                  width: 64, height: 64,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    width: 64, height: 64,
-                    decoration: BoxDecoration(
-                      color: CColors.orangeLight,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.image_rounded, color: CColors.orange, size: 28),
-                  ),
-                ),
+                child: _pickedImageBytes != null
+                    ? Image.memory(
+                        _pickedImageBytes!,
+                        width: 64, height: 64,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _imgFallback(),
+                      )
+                    : _imgFallback(),
               ),
               const SizedBox(width: 12),
               Expanded(

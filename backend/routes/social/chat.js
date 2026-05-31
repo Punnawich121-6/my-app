@@ -17,14 +17,28 @@ async function ensureCols() {
         sender_role ENUM('customer','store','rider') NOT NULL,
         sender_name VARCHAR(100) NOT NULL,
         message TEXT NOT NULL DEFAULT '',
-        image_url VARCHAR(500),
+        image_url LONGTEXT,
         chat_type ENUM('store','rider') NOT NULL DEFAULT 'store',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
   } catch (_) {}
-  try { await db.query(`ALTER TABLE messages ADD COLUMN image_url VARCHAR(500) AFTER message`); } catch (_) {}
+  try { await db.query(`ALTER TABLE messages ADD COLUMN image_url LONGTEXT AFTER message`); } catch (_) {}
+  try { await db.query(`ALTER TABLE messages MODIFY COLUMN image_url LONGTEXT`); } catch (_) {}
   try { await db.query(`ALTER TABLE messages ADD COLUMN chat_type ENUM('store','rider') NOT NULL DEFAULT 'store' AFTER image_url`); } catch (_) {}
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS chat_deletions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id VARCHAR(100) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        user_role VARCHAR(20) NOT NULL,
+        chat_type VARCHAR(20) NOT NULL DEFAULT 'store',
+        deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_chat_del (order_id, user_id, user_role, chat_type)
+      )
+    `);
+  } catch (_) {}
   _migrated = true;
 }
 
@@ -101,19 +115,31 @@ router.post('/:orderId/upload', upload.single('image'), (req, res) => {
   res.json({ url: `data:${req.file.mimetype};base64,${b64}` });
 });
 
-// GET messages for an order
+// GET messages for an order (filtered by user's deletion timestamp)
 router.get('/:orderId', async (req, res) => {
   const { orderId } = req.params;
   const { userId, userRole, chatType = 'store' } = req.query;
 
   try {
+    await ensureCols();
     if (!await hasAccess(orderId, userId, userRole))
       return res.status(403).json({ error: 'access denied' });
 
-    const [rows] = await db.query(
-      'SELECT * FROM messages WHERE order_id = ? AND chat_type = ? ORDER BY created_at ASC',
-      [orderId, chatType]
+    const [[del]] = await db.query(
+      'SELECT deleted_at FROM chat_deletions WHERE order_id = ? AND user_id = ? AND user_role = ? AND chat_type = ?',
+      [orderId, userId, userRole, chatType]
     );
+
+    const [rows] = del
+      ? await db.query(
+          'SELECT * FROM messages WHERE order_id = ? AND chat_type = ? AND created_at > ? ORDER BY created_at ASC',
+          [orderId, chatType, del.deleted_at]
+        )
+      : await db.query(
+          'SELECT * FROM messages WHERE order_id = ? AND chat_type = ? ORDER BY created_at ASC',
+          [orderId, chatType]
+        );
+
     res.json(rows);
   } catch (e) {
     console.error('[chat GET]', e.message);
@@ -121,14 +147,20 @@ router.get('/:orderId', async (req, res) => {
   }
 });
 
-// DELETE all messages for an order
+// DELETE (soft) — hide chat for this user only, others still see messages
 router.delete('/:orderId', async (req, res) => {
   const { orderId } = req.params;
-  const { userId, userRole } = req.query;
+  const { userId, userRole, chatType = 'store' } = req.query;
   try {
+    await ensureCols();
     if (!await hasAccess(orderId, userId, userRole))
       return res.status(403).json({ error: 'access denied' });
-    await db.query('DELETE FROM messages WHERE order_id = ?', [orderId]);
+    await db.query(
+      `INSERT INTO chat_deletions (order_id, user_id, user_role, chat_type, deleted_at)
+       VALUES (?, ?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE deleted_at = NOW()`,
+      [orderId, userId, userRole, chatType]
+    );
     res.json({ ok: true });
   } catch (e) {
     console.error('[chat DELETE]', e.message);

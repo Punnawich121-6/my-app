@@ -20,3 +20,6 @@ Future<http.Response> apiPut(String url, String body) =>
 
 Future<http.Response> apiPatch(String url, String body) =>
     http.patch(Uri.parse(url), headers: kHeaders, body: body);
+
+Future<http.Response> apiDelete(String url) =>
+    http.delete(Uri.parse(url), headers: kHeaders);

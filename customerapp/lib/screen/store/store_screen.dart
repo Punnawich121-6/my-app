@@ -336,7 +336,7 @@ class _StoreScreenState extends State<StoreScreen> {
             ),
             const Spacer(),
             Text(widget.store['name'] ?? 'Restaurant',
-                style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w700, color: CColors.text)),
+                style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w700, color: CColors.text)),
             const Spacer(),
             GestureDetector(
               onTap: _showStoreMenu,
@@ -381,26 +381,26 @@ class _StoreScreenState extends State<StoreScreen> {
                         Row(children: [
                           Expanded(
                             child: Text(widget.store['name'] ?? '',
-                              style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: CColors.text)),
+                              style: TextStyle(fontSize: context.sp(19), fontWeight: FontWeight.w800, color: CColors.text)),
                           ),
                         ]),
                         SizedBox(height: context.wp(6)),
                         Row(children: [
                           Icon(Icons.star_rounded, color: CColors.orange, size: context.wp(15)),
                           SizedBox(width: context.wp(3)),
-                          Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600, color: CColors.text)),
+                          Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: CColors.text)),
                           SizedBox(width: context.wp(12)),
                           Icon(Icons.delivery_dining_rounded, color: CColors.orange, size: context.wp(15)),
                           SizedBox(width: context.wp(3)),
-                          Text('ส่งฟรี', style: TextStyle(fontSize: context.sp(13), color: CColors.muted)),
+                          Text('ส่งฟรี', style: TextStyle(fontSize: context.sp(14), color: CColors.muted)),
                           SizedBox(width: context.wp(12)),
                           Icon(Icons.access_time_rounded, color: CColors.orange, size: context.wp(15)),
                           SizedBox(width: context.wp(3)),
-                          Text('30 นาที', style: TextStyle(fontSize: context.sp(13), color: CColors.muted)),
+                          Text('30 นาที', style: TextStyle(fontSize: context.sp(14), color: CColors.muted)),
                           SizedBox(width: context.wp(12)),
                           Expanded(
                             child: Text(widget.store['address'] ?? '',
-                              style: TextStyle(fontSize: context.sp(12), color: CColors.muted),
+                              style: TextStyle(fontSize: context.sp(13), color: CColors.muted),
                               maxLines: 1, overflow: TextOverflow.ellipsis),
                           ),
                         ]),
@@ -438,7 +438,7 @@ class _StoreScreenState extends State<StoreScreen> {
                         _selectedCat == -1
                             ? 'เมนูทั้งหมด (${_filteredItems.length})'
                             : '${_categories.firstWhere((c) => c['id'] == _selectedCat, orElse: () => {'name': ''})['name']} (${_filteredItems.length})',
-                        style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: CColors.text),
+                        style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: CColors.text),
                       ),
                     ),
                   ),
@@ -491,11 +491,11 @@ class _StoreScreenState extends State<StoreScreen> {
                         Container(
                           width: context.wp(28), height: context.wp(28),
                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(8)),
-                          child: Center(child: Text('$_cartCount', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: context.sp(13)))),
+                          child: Center(child: Text('$_cartCount', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: context.sp(14)))),
                         ),
                         SizedBox(width: context.wp(12)),
-                        Expanded(child: Text('ดูตะกร้า', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: context.sp(16)))),
-                        Text('฿${fmt.format(_cartTotal)}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: context.sp(16))),
+                        Expanded(child: Text('ดูตะกร้า', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: context.sp(17)))),
+                        Text('฿${fmt.format(_cartTotal)}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: context.sp(17))),
                       ]),
                     ),
                   ),
@@ -707,16 +707,16 @@ class _MenuGridCard extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(item['name'] ?? '',
-                  style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w700, color: const Color(0xFF1A1A1A)),
+                  style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700, color: const Color(0xFF1A1A1A)),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(storeName,
-                  style: TextStyle(fontSize: context.sp(11), color: CColors.muted),
+                  style: TextStyle(fontSize: context.sp(12), color: CColors.muted),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               ]),
               Row(children: [
                 Text('฿${fmt.format(price)}',
-                  style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w800, color: const Color(0xFF1A1A1A))),
+                  style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w800, color: const Color(0xFF1A1A1A))),
                 const Spacer(),
                 if (qty == 0)
                   Builder(builder: (btnCtx) => GestureDetector(
@@ -728,7 +728,7 @@ class _MenuGridCard extends StatelessWidget {
                 else
                   Row(mainAxisSize: MainAxisSize.min, children: [
                     GestureDetector(onTap: onRemove, child: Container(width: context.wp(26), height: context.wp(26), decoration: BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle), child: Icon(Icons.remove_rounded, color: CColors.orange, size: context.wp(14)))),
-                    SizedBox(width: context.wp(22), child: Center(child: Text('$qty', style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w700)))),
+                    SizedBox(width: context.wp(22), child: Center(child: Text('$qty', style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700)))),
                     Builder(builder: (btnCtx) => GestureDetector(onTap: () => onAdd(btnCtx), child: Container(width: context.wp(26), height: context.wp(26), decoration: const BoxDecoration(color: CColors.orange, shape: BoxShape.circle), child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(14))))),
                   ]),
               ]),

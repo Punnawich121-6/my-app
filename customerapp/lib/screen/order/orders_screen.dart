@@ -103,7 +103,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                   ? _CircleBtn(icon: Icons.chevron_left_rounded, onTap: () => Navigator.pop(context))
                   : SizedBox(width: context.wp(40)),
               const Spacer(),
-              Text(S.myOrders, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: context.fg)),
+              Text(S.myOrders, style: TextStyle(fontSize: context.sp(19), fontWeight: FontWeight.w800, color: context.fg)),
               const Spacer(),
               SizedBox(width: context.wp(40)),
             ]),
@@ -114,8 +114,8 @@ class _OrdersScreenState extends State<OrdersScreen>
             controller: _tab,
             labelColor: CColors.orange,
             unselectedLabelColor: CColors.muted,
-            labelStyle: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700),
-            unselectedLabelStyle: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w500),
+            labelStyle: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700),
+            unselectedLabelStyle: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w500),
             indicatorColor: CColors.orange,
             indicatorWeight: 2.5,
             indicatorSize: TabBarIndicatorSize.label,
@@ -175,9 +175,9 @@ class _OrderList extends StatelessWidget {
             child: Icon(Icons.receipt_long_rounded, color: CColors.orange, size: context.wp(40)),
           ),
           SizedBox(height: context.wp(16)),
-          Text(emptyMsg, style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w600, color: context.fg)),
+          Text(emptyMsg, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w600, color: context.fg)),
           SizedBox(height: context.wp(8)),
-          Text(S.orderFood, style: TextStyle(color: context.muted, fontSize: context.sp(13))),
+          Text(S.orderFood, style: TextStyle(color: context.muted, fontSize: context.sp(14))),
         ]),
       );
     }
@@ -315,7 +315,7 @@ class _OrderCardState extends State<_OrderCard> {
   };
 
   Color _statusColor(String s) {
-    if (s == 'completed') return CColors.green;
+    if (s == 'completed') return const Color(0xFF16A34A);
     if (s == 'cancelled') return CColors.red;
     return CColors.orange;
   }
@@ -366,10 +366,10 @@ class _OrderCardState extends State<_OrderCard> {
         Padding(
           padding: EdgeInsets.fromLTRB(context.wp(16), context.wp(14), context.wp(16), context.wp(10)),
           child: Row(children: [
-            Text('Food', style: TextStyle(fontSize: context.sp(13), color: context.muted, fontWeight: FontWeight.w500)),
+            Text('Food', style: TextStyle(fontSize: context.sp(14), color: context.muted, fontWeight: FontWeight.w500)),
             SizedBox(width: context.wp(8)),
             Text(_statusLabel[status] ?? status,
-                style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w700, color: sColor)),
+                style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w700, color: sColor)),
           ]),
         ),
         Divider(height: 1, color: context.divider),
@@ -391,23 +391,23 @@ class _OrderCardState extends State<_OrderCard> {
                 Row(children: [
                   Expanded(
                     child: Text(order['store_name'] ?? '-',
-                        style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: context.fg),
+                        style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700, color: context.fg),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
                   SizedBox(width: context.wp(6)),
-                  Text(orderId, style: TextStyle(fontSize: context.sp(11), color: context.muted)),
+                  Text(orderId, style: TextStyle(fontSize: context.sp(12), color: context.muted)),
                 ]),
                 SizedBox(height: context.wp(4)),
                 Text('฿${fmt.format(total)}',
-                    style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w800, color: context.fg)),
+                    style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: context.fg)),
                 SizedBox(height: context.wp(3)),
                 if (summary.isNotEmpty)
                   Text(summary,
-                      style: TextStyle(fontSize: context.sp(12), color: context.muted),
+                      style: TextStyle(fontSize: context.sp(13), color: context.muted),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 if (dateStr.isNotEmpty) ...[
                   SizedBox(height: context.wp(2)),
-                  Text(dateStr, style: TextStyle(fontSize: context.sp(11), color: context.muted)),
+                  Text(dateStr, style: TextStyle(fontSize: context.sp(12), color: context.muted)),
                 ],
               ]),
             ),
@@ -480,7 +480,7 @@ class _OrderCardState extends State<_OrderCard> {
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(Icons.check_circle_rounded, color: CColors.green, size: context.wp(15)),
                     SizedBox(width: context.wp(4)),
-                    Text(S.rated, style: TextStyle(color: CColors.green, fontWeight: FontWeight.w600, fontSize: context.sp(13))),
+                    Text(S.rated, style: TextStyle(color: CColors.green, fontWeight: FontWeight.w600, fontSize: context.sp(14))),
                   ]),
                 );
               }
@@ -493,7 +493,7 @@ class _OrderCardState extends State<_OrderCard> {
                   padding: EdgeInsets.symmetric(vertical: context.wp(10)),
                 ),
                 child: Text(isCompleted ? S.rate : S.track,
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(14))),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(15))),
               );
             })),
             const SizedBox(width: 10),
@@ -511,7 +511,7 @@ class _OrderCardState extends State<_OrderCard> {
                       child: _cancelling
                           ? SizedBox(width: context.wp(16), height: context.wp(16),
                               child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
-                          : Text(S.cancelOrder, style: TextStyle(fontWeight: FontWeight.w700, fontSize: context.sp(14))),
+                          : Text(S.cancelOrder, style: TextStyle(fontWeight: FontWeight.w700, fontSize: context.sp(15))),
                     )
                   : ElevatedButton(
                       onPressed: _reordering ? null : _reorder,
@@ -525,7 +525,7 @@ class _OrderCardState extends State<_OrderCard> {
                       child: _reordering
                           ? SizedBox(width: context.wp(16), height: context.wp(16),
                               child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Text(S.reorder, style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(14))),
+                          : Text(S.reorder, style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(15))),
                     ),
             ),
           ]),
@@ -556,7 +556,7 @@ class _OrderCardState extends State<_OrderCard> {
                   Icon(Icons.report_problem_rounded, size: context.wp(15), color: Colors.red),
                   SizedBox(width: context.wp(6)),
                   Text(S.reportOrder,
-                      style: TextStyle(color: Colors.red, fontSize: context.sp(13), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: Colors.red, fontSize: context.sp(14), fontWeight: FontWeight.w600)),
                 ]),
               ),
             ),
