@@ -358,9 +358,9 @@ class _StoreListTabState extends State<_StoreListTab> {
                       decoration: BoxDecoration(
                         color: selected ? CColors.orange : context.card,
                         borderRadius: BorderRadius.circular(context.wp(14)),
-                        border: Border.all(
-                          color: selected ? CColors.orange : const Color(0xFFC0C0C0),
-                          width: 1.5,
+                        border: selected ? null : Border.all(
+                          color: const Color(0xFFEEEEEE),
+                          width: 0.6,
                         ),
                         boxShadow: [
                           BoxShadow(
