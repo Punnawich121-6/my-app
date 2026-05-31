@@ -78,9 +78,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       final isOpen = store['is_open'] == 1;
                       final rating = double.tryParse(store['rating']?.toString() ?? '0') ?? 0;
                       return GestureDetector(
-                        onTap: isOpen ? () => Navigator.push(context, MaterialPageRoute(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(
                           builder: (_) => StoreScreen(store: store, customerId: widget.customerId, customerName: widget.customerName, customerPhone: widget.customerPhone),
-                        )).then((_) => _load()) : null,
+                        )).then((_) => _load()),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 14),
                           decoration: BoxDecoration(

@@ -246,6 +246,19 @@ router.get('/orders/:customerId', async (req, res) => {
   }
 });
 
+// ─── GET profile by id ───────────────────────────────────────────────────────
+router.get('/profile/:id', async (req, res) => {
+  try {
+    const [[user]] = await db.query(
+      'SELECT id, name, phone, profile_image FROM customer WHERE id = ?',
+      [req.params.id]
+    );
+    res.json(user || null);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── PUT update profile ───────────────────────────────────────────────────────
 router.put('/profile/:id', async (req, res) => {
   const { name, profileImage } = req.body;

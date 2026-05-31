@@ -254,11 +254,23 @@ class CustomerService {
     } catch (_) { return null; }
   }
 
+  static Future<Map<String, dynamic>?> getProfile(String customerId) async {
+    try {
+      final res = await apiGet('$_base/profile/$customerId')
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return null;
+      return Map<String, dynamic>.from(data);
+    } catch (_) { return null; }
+  }
+
   static Future<bool> updateProfile(String customerId, String name, {String? profileImage}) async {
     try {
       final body = <String, dynamic>{'name': name};
       if (profileImage != null) body['profileImage'] = profileImage;
-      final res = await apiPut('$_base/profile/$customerId', jsonEncode(body));
+      final res = await apiPut('$_base/profile/$customerId', jsonEncode(body))
+          .timeout(const Duration(seconds: 30));
       return res.statusCode == 200;
     } catch (_) { return false; }
   }

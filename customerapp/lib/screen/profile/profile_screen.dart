@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../l10n/strings.dart';
+import '../../services/customer_service.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'favorites_screen.dart';
@@ -34,7 +35,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _profileImage;
 
   @override
-  void initState() { super.initState(); _name = widget.customerName; }
+  void initState() {
+    super.initState();
+    _name = widget.customerName;
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final data = await CustomerService.getProfile(widget.customerId);
+    if (!mounted || data == null) return;
+    setState(() {
+      _name = (data['name'] as String?) ?? _name;
+      _profileImage = data['profile_image'] as String?;
+    });
+  }
 
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
