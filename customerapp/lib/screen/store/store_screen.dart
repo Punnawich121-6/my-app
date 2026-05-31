@@ -11,6 +11,7 @@ import '../location/location_picker_screen.dart';
 import '../order/payment_screen.dart';
 import '../profile/favorites_screen.dart';
 import '../chat/review_screen.dart';
+import 'store_reviews_screen.dart';
 
 class StoreScreen extends StatefulWidget {
   final Map<String, dynamic> store;
@@ -26,6 +27,7 @@ class _StoreScreenState extends State<StoreScreen> {
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _items = [];
   List<Map<String, dynamic>> _promos = [];
+  List<Map<String, dynamic>> _reviews = [];
   Map<int, int> _cart = {};
   bool _loading = true;
   int _selectedCat = -1;
@@ -49,10 +51,12 @@ class _StoreScreenState extends State<StoreScreen> {
     final results = await Future.wait([
       CustomerService.getMenu(widget.store['id']),
       CustomerService.getActivePromos(widget.store['id']),
+      CustomerService.getStoreReviews(widget.store['id'].toString()),
     ]);
     if (!mounted) return;
     final data = results[0] as Map<String, dynamic>?;
     final promos = results[1] as List<Map<String, dynamic>>;
+    final reviews = results[2] as List<Map<String, dynamic>>;
     if (data == null) return;
 
     final newCategories = List<Map<String, dynamic>>.from(data['categories'] ?? []);
@@ -71,6 +75,7 @@ class _StoreScreenState extends State<StoreScreen> {
       _categories = newCategories;
       _items      = newItems;
       _promos     = promos;
+      _reviews    = reviews;
       _cart       = restoredCart;
       _loading    = false;
     });
@@ -386,9 +391,23 @@ class _StoreScreenState extends State<StoreScreen> {
                         ]),
                         SizedBox(height: context.wp(6)),
                         Row(children: [
-                          Icon(Icons.star_rounded, color: CColors.orange, size: context.wp(15)),
-                          SizedBox(width: context.wp(3)),
-                          Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: CColors.text)),
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => StoreReviewsScreen(
+                                storeId: widget.store['id'].toString(),
+                                storeName: widget.store['name'] ?? '',
+                                rating: rating,
+                              )),
+                            ),
+                            child: Row(children: [
+                              Icon(Icons.star_rounded, color: CColors.orange, size: context.wp(15)),
+                              SizedBox(width: context.wp(3)),
+                              Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: CColors.text)),
+                              SizedBox(width: context.wp(3)),
+                              Text('ดูรีวิว', style: TextStyle(fontSize: context.sp(12), color: CColors.orange, fontWeight: FontWeight.w600)),
+                            ]),
+                          ),
                           SizedBox(width: context.wp(12)),
                           Icon(Icons.delivery_dining_rounded, color: CColors.orange, size: context.wp(15)),
                           SizedBox(width: context.wp(3)),
@@ -416,6 +435,22 @@ class _StoreScreenState extends State<StoreScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         child: Column(
                           children: _promos.map((p) => _PromoBanner(promo: p)).toList(),
+                        ),
+                      ),
+                    ),
+
+                  // Reviews preview
+                  if (_reviews.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: _ReviewsPreviewSection(
+                        reviews: _reviews,
+                        onSeeAll: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => StoreReviewsScreen(
+                            storeId: widget.store['id'].toString(),
+                            storeName: widget.store['name'] ?? '',
+                            rating: double.tryParse(widget.store['rating']?.toString() ?? '0') ?? 0,
+                          )),
                         ),
                       ),
                     ),
@@ -1448,4 +1483,94 @@ class _SheetOption extends StatelessWidget {
       ]),
     ),
   );
+}
+
+// ─── Reviews Preview Section ──────────────────────────────────────────────────
+class _ReviewsPreviewSection extends StatelessWidget {
+  final List<Map<String, dynamic>> reviews;
+  final VoidCallback onSeeAll;
+  const _ReviewsPreviewSection({required this.reviews, required this.onSeeAll});
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = reviews.take(10).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 10),
+        child: Row(children: [
+          const Text('คนอื่นว่าไงบ้าง',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: CColors.text)),
+          const Spacer(),
+          GestureDetector(
+            onTap: onSeeAll,
+            child: Container(
+              width: 32, height: 32,
+              decoration: const BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle),
+              child: const Icon(Icons.arrow_forward_rounded, color: CColors.orange, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ]),
+      ),
+      SizedBox(
+        height: 110,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          itemCount: preview.length,
+          itemBuilder: (_, i) => _ReviewChip(review: preview[i], onTap: onSeeAll),
+        ),
+      ),
+      const SizedBox(height: 8),
+    ]);
+  }
+}
+
+class _ReviewChip extends StatelessWidget {
+  final Map<String, dynamic> review;
+  final VoidCallback onTap;
+  const _ReviewChip({required this.review, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = int.tryParse(review['rating']?.toString() ?? '0') ?? 0;
+    final comment = (review['comment'] as String? ?? '').trim();
+    final name = review['customer_name'] as String? ?? 'ลูกค้า';
+    final displayText = comment.isNotEmpty ? comment : 'ไม่มีความเห็น';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFEEEEEE), width: 1),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(displayText,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, color: CColors.text, height: 1.4)),
+          const Spacer(),
+          Row(children: [
+            ...List.generate(5, (i) => Icon(
+              i < rating ? Icons.star_rounded : Icons.star_border_rounded,
+              color: CColors.orange, size: 13,
+            )),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text('· $name',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: CColors.muted)),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
 }

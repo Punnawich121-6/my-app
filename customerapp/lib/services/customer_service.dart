@@ -157,6 +157,16 @@ class CustomerService {
     } catch (_) { return null; }
   }
 
+  static Future<List<Map<String, dynamic>>> getStoreReviews(String storeId) async {
+    try {
+      final res = await apiGet('$_base/stores/$storeId/reviews')
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as List;
+      return data.map((e) => Map<String, dynamic>.from(e)).toList();
+    } catch (_) { return []; }
+  }
+
   static Future<List<Map<String, dynamic>>> getMyReviews(String customerId) async {
     try {
       final res = await apiGet('$_base/reviews/$customerId');
