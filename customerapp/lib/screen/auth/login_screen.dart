@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
           resizeToAvoidBottomInset: false,
           body: Column(
             children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.42),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.35),
               Expanded(
                 child: _FormSheet(
                   phoneController: _phoneCtrl,
