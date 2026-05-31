@@ -267,7 +267,7 @@ class _StoreListTabState extends State<_StoreListTab> {
         decoration: BoxDecoration(
           color: context.subtleBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFC0C0C0), width: 1.5),
+          border: Border.all(color: const Color(0xFFC0C0C0), width: 0.8),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: Row(children: [
@@ -433,7 +433,7 @@ class _AIFeatureCard extends StatelessWidget {
     elevation: 14,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: Color(0xFFC0C0C0), width: 1.5),
+      side: const BorderSide(color: Color(0xFFC0C0C0), width: 0.8),
     ),
     child: InkWell(
       onTap: onTap,
@@ -507,7 +507,7 @@ class _RestaurantCardState extends State<_RestaurantCard>
         decoration: BoxDecoration(
           color: context.card,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFC0C0C0), width: 1.5),
+          border: Border.all(color: const Color(0xFFC0C0C0), width: 0.8),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 16, offset: const Offset(0, 4))],
         ),
         child: Column(
