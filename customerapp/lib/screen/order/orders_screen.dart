@@ -5,16 +5,19 @@ import '../../main.dart';
 import '../../l10n/strings.dart';
 import '../../utils/responsive.dart';
 import '../../config.dart';
+import '../../cart_manager.dart';
 import '../../services/customer_service.dart';
 import 'order_tracking_screen.dart';
 import 'dispute_screen.dart';
+import '../cart/cart_screen.dart';
 import '../chat/chat_screen.dart';
 import '../chat/review_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   final String customerId;
   final String customerName;
-  const OrdersScreen({super.key, required this.customerId, this.customerName = 'ลูกค้า'});
+  final String customerPhone;
+  const OrdersScreen({super.key, required this.customerId, this.customerName = 'ลูกค้า', this.customerPhone = ''});
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
 }
@@ -128,9 +131,11 @@ class _OrdersScreenState extends State<OrdersScreen>
                     children: [
                       _OrderList(orders: _ongoing, onTap: _goTracking, onReview: _goReview,
                           customerId: widget.customerId, customerName: widget.customerName,
+                          customerPhone: widget.customerPhone,
                           emptyMsg: S.noOngoing, onRefresh: _load),
                       _OrderList(orders: _history, onTap: _goTracking, onReview: _goReview,
                           customerId: widget.customerId, customerName: widget.customerName,
+                          customerPhone: widget.customerPhone,
                           emptyMsg: S.noHistory, onRefresh: _load),
                     ],
                   ),
@@ -149,11 +154,13 @@ class _OrderList extends StatelessWidget {
   final Function(Map<String, dynamic>) onReview;
   final String customerId;
   final String customerName;
+  final String customerPhone;
   final String emptyMsg;
   final Future<void> Function() onRefresh;
   const _OrderList({
     required this.orders, required this.onTap, required this.onReview,
     required this.customerId, required this.customerName,
+    required this.customerPhone,
     required this.emptyMsg, required this.onRefresh,
   });
 
@@ -184,6 +191,7 @@ class _OrderList extends StatelessWidget {
           order: orders[i],
           customerId: customerId,
           customerName: customerName,
+          customerPhone: customerPhone,
           onTap: () => onTap(orders[i]['id'].toString()),
           onReview: () => onReview(orders[i]),
           onRefresh: onRefresh,
@@ -199,12 +207,14 @@ class _OrderCard extends StatefulWidget {
   final Map<String, dynamic> order;
   final String customerId;
   final String customerName;
+  final String customerPhone;
   final VoidCallback onTap;
   final VoidCallback onReview;
   final Future<void> Function() onRefresh;
   const _OrderCard({
     required this.order, required this.onTap, required this.onReview,
     required this.customerId, required this.customerName,
+    required this.customerPhone,
     required this.onRefresh,
   });
   @override
@@ -213,6 +223,56 @@ class _OrderCard extends StatefulWidget {
 
 class _OrderCardState extends State<_OrderCard> {
   bool _cancelling = false;
+  bool _reordering = false;
+
+  Future<void> _reorder() async {
+    final order = widget.order;
+    final orderId = order['id']?.toString() ?? '';
+    final storeId = order['store_id']?.toString() ?? '';
+    setState(() => _reordering = true);
+    try {
+      final detail = await CustomerService.getOrderDetail(orderId);
+      final menuData = await CustomerService.getMenu(storeId);
+      if (!mounted) return;
+      if (detail == null || menuData == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ไม่สามารถโหลดข้อมูลร้านได้')),
+        );
+        return;
+      }
+      final menuItems = (menuData['items'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final promos = await CustomerService.getActivePromos(storeId);
+      CartManager.instance.clear();
+      CartManager.instance.syncMenu(
+        {'id': storeId, 'name': order['store_name'] ?? ''},
+        menuItems, promos,
+      );
+      final orderItems = (detail['items'] as List? ?? []);
+      for (final item in orderItems) {
+        final itemId = (item['menu_item_id'] ?? item['item_id'] ?? item['id'])?.toString();
+        final qty = int.tryParse((item['quantity'] ?? item['qty'] ?? 1).toString()) ?? 1;
+        if (itemId == null) continue;
+        final found = menuItems.firstWhere(
+          (m) => m['id'].toString() == itemId,
+          orElse: () => {},
+        );
+        if (found.isNotEmpty) {
+          CartManager.instance.setItem(int.parse(itemId), qty);
+        }
+      }
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => CartScreen(
+          customerId: widget.customerId,
+          customerName: widget.customerName,
+          customerPhone: widget.customerPhone,
+        ),
+      ));
+    } finally {
+      if (mounted) setState(() => _reordering = false);
+    }
+  }
 
   Future<void> _cancel() async {
     final orderId = widget.order['id']?.toString() ?? '';
@@ -454,7 +514,7 @@ class _OrderCardState extends State<_OrderCard> {
                           : Text(S.cancelOrder, style: TextStyle(fontWeight: FontWeight.w700, fontSize: context.sp(14))),
                     )
                   : ElevatedButton(
-                      onPressed: widget.onTap,
+                      onPressed: _reordering ? null : _reorder,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CColors.orange,
                         foregroundColor: Colors.white,
@@ -462,7 +522,10 @@ class _OrderCardState extends State<_OrderCard> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(vertical: context.wp(10)),
                       ),
-                      child: Text(S.reorder, style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(14))),
+                      child: _reordering
+                          ? SizedBox(width: context.wp(16), height: context.wp(16),
+                              child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text(S.reorder, style: TextStyle(fontWeight: FontWeight.w600, fontSize: context.sp(14))),
                     ),
             ),
           ]),

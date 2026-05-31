@@ -201,6 +201,19 @@ router.get('/orders/detail/:orderId', async (req, res) => {
   }
 });
 
+// ─── DEBUG: order status summary ─────────────────────────────────────────────
+router.get('/debug/orders/:customerId', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT id, orderNumber, status, totalAmount, createdAt FROM \`order\` WHERE customerId = ? ORDER BY createdAt DESC LIMIT 50`,
+      [req.params.customerId]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── GET orders by customer ───────────────────────────────────────────────────
 router.get('/orders/:customerId', async (req, res) => {
   try {
