@@ -289,7 +289,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                       const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
-                          Text(addr['label'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: CColors.text)),
+                          Text(addr['label'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: CColors.text)),
                           if (hasPin) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -300,7 +300,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                           ],
                         ]),
                         const SizedBox(height: 3),
-                        Text(addr['address'] ?? '', style: const TextStyle(fontSize: 12, color: CColors.muted), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        Text(addr['address'] ?? '', style: const TextStyle(fontSize: 12.5, color: CColors.muted), maxLines: 2, overflow: TextOverflow.ellipsis),
                       ])),
                       if (!widget.pickMode) Row(children: [
                         IconButton(icon: const Icon(Icons.edit_rounded, size: 18, color: CColors.muted), onPressed: () => _addOrEdit(index: i)),

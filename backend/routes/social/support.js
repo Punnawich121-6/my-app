@@ -34,6 +34,18 @@ async function ensureTable() {
   try {
     await db.query(`ALTER TABLE support_messages MODIFY COLUMN sender_role ENUM('store','admin','customer') NOT NULL DEFAULT 'store'`);
   } catch (_) {}
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS support_chat_deletions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        store_id VARCHAR(255) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        user_role VARCHAR(20) NOT NULL,
+        deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_supp_del (store_id, user_id, user_role)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+  } catch (_) {}
   _tableReady = true;
 }
 
@@ -92,15 +104,34 @@ router.post('/:storeId/upload', upload.single('image'), (req, res) => {
   res.json({ url });
 });
 
-// GET /api/support/:storeId — messages for one store thread
+// GET /api/support/:storeId — messages for one store thread (filtered by soft-delete timestamp)
 router.get('/:storeId', async (req, res) => {
   try {
     await ensureTable();
     const { storeId } = req.params;
-    const [rows] = await db.query(
-      'SELECT * FROM support_messages WHERE store_id = ? ORDER BY created_at ASC',
-      [storeId]
-    );
+    const { userId, userRole } = req.query;
+
+    let rows;
+    if (userId && userRole) {
+      const [[del]] = await db.query(
+        'SELECT deleted_at FROM support_chat_deletions WHERE store_id = ? AND user_id = ? AND user_role = ?',
+        [storeId, userId, userRole]
+      );
+      [rows] = del
+        ? await db.query(
+            'SELECT * FROM support_messages WHERE store_id = ? AND created_at > ? ORDER BY created_at ASC',
+            [storeId, del.deleted_at]
+          )
+        : await db.query(
+            'SELECT * FROM support_messages WHERE store_id = ? ORDER BY created_at ASC',
+            [storeId]
+          );
+    } else {
+      [rows] = await db.query(
+        'SELECT * FROM support_messages WHERE store_id = ? ORDER BY created_at ASC',
+        [storeId]
+      );
+    }
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -130,12 +161,22 @@ router.post('/:storeId', async (req, res) => {
   }
 });
 
-// DELETE /api/support/:storeId — clear all messages for a store thread
+// DELETE /api/support/:storeId — soft-delete for this user (others still see messages)
 router.delete('/:storeId', async (req, res) => {
   try {
     await ensureTable();
     const { storeId } = req.params;
-    await db.query('DELETE FROM support_messages WHERE store_id = ?', [storeId]);
+    const { userId, userRole } = req.query;
+    if (userId && userRole) {
+      await db.query(
+        `INSERT INTO support_chat_deletions (store_id, user_id, user_role, deleted_at)
+         VALUES (?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE deleted_at = NOW()`,
+        [storeId, userId, userRole]
+      );
+    } else {
+      await db.query('DELETE FROM support_messages WHERE store_id = ?', [storeId]);
+    }
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

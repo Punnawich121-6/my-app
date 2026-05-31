@@ -325,7 +325,7 @@ class _StoreListTabState extends State<_StoreListTab> {
         Padding(
           padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(14)),
           child: Row(children: [
-            Text(S.allCategories, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: context.fg)),
+            Text(S.allCategories, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
             const Spacer(),
             GestureDetector(
               onTap: () => setState(() => _selectedType = _kAllTypes),
@@ -365,10 +365,10 @@ class _StoreListTabState extends State<_StoreListTab> {
                         boxShadow: [
                           BoxShadow(
                             color: selected
-                                ? CColors.orange.withValues(alpha: 0.65)
-                                : Colors.black.withValues(alpha: 0.28),
-                            blurRadius: 18,
-                            offset: const Offset(0, 7),
+                                ? CColors.orange.withValues(alpha: 0.35)
+                                : Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
@@ -407,7 +407,7 @@ class _StoreListTabState extends State<_StoreListTab> {
     return Padding(
       padding: EdgeInsets.fromLTRB(context.wp(20), 0, context.wp(20), context.wp(14)),
       child: Row(children: [
-        Text(S.openRestaurants, style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.w800, color: context.fg)),
+        Text(S.openRestaurants, style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
         const Spacer(),
         Text('$openCount ${S.stores}', style: TextStyle(fontSize: context.sp(14), color: context.muted)),
         Icon(Icons.chevron_right_rounded, size: context.wp(18), color: context.muted),
@@ -634,14 +634,14 @@ class _RestaurantCardState extends State<_RestaurantCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(store['name'] ?? '', style: TextStyle(fontSize: context.sp(17), fontWeight: FontWeight.w800, color: context.fg)),
+                  Text(store['name'] ?? '', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w800, color: context.fg)),
                   SizedBox(height: context.wp(4)),
-                  Text(store['type'] ?? '', style: TextStyle(fontSize: context.sp(14), color: context.muted)),
+                  Text(store['type'] ?? '', style: TextStyle(fontSize: context.sp(13), color: context.muted)),
                   SizedBox(height: context.wp(10)),
                   Row(children: [
                     Icon(Icons.star_rounded, size: context.wp(15), color: CColors.orange),
                     SizedBox(width: context.wp(4)),
-                    Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w600, color: context.fg)),
+                    Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600, color: context.fg)),
                     SizedBox(width: context.wp(16)),
                     Icon(Icons.delivery_dining_rounded, size: context.wp(15), color: CColors.orange),
                     SizedBox(width: context.wp(4)),

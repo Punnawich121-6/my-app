@@ -312,10 +312,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(widget.chatType == 'rider' ? 'ไรเดอร์' : widget.storeName,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: CColors.text),
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: CColors.text),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(widget.chatType == 'rider' ? 'แชทกับไรเดอร์' : 'แชทกับร้านค้า',
-                    style: const TextStyle(fontSize: 11, color: CColors.muted)),
+                    style: const TextStyle(fontSize: 13, color: CColors.muted)),
                 ],
               ),
             ),

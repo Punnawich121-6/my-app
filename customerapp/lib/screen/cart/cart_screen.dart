@@ -200,46 +200,70 @@ class _CartItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = double.tryParse(item['price'].toString()) ?? 0;
+    final imageUrl = item['image_url'] as String?;
     return Padding(
-      padding: EdgeInsets.only(bottom: context.wp(12)),
-      child: Row(children: [
-        Expanded(
-          child: Text(item['name'] ?? '', style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w600, color: context.fg)),
+      padding: EdgeInsets.only(bottom: context.wp(14)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        // รูปเมนู
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: imageUrl != null && imageUrl.isNotEmpty
+              ? Image.network(
+                  imageUrl,
+                  width: context.wp(64),
+                  height: context.wp(64),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _imgPlaceholder(context),
+                )
+              : _imgPlaceholder(context),
         ),
-        Row(children: [
-          GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              width: context.wp(28), height: context.wp(28),
-              decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(8)),
-              child: Icon(Icons.remove_rounded, color: CColors.orange, size: context.wp(16)),
-            ),
-          ),
-          SizedBox(
-            width: context.wp(28),
-            child: Center(
-              child: Text('${item['qty']}', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700, color: context.fg)),
-            ),
-          ),
-          GestureDetector(
-            onTap: onAdd,
-            child: Container(
-              width: context.wp(28), height: context.wp(28),
-              decoration: BoxDecoration(color: CColors.orange, borderRadius: BorderRadius.circular(8)),
-              child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(16)),
-            ),
-          ),
-        ]),
         SizedBox(width: context.wp(12)),
-        SizedBox(
-          width: context.wp(64),
-          child: Text('฿${fmt.format(price * (item['qty'] as int))}',
-              textAlign: TextAlign.right,
-              style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: CColors.orange)),
+        // ชื่อ + ปุ่ม + ราคา
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(item['name'] ?? '',
+                style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w600, color: context.fg)),
+            SizedBox(height: context.wp(8)),
+            Row(children: [
+              GestureDetector(
+                onTap: onRemove,
+                child: Container(
+                  width: context.wp(30), height: context.wp(30),
+                  decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(8)),
+                  child: Icon(Icons.remove_rounded, color: CColors.orange, size: context.wp(16)),
+                ),
+              ),
+              SizedBox(
+                width: context.wp(32),
+                child: Center(
+                  child: Text('${item['qty']}',
+                      style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.w700, color: context.fg)),
+                ),
+              ),
+              GestureDetector(
+                onTap: onAdd,
+                child: Container(
+                  width: context.wp(30), height: context.wp(30),
+                  decoration: BoxDecoration(color: CColors.orange, borderRadius: BorderRadius.circular(8)),
+                  child: Icon(Icons.add_rounded, color: Colors.white, size: context.wp(16)),
+                ),
+              ),
+              const Spacer(),
+              Text('฿${fmt.format(price * (item['qty'] as int))}',
+                  style: TextStyle(fontSize: context.sp(15), fontWeight: FontWeight.w700, color: CColors.orange)),
+            ]),
+          ]),
         ),
       ]),
     );
   }
+
+  Widget _imgPlaceholder(BuildContext context) => Container(
+    width: context.wp(64),
+    height: context.wp(64),
+    decoration: BoxDecoration(color: context.orangeLight, borderRadius: BorderRadius.circular(10)),
+    child: Icon(Icons.fastfood_rounded, color: CColors.orange, size: context.wp(28)),
+  );
 }
 
 class _SummaryRow extends StatelessWidget {
@@ -252,8 +276,8 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseColor = bold ? context.fg : context.muted;
     final style = TextStyle(
-        fontSize: bold ? 15 : 13,
-        fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+        fontSize: bold ? 16 : 15,
+        fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
         color: baseColor);
     final valueColor = isDiscount ? const Color(0xFFD32F2F) : (bold ? CColors.orange : context.muted);
     return Row(children: [

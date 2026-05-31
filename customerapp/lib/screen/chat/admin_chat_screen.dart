@@ -66,7 +66,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   Future<void> _pollMessages() async {
     if (!mounted || _sending) return;
     try {
-      final res = await apiGet('$_base/$_threadId');
+      final res = await apiGet('$_base/$_threadId?userId=${widget.customerId}&userRole=customer');
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
         final fetched = data.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -98,7 +98,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   Future<void> _loadMessages() async {
     try {
-      final res = await apiGet('$_base/$_threadId');
+      final res = await apiGet('$_base/$_threadId?userId=${widget.customerId}&userRole=customer');
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
         setState(() {
@@ -192,23 +192,35 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('ลบแชท', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text('ต้องการลบข้อความทั้งหมดในหน้าจอนี้ใช่ไหม?\n(ข้อมูลยังคงอยู่ในระบบ)'),
+        content: const Text('ข้อความจะหายไปจากหน้าจอคุณเท่านั้น\nทีมสนับสนุนยังคงเห็นข้อความเดิม'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('ยกเลิก', style: TextStyle(color: CColors.muted)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() => _messages.clear());
+              await _deleteChat();
             },
             child: const Text('ลบ', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteChat() async {
+    try {
+      await apiDelete(
+        '$_base/$_threadId?userId=${widget.customerId}&userRole=customer',
+      );
+      if (mounted) setState(() => _messages.clear());
+    } catch (_) {
+      if (mounted) setState(() => _messages.clear());
+    }
   }
 
   void _scrollToBottom() {

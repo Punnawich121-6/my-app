@@ -345,7 +345,7 @@ class _MenuItem extends StatelessWidget {
           child: Icon(icon, color: iconColor, size: 20),
         ),
         const SizedBox(width: 14),
-        Expanded(child: Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: context.fg))),
+        Expanded(child: Text(label, style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w500, color: context.fg))),
         Icon(Icons.chevron_right_rounded, color: context.muted, size: 20),
       ]),
     ),
