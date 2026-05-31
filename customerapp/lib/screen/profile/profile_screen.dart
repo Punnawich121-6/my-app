@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../l10n/strings.dart';
@@ -30,6 +31,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late String _name;
+  String? _profileImage;
 
   @override
   void initState() { super.initState(); _name = widget.customerName; }
@@ -88,21 +90,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         blurRadius: 20, offset: const Offset(0, 6),
                       )],
                     ),
-                    child: const Icon(Icons.person_rounded, color: CColors.orange, size: 52),
+                    clipBehavior: Clip.antiAlias,
+                    child: _profileImage != null && _profileImage!.startsWith('data:')
+                        ? Image.memory(base64Decode(_profileImage!.split(',').last), fit: BoxFit.cover)
+                        : const Icon(Icons.person_rounded, color: CColors.orange, size: 52),
                   ),
                   Positioned(
                     right: 2, bottom: 2,
                     child: GestureDetector(
                       onTap: () async {
-                        final newName = await Navigator.push<String>(
+                        final result = await Navigator.push<Map<String, dynamic>>(
                           context,
                           MaterialPageRoute(builder: (_) => EditProfileScreen(
                             customerId: widget.customerId,
                             customerName: _name,
                             customerPhone: widget.customerPhone,
+                            profileImage: _profileImage,
                           )),
                         );
-                        if (newName != null) setState(() => _name = newName);
+                        if (result != null) {
+                          setState(() {
+                            _name = result['name'] as String;
+                            _profileImage = result['profileImage'] as String?;
+                          });
+                        }
                       },
                       child: Container(
                         width: 30, height: 30,
@@ -131,15 +142,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconColor: CColors.orange,
                 label: S.personalInfo,
                 onTap: () async {
-                  final newName = await Navigator.push<String>(
+                  final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(builder: (_) => EditProfileScreen(
                       customerId: widget.customerId,
                       customerName: _name,
                       customerPhone: widget.customerPhone,
+                      profileImage: _profileImage,
                     )),
                   );
-                  if (newName != null) setState(() => _name = newName);
+                  if (result != null) {
+                    setState(() {
+                      _name = result['name'] as String;
+                      _profileImage = result['profileImage'] as String?;
+                    });
+                  }
                 },
               ),
               const _Divider(),
