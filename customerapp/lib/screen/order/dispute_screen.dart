@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../main.dart';
@@ -23,7 +24,7 @@ class DisputeScreen extends StatefulWidget {
 class _DisputeScreenState extends State<DisputeScreen> {
   String? _selectedReason;
   final _descCtrl = TextEditingController();
-  final List<File> _photos = [];
+  final List<XFile> _photos = [];
   bool _submitting = false;
   bool _done = false;
 
@@ -51,7 +52,7 @@ class _DisputeScreenState extends State<DisputeScreen> {
       imageQuality: 80,
     );
     if (picked == null) return;
-    setState(() => _photos.add(File(picked.path)));
+    setState(() => _photos.add(picked));
   }
 
   Future<void> _submit() async {
@@ -284,7 +285,9 @@ class _DisputeScreenState extends State<DisputeScreen> {
               child: Stack(children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  child: Image.file(file, width: 76, height: 76, fit: BoxFit.cover),
+                  child: kIsWeb
+                      ? Image.network(file.path, width: 76, height: 76, fit: BoxFit.cover)
+                      : Image.file(io.File(file.path), width: 76, height: 76, fit: BoxFit.cover),
                 ),
                 Positioned(
                   top: 4, right: 4,

@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../config.dart';
 
 final _base = '$kBackendUrl/api/customer';
@@ -183,7 +183,7 @@ class CustomerService {
     required String storeId,
     required int rating,
     String comment = '',
-    List<File> images = const [],
+    List<XFile> images = const [],
   }) async {
     if (images.isEmpty) {
       final res = await apiPost('$_base/review/store', jsonEncode({
@@ -194,8 +194,6 @@ class CustomerService {
         'rating': rating,
         'comment': comment,
       })).timeout(const Duration(seconds: 20));
-      // ignore: avoid_print
-      print('[submitStoreReview] status=${res.statusCode} body=${res.body} storeId=$storeId');
       return res.statusCode == 200;
     }
     final uri = Uri.parse('$_base/review/store');
@@ -207,7 +205,11 @@ class CustomerService {
       ..fields['rating'] = rating.toString()
       ..fields['comment'] = comment;
     for (final img in images) {
-      request.files.add(await http.MultipartFile.fromPath('images', img.path));
+      final bytes = await img.readAsBytes();
+      request.files.add(http.MultipartFile.fromBytes(
+        'images', bytes,
+        filename: img.name.isNotEmpty ? img.name : 'image.jpg',
+      ));
     }
     final streamed = await request.send().timeout(const Duration(seconds: 30));
     return streamed.statusCode == 200;
@@ -288,7 +290,7 @@ class CustomerService {
     required String customerId,
     required String reasonType,
     String description = '',
-    List<File> photos = const [],
+    List<XFile> photos = const [],
   }) async {
     try {
       final uri = Uri.parse('$kBackendUrl/api/disputes');
@@ -310,7 +312,11 @@ class CustomerService {
         ..fields['reasonType']  = reasonType
         ..fields['description'] = description;
       for (final photo in photos) {
-        request.files.add(await http.MultipartFile.fromPath('evidence', photo.path));
+        final bytes = await photo.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'evidence', bytes,
+          filename: photo.name.isNotEmpty ? photo.name : 'photo.jpg',
+        ));
       }
       final streamed = await request.send().timeout(const Duration(seconds: 20));
       return streamed.statusCode == 201;

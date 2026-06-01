@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../main.dart';
@@ -31,7 +32,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   int _riderRating = 0;
   final _storeCommentCtrl = TextEditingController();
   final _riderCommentCtrl = TextEditingController();
-  List<File> _storeImages = [];
+  List<XFile> _storeImages = [];
   bool _submitting = false;
   bool _submitted = false;
 
@@ -47,7 +48,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final picked = await picker.pickMultiImage(imageQuality: 80, limit: 5);
     if (picked.isNotEmpty) {
       setState(() {
-        _storeImages = [..._storeImages, ...picked.map((x) => File(x.path))];
+        _storeImages = [..._storeImages, ...picked];
         if (_storeImages.length > 5) _storeImages = _storeImages.sublist(0, 5);
       });
     }
@@ -132,7 +133,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Store rating card
         _RatingCard(
           icon: Icons.store_rounded,
           iconColor: CColors.orange,
@@ -148,7 +148,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
           onRemoveImage: (i) => setState(() => _storeImages.removeAt(i)),
         ),
 
-        // Rider rating card (only if rider was assigned)
         if (widget.riderId != null && widget.riderId!.isNotEmpty) ...[
           const SizedBox(height: 16),
           _RatingCard(
@@ -199,7 +198,7 @@ class _RatingCard extends StatelessWidget {
   final ValueChanged<int> onRatingChanged;
   final TextEditingController commentCtrl;
   final String commentHint;
-  final List<File>? images;
+  final List<XFile>? images;
   final VoidCallback? onPickImages;
   final ValueChanged<int>? onRemoveImage;
 
@@ -279,7 +278,6 @@ class _RatingCard extends StatelessWidget {
           ),
         ),
 
-        // Image picker (store review only)
         if (onPickImages != null) ...[
           const SizedBox(height: 12),
           _ImagePickerRow(
@@ -296,11 +294,18 @@ class _RatingCard extends StatelessWidget {
 // ─── Image Picker Row ─────────────────────────────────────────────────────────
 
 class _ImagePickerRow extends StatelessWidget {
-  final List<File> images;
+  final List<XFile> images;
   final VoidCallback onPick;
   final ValueChanged<int> onRemove;
 
   const _ImagePickerRow({required this.images, required this.onPick, required this.onRemove});
+
+  Widget _buildThumb(XFile f) {
+    if (kIsWeb) {
+      return Image.network(f.path, fit: BoxFit.cover, width: 80, height: 80);
+    }
+    return Image.file(io.File(f.path), fit: BoxFit.cover, width: 80, height: 80);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +324,6 @@ class _ImagePickerRow extends StatelessWidget {
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
-            // Add button
             if (images.length < 5)
               GestureDetector(
                 onTap: onPick,
@@ -338,7 +342,6 @@ class _ImagePickerRow extends StatelessWidget {
                   ]),
                 ),
               ),
-            // Selected images
             ...images.asMap().entries.map((e) => Stack(
               children: [
                 Container(
@@ -347,7 +350,7 @@ class _ImagePickerRow extends StatelessWidget {
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.file(e.value, fit: BoxFit.cover, width: 80, height: 80),
+                    child: _buildThumb(e.value),
                   ),
                 ),
                 Positioned(
