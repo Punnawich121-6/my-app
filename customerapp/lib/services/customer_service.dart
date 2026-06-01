@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import '../config.dart';
 
@@ -206,9 +207,12 @@ class CustomerService {
       ..fields['comment'] = comment;
     for (final img in images) {
       final bytes = await img.readAsBytes();
+      final name  = img.name.isNotEmpty ? img.name : 'image.jpg';
+      final mime  = img.mimeType ?? _guessMime(name);
       request.files.add(http.MultipartFile.fromBytes(
         'images', bytes,
-        filename: img.name.isNotEmpty ? img.name : 'image.jpg',
+        filename: name,
+        contentType: MediaType.parse(mime),
       ));
     }
     final streamed = await request.send().timeout(const Duration(seconds: 30));
@@ -313,9 +317,12 @@ class CustomerService {
         ..fields['description'] = description;
       for (final photo in photos) {
         final bytes = await photo.readAsBytes();
+        final name  = photo.name.isNotEmpty ? photo.name : 'photo.jpg';
+        final mime  = photo.mimeType ?? _guessMime(name);
         request.files.add(http.MultipartFile.fromBytes(
           'evidence', bytes,
-          filename: photo.name.isNotEmpty ? photo.name : 'photo.jpg',
+          filename: name,
+          contentType: MediaType.parse(mime),
         ));
       }
       final streamed = await request.send().timeout(const Duration(seconds: 20));
@@ -380,5 +387,16 @@ class CustomerService {
       }));
       return jsonDecode(res.body);
     } catch (_) { return null; }
+  }
+}
+
+String _guessMime(String filename) {
+  final ext = filename.split('.').last.toLowerCase();
+  switch (ext) {
+    case 'png':  return 'image/png';
+    case 'gif':  return 'image/gif';
+    case 'webp': return 'image/webp';
+    case 'heic': return 'image/heic';
+    default:     return 'image/jpeg';
   }
 }
