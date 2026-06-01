@@ -195,6 +195,7 @@ class CustomerService {
         'rating': rating,
         'comment': comment,
       })).timeout(const Duration(seconds: 20));
+      if (res.statusCode == 409) throw AlreadyReviewedException();
       return res.statusCode == 200;
     }
     final uri = Uri.parse('$_base/review/store');
@@ -216,6 +217,7 @@ class CustomerService {
       ));
     }
     final streamed = await request.send().timeout(const Duration(seconds: 30));
+    if (streamed.statusCode == 409) throw AlreadyReviewedException();
     return streamed.statusCode == 200;
   }
 
@@ -389,6 +391,8 @@ class CustomerService {
     } catch (_) { return null; }
   }
 }
+
+class AlreadyReviewedException implements Exception {}
 
 String _guessMime(String filename) {
   final ext = filename.split('.').last.toLowerCase();

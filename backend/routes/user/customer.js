@@ -328,7 +328,7 @@ router.post('/review/store', reviewUpload.array('images', 5), async (req, res) =
         [customer_id, store_id]
       );
     }
-    if (existing) return res.json({ success: true, alreadyReviewed: true });
+    if (existing) return res.status(409).json({ error: 'already_reviewed' });
 
     const proto = req.get('x-forwarded-proto') || req.protocol;
     const baseUrl = `${proto}://${req.get('host')}`;

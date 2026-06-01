@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../main.dart';
-import '../../services/customer_service.dart';
+import '../../services/customer_service.dart' show CustomerService, AlreadyReviewedException;
 
 class ReviewScreen extends StatefulWidget {
   final String orderId;
@@ -89,13 +89,27 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
 
     bool ok = false;
+    bool alreadyReviewed = false;
     try {
       final results = await Future.wait(futures);
       ok = results.every((r) => r == true);
+    } on AlreadyReviewedException {
+      alreadyReviewed = true;
     } catch (_) {
       ok = false;
     }
     if (!mounted) return;
+
+    if (alreadyReviewed) {
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('คุณรีวิวออเดอร์นี้ไปแล้ว'),
+        backgroundColor: CColors.orange,
+        behavior: SnackBarBehavior.floating,
+      ));
+      Navigator.pop(context, false);
+      return;
+    }
 
     if (!ok) {
       setState(() => _submitting = false);
