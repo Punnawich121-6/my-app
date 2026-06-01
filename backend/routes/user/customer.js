@@ -29,8 +29,11 @@ const reviewUpload = multer({
 db.query(`ALTER TABLE customer ADD COLUMN IF NOT EXISTS profile_image LONGTEXT`).catch(() => {});
 db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS images TEXT DEFAULT NULL`).catch(() => {});
 db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255) DEFAULT 'Customer'`).catch(() => {});
-db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
 db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reply TEXT DEFAULT NULL`).catch(() => {});
+
+// Fix column types: customer_id and order_id must be VARCHAR(36) for UUIDs
+db.query(`ALTER TABLE reviews MODIFY COLUMN customer_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
+db.query(`ALTER TABLE reviews MODIFY COLUMN order_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
 
 // ─── GET stores (restaurant table) ───────────────────────────────────────────
 router.get('/stores', async (req, res) => {
