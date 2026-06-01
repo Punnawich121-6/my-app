@@ -25,6 +25,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   bool _loading = true;
   bool _error = false;
   bool _cancelling = false;
+  StreamSubscription<Map<String, dynamic>>? _orderSub;
 
   static const _steps = [
     {'key': 'pending',    'label': 'สั่งแล้ว',    'icon': Icons.receipt_long_rounded},
@@ -61,20 +62,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     _load();
     SocketService.instance.connect();
     SocketService.instance.joinOrder(widget.orderId);
-    SocketService.instance.on('order_updated', _onOrderUpdated);
+    _orderSub = SocketService.instance.orderUpdates.listen((data) {
+      if (!mounted) return;
+      if (data['order_id']?.toString() == widget.orderId) _load();
+    });
   }
 
   @override
   void dispose() {
-    SocketService.instance.off('order_updated');
+    _orderSub?.cancel();
     SocketService.instance.leaveOrder(widget.orderId);
     super.dispose();
-  }
-
-  void _onOrderUpdated(dynamic data) {
-    if (!mounted) return;
-    final update = Map<String, dynamic>.from(data as Map);
-    if (update['order_id']?.toString() == widget.orderId) _load();
   }
 
   Future<void> _load() async {

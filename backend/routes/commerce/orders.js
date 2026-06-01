@@ -99,8 +99,19 @@ router.put('/:orderId/status', async (req, res) => {
   }
   try {
     await db.query('UPDATE `order` SET status = ? WHERE id = ?', [status, orderId]);
+
+    const [[orderInfo]] = await db.query(
+      `SELECT o.customerId, r.name AS store_name
+       FROM \`order\` o
+       JOIN restaurant r ON o.restaurantId = r.id
+       WHERE o.id = ?`,
+      [orderId]
+    );
+
     const io = req.app.get('io');
-    io?.to(`order_${orderId}`).emit('order_updated', { order_id: orderId, status });
+    const payload = { order_id: orderId, status, store_name: orderInfo?.store_name || 'ร้านอาหาร' };
+    io?.to(`order_${orderId}`).emit('order_updated', payload);
+    io?.to(`customer_${orderInfo?.customerId}`).emit('order_updated', payload);
     io?.to('admin').emit('order_status_changed', { order_id: orderId, status });
 
     if (status === 'completed') {

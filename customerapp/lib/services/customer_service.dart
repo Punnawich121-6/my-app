@@ -185,32 +185,32 @@ class CustomerService {
     String comment = '',
     List<File> images = const [],
   }) async {
-    try {
-      if (images.isEmpty) {
-        final res = await apiPost('$_base/review/store', jsonEncode({
-          'order_id': orderId,
-          'customer_id': customerId,
-          'customer_name': customerName,
-          'store_id': storeId,
-          'rating': rating,
-          'comment': comment,
-        }));
-        return res.statusCode == 200;
-      }
-      final uri = Uri.parse('$_base/review/store');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['order_id'] = orderId
-        ..fields['customer_id'] = customerId
-        ..fields['customer_name'] = customerName
-        ..fields['store_id'] = storeId
-        ..fields['rating'] = rating.toString()
-        ..fields['comment'] = comment;
-      for (final img in images) {
-        request.files.add(await http.MultipartFile.fromPath('images', img.path));
-      }
-      final streamed = await request.send().timeout(const Duration(seconds: 30));
-      return streamed.statusCode == 200;
-    } catch (_) { return false; }
+    if (images.isEmpty) {
+      final res = await apiPost('$_base/review/store', jsonEncode({
+        'order_id': orderId,
+        'customer_id': customerId,
+        'customer_name': customerName,
+        'store_id': storeId,
+        'rating': rating,
+        'comment': comment,
+      })).timeout(const Duration(seconds: 20));
+      // ignore: avoid_print
+      print('[submitStoreReview] status=${res.statusCode} body=${res.body} storeId=$storeId');
+      return res.statusCode == 200;
+    }
+    final uri = Uri.parse('$_base/review/store');
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['order_id'] = orderId
+      ..fields['customer_id'] = customerId
+      ..fields['customer_name'] = customerName
+      ..fields['store_id'] = storeId
+      ..fields['rating'] = rating.toString()
+      ..fields['comment'] = comment;
+    for (final img in images) {
+      request.files.add(await http.MultipartFile.fromPath('images', img.path));
+    }
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    return streamed.statusCode == 200;
   }
 
   static Future<bool> submitRiderReview({
@@ -221,17 +221,15 @@ class CustomerService {
     required int rating,
     String comment = '',
   }) async {
-    try {
-      final res = await apiPost('$_base/review/rider', jsonEncode({
-        'order_id': orderId,
-        'customer_id': customerId,
-        'customer_name': customerName,
-        'rider_id': riderId,
-        'rating': rating,
-        'comment': comment,
-      }));
-      return res.statusCode == 200;
-    } catch (_) { return false; }
+    final res = await apiPost('$_base/review/rider', jsonEncode({
+      'order_id': orderId,
+      'customer_id': customerId,
+      'customer_name': customerName,
+      'rider_id': riderId,
+      'rating': rating,
+      'comment': comment,
+    })).timeout(const Duration(seconds: 20));
+    return res.statusCode == 200;
   }
 
   static Future<Map<String, dynamic>?> createQrPayment({

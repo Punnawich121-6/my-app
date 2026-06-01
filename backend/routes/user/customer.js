@@ -281,7 +281,7 @@ router.get('/reviews/:customerId', async (req, res) => {
   try {
     const [storeReviews] = await db.query(
       `SELECT r.id, 'store' AS type, rv.name AS target_name, rv.imageUrl AS target_image,
-              r.rating, r.comment, r.createdAt AS created_at
+              r.rating, r.comment, r.images, r.createdAt AS created_at
        FROM reviews r
        LEFT JOIN restaurant rv ON r.store_id = rv.id
        WHERE r.customer_id = ?

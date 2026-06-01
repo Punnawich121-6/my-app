@@ -46,16 +46,18 @@ app.use('/api/disputes',   require('./routes/dispute/disputes'));
 app.use('/api/promotions', require('./routes/commerce/promotions'));
 
 io.on('connection', (socket) => {
-  socket.on('join_order',   (orderId)  => socket.join(`order_${orderId}`));
-  socket.on('leave_order',  (orderId)  => socket.leave(`order_${orderId}`));
-  socket.on('join_admin',   ()         => socket.join('admin'));
-  socket.on('leave_admin',  ()         => socket.leave('admin'));
-  socket.on('join_support', (storeId)  => socket.join(`support_${storeId}`));
-  socket.on('leave_support',(storeId)  => socket.leave(`support_${storeId}`));
-  socket.on('join_disputes',()         => socket.join('disputes'));
-  socket.on('leave_disputes',()        => socket.leave('disputes'));
-  socket.on('join_store',   (storeId)  => socket.join(`store_${storeId}`));
-  socket.on('leave_store',  (storeId)  => socket.leave(`store_${storeId}`));
+  socket.on('join_order',    (orderId)    => socket.join(`order_${orderId}`));
+  socket.on('leave_order',   (orderId)    => socket.leave(`order_${orderId}`));
+  socket.on('join_customer', (customerId) => socket.join(`customer_${customerId}`));
+  socket.on('leave_customer',(customerId) => socket.leave(`customer_${customerId}`));
+  socket.on('join_admin',    ()           => socket.join('admin'));
+  socket.on('leave_admin',   ()           => socket.leave('admin'));
+  socket.on('join_support',  (storeId)    => socket.join(`support_${storeId}`));
+  socket.on('leave_support', (storeId)    => socket.leave(`support_${storeId}`));
+  socket.on('join_disputes', ()           => socket.join('disputes'));
+  socket.on('leave_disputes',()           => socket.leave('disputes'));
+  socket.on('join_store',    (storeId)    => socket.join(`store_${storeId}`));
+  socket.on('leave_store',   (storeId)    => socket.leave(`store_${storeId}`));
 });
 
 const db                 = require('./db');

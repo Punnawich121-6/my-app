@@ -64,7 +64,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
     setState(() => _submitting = true);
 
-    final futures = <Future>[];
+    final futures = <Future<bool>>[];
 
     futures.add(CustomerService.submitStoreReview(
       orderId: widget.orderId,
@@ -87,8 +87,25 @@ class _ReviewScreenState extends State<ReviewScreen> {
       ));
     }
 
-    await Future.wait(futures);
+    bool ok = false;
+    try {
+      final results = await Future.wait(futures);
+      ok = results.every((r) => r == true);
+    } catch (_) {
+      ok = false;
+    }
     if (!mounted) return;
+
+    if (!ok) {
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
+        backgroundColor: CColors.red,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+
     setState(() { _submitting = false; _submitted = true; });
   }
 

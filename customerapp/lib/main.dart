@@ -6,6 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_settings.dart';
 import 'firebase_options.dart';
 import 'screen/auth/login_screen.dart';
+import 'services/order_notification_service.dart';
+
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +17,7 @@ void main() async {
     final host = kIsWeb ? 'localhost' : '10.0.2.2';
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);
   }
+  OrderNotificationService.instance.navigatorKey = _navigatorKey;
   runApp(const CustomerApp());
 }
 
@@ -44,6 +48,7 @@ class _CustomerAppState extends State<CustomerApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Food Delivery',
+      navigatorKey: _navigatorKey,
       themeMode: AppSettings.instance.themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

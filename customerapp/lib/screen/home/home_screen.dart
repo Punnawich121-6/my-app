@@ -13,6 +13,7 @@ import '../food/random_food_screen.dart';
 import '../food/food_scan_match_screen.dart';
 import '../../cart_manager.dart';
 import '../../services/customer_service.dart';
+import '../../services/order_notification_service.dart';
 import '../cart/cart_screen.dart';
 import '../profile/favorites_screen.dart';
 
@@ -27,6 +28,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    OrderNotificationService.instance.start(widget.customerId);
+  }
+
+  @override
+  void dispose() {
+    OrderNotificationService.instance.stop();
+    super.dispose();
+  }
 
   void _goToOrders() => setState(() => _index = 1);
 
