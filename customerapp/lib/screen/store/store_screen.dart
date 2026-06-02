@@ -1513,7 +1513,7 @@ class _ReviewsPreviewSection extends StatelessWidget {
         ]),
       ),
       SizedBox(
-        height: 110,
+        height: 140,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -1533,42 +1533,56 @@ class _ReviewChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rating = int.tryParse(review['rating']?.toString() ?? '0') ?? 0;
+    final rating  = int.tryParse(review['rating']?.toString() ?? '0') ?? 0;
     final comment = (review['comment'] as String? ?? '').trim();
-    final name = review['customer_name'] as String? ?? 'ลูกค้า';
+    final name    = review['customer_name'] as String? ?? 'ลูกค้า';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'ล';
     final displayText = comment.isNotEmpty ? comment : 'ไม่มีความเห็น';
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 220,
+        width: 200,
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFEEEEEE), width: 1),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8, offset: const Offset(0, 2),
+          )],
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(displayText,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: CColors.text, height: 1.4)),
-          const Spacer(),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Avatar + name + stars
           Row(children: [
-            ...List.generate(5, (i) => Icon(
-              i < rating ? Icons.star_rounded : Icons.star_border_rounded,
-              color: CColors.orange, size: 13,
-            )),
-            const SizedBox(width: 6),
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: CColors.orangeLight,
+              child: Text(initial,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: CColors.orange)),
+            ),
+            const SizedBox(width: 8),
             Expanded(
-              child: Text('· $name',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: CColors.muted)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: CColors.text)),
+                Row(children: List.generate(5, (i) => Icon(
+                  i < rating ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: CColors.orange, size: 11,
+                ))),
+              ]),
             ),
           ]),
+          const SizedBox(height: 8),
+          // Comment
+          Text(displayText,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5, color: CColors.text, height: 1.45)),
         ]),
       ),
     );
