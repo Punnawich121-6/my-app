@@ -89,6 +89,22 @@ class OrderNotificationService {
     _showOrderPopup(orderId: orderId, status: status, storeName: storeName);
   }
 
+  /// Called by OrderTrackingScreen after every HTTP fetch so the bar stays in sync
+  /// even when socket events only reach the order room (not customer room).
+  void syncFromTracking(String orderId, Map<String, dynamic> orderData) {
+    final currentId = activeOrder.value?['order_id']?.toString();
+    if (currentId != null && currentId != orderId) return;
+
+    final storeName = orderData['store_name']?.toString() ??
+        activeOrder.value?['store_name'] ?? 'ร้านอาหาร';
+
+    _updateActiveBar({
+      ...orderData,
+      'order_id': orderId,
+      'store_name': storeName,
+    });
+  }
+
   void notifyOrderPlaced({required String orderId, required String storeName}) {
     _updateActiveBar({
       'order_id': orderId,

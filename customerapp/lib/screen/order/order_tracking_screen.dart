@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/customer_service.dart';
+import '../../services/order_notification_service.dart';
 import '../../services/socket_service.dart';
 import '../chat/chat_screen.dart';
 import '../chat/call_screen.dart';
@@ -84,6 +85,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           .timeout(const Duration(seconds: 10));
       if (!mounted) return;
       setState(() { _order = data; _loading = false; _error = data == null; });
+      if (data != null) {
+        OrderNotificationService.instance.syncFromTracking(widget.orderId, data);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() { _loading = false; _error = true; });
