@@ -31,9 +31,11 @@ void main() async {
     () => runApp(const CustomerApp()),
     (error, stack) {
       final msg = error.toString().toLowerCase();
-      if (msg.contains('image') || msg.contains('404') ||
-          msg.contains('http') || msg.contains('network')) return;
-      if (kDebugMode) { print('Zone error: $error'); }
+      // Only suppress broken image/network 404 errors — NOT widget/logic errors
+      if (msg.contains('failed to load network image') ||
+          msg.contains('image codec') ||
+          msg.contains('exception: http error')) return;
+      if (kDebugMode) { print('[ZoneError] $error\n$stack'); }
     },
   );
 }
