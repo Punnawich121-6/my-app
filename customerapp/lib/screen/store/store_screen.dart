@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../main.dart';
 import '../../utils/responsive.dart';
 import '../../cart_manager.dart';
@@ -214,15 +215,20 @@ class _StoreScreenState extends State<StoreScreen> {
             iconColor: CColors.orange,
             label: 'แชร์ร้านนี้',
             onTap: () {
-              final name    = widget.store['name'] ?? '';
-              final address = widget.store['address'] ?? '';
-              Clipboard.setData(ClipboardData(text: '$name\n$address'));
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('คัดลอกข้อมูลร้านแล้ว'),
-                duration: Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ));
+              final name    = widget.store['name'] ?? 'ร้านอาหาร';
+              final address = widget.store['address'] ?? '';
+              final lat     = widget.store['lat'];
+              final lng     = widget.store['lng'];
+
+              final mapsUrl = (lat != null && lng != null)
+                  ? 'https://www.google.com/maps/search/?api=1&query=$lat,$lng'
+                  : 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(name + ' ' + address)}';
+
+              Share.share(
+                '🍽️ $name\n📍 $address\n\nดูแผนที่: $mapsUrl',
+                subject: name,
+              );
             },
           ),
           const Divider(height: 1, color: Color(0xFFF5F5F5)),
