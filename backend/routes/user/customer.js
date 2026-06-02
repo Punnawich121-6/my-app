@@ -32,6 +32,8 @@ db.query(`UPDATE restaurant SET imageUrl = NULL WHERE imageUrl LIKE '%onrender.c
 db.query(`UPDATE restaurant SET imageUrl = NULL WHERE imageUrl LIKE '%localhost%'`).catch(() => {});
 db.query(`UPDATE menu_items SET image_url = NULL WHERE image_url LIKE '%onrender.com/uploads/%'`).catch(() => {});
 db.query(`UPDATE menu_items SET image_url = NULL WHERE image_url LIKE '%localhost%'`).catch(() => {});
+// Clear known broken Unsplash photos (removed/404)
+db.query(`UPDATE menu_items SET image_url = NULL WHERE image_url LIKE '%photo-1559742117%'`).catch(() => {});
 
 // ─── GET stores (restaurant table) ───────────────────────────────────────────
 router.get('/stores', async (req, res) => {
