@@ -69,6 +69,14 @@ class OrderNotificationService {
     _showPopup(orderId: orderId, status: status, storeName: storeName);
   }
 
+  void notifyOrderPlaced({required String orderId, required String storeName}) {
+    _updateActiveBar({
+      'order_id': orderId,
+      'status': 'pending',
+      'store_name': storeName,
+    });
+  }
+
   void _updateActiveBar(Map<String, dynamic> data) {
     final status  = data['status']?.toString() ?? '';
     final orderId = data['order_id']?.toString() ?? '';

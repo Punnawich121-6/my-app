@@ -8,6 +8,7 @@ import '../../services/customer_service.dart';
 import '../../utils/responsive.dart';
 import '../location/location_picker_screen.dart';
 import '../order/payment_screen.dart';
+import '../../services/order_notification_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final String customerId, customerName, customerPhone;
@@ -105,7 +106,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               promoId: widget.promoId,
             );
             if (result != null && result['success'] == true) {
-              return result['order_id'] as String?;
+              final orderId = result['order_id'] as String?;
+              if (orderId != null) {
+                OrderNotificationService.instance.notifyOrderPlaced(
+                  orderId: orderId,
+                  storeName: store['name']?.toString() ?? 'ร้านอาหาร',
+                );
+              }
+              return orderId;
             }
             return null;
           },
