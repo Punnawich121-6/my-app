@@ -171,6 +171,41 @@ router.post('/', upload.array('evidence', 5), async (req, res) => {
   }
 });
 
+// POST /api/disputes/store-report — Customer reports a store (no order required)
+router.post('/store-report', upload.array('evidence', 3), async (req, res) => {
+  try {
+    await ensureTables();
+    const { customerId, customerName, storeId, storeName, reasonType, description } = req.body;
+    if (!storeId || !reasonType) {
+      return res.status(400).json({ error: 'storeId and reasonType required' });
+    }
+
+    const evidenceUrls = await Promise.all(
+      (req.files || []).map(f => uploadBuffer(f.buffer, { folder: 'digio/reports', mimetype: f.mimetype }))
+    ).then(urls => urls.filter(Boolean));
+
+    const desc = `[ลูกค้ารายงานร้าน] ${description || ''}`;
+
+    const [result] = await db.query(`
+      INSERT INTO disputes
+        (order_id, order_number, customer_id, customer_name, restaurant_name,
+         reason_type, description, evidence_urls, status)
+      VALUES (?,?,?,?,?,?,?,?,'pending_review')
+    `, [null, `รายงานร้าน #${storeId}`, customerId || null, customerName || 'ลูกค้า',
+        storeName || 'ร้านอาหาร', reasonType, desc, JSON.stringify(evidenceUrls)]);
+
+    const io = req.app.get('io');
+    io?.to('admin').emit('new_dispute', {
+      disputeId: result.insertId, reasonType,
+      customerName: customerName || 'ลูกค้า',
+    });
+
+    res.status(201).json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/disputes/stats
 router.get('/stats', async (req, res) => {
   try {

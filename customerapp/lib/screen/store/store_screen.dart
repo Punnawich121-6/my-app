@@ -13,6 +13,7 @@ import '../order/payment_screen.dart';
 import '../profile/favorites_screen.dart';
 import '../chat/review_screen.dart';
 import 'store_reviews_screen.dart';
+import 'report_store_screen.dart';
 
 class StoreScreen extends StatefulWidget {
   final Map<String, dynamic> store;
@@ -256,25 +257,14 @@ class _StoreScreenState extends State<StoreScreen> {
             label: 'รายงานปัญหา',
             onTap: () {
               Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  title: const Text('รายงานปัญหา', style: TextStyle(fontWeight: FontWeight.w700)),
-                  content: const Text('ขอบคุณที่แจ้งปัญหา\nทีมงานจะตรวจสอบและดำเนินการโดยเร็ว'),
-                  actions: [
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: CColors.orange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('ตกลง'),
-                    ),
-                  ],
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => ReportStoreScreen(
+                  storeId:      widget.store['id']?.toString() ?? '',
+                  storeName:    widget.store['name'] ?? 'ร้านอาหาร',
+                  customerId:   widget.customerId,
+                  customerName: widget.customerName,
                 ),
-              );
+              ));
             },
           ),
         ]),
