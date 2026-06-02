@@ -17,6 +17,14 @@ void main() async {
     final host = kIsWeb ? 'localhost' : '10.0.2.2';
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);
   }
+
+  // Suppress image loading errors (broken URLs, 404s) from crashing the app on web
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final lib = details.library ?? '';
+    if (lib.contains('image') || lib.contains('painting')) return;
+    FlutterError.presentError(details);
+  };
+
   OrderNotificationService.instance.navigatorKey = _navigatorKey;
   runApp(const CustomerApp());
 }
