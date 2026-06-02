@@ -10,6 +10,8 @@ class OrderNotificationService {
 
   GlobalKey<NavigatorState>? navigatorKey;
 
+  final activeOrder = ValueNotifier<Map<String, dynamic>?>(null);
+
   StreamSubscription<Map<String, dynamic>>? _sub;
   OverlayEntry? _entry;
   String? _lastOrderId;
@@ -40,15 +42,19 @@ class OrderNotificationService {
     _sub?.cancel();
     _sub = null;
     _customerId = null;
+    activeOrder.value = null;
     _dismiss();
   }
 
   void _onOrderUpdated(Map<String, dynamic> data) {
-    final orderId   = data['order_id']?.toString() ?? '';
-    final status    = data['status']?.toString()   ?? '';
-    final storeName = data['store_name']?.toString() ?? 'ร้านอาหาร';
+    final orderId = data['order_id']?.toString() ?? '';
+    final status  = data['status']?.toString()   ?? '';
 
-    if (orderId.isEmpty || status == 'pending') return;
+    if (orderId.isEmpty) return;
+
+    _updateActiveBar(data);
+
+    if (status == 'pending') return;
 
     final now = DateTime.now();
     if (_lastOrderId == orderId &&
@@ -59,7 +65,23 @@ class OrderNotificationService {
     _lastOrderId = orderId;
     _lastShown = now;
 
+    final storeName = data['store_name']?.toString() ?? 'ร้านอาหาร';
     _showPopup(orderId: orderId, status: status, storeName: storeName);
+  }
+
+  void _updateActiveBar(Map<String, dynamic> data) {
+    final status  = data['status']?.toString() ?? '';
+    final orderId = data['order_id']?.toString() ?? '';
+    activeOrder.value = data;
+
+    if (status == 'completed' || status == 'cancelled') {
+      Future.delayed(const Duration(seconds: 7), () {
+        if (activeOrder.value?['order_id']?.toString() == orderId &&
+            activeOrder.value?['status']?.toString() == status) {
+          activeOrder.value = null;
+        }
+      });
+    }
   }
 
   void _showPopup({

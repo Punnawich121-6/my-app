@@ -16,6 +16,8 @@ import '../../services/customer_service.dart';
 import '../../services/order_notification_service.dart';
 import '../cart/cart_screen.dart';
 import '../profile/favorites_screen.dart';
+import '../order/order_tracking_screen.dart';
+import '../../widgets/order_status_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   final String customerId;
@@ -58,25 +60,63 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: context.card,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, -4))],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _index,
-          onTap: (i) => setState(() => _index = i),
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: CColors.orange,
-          unselectedItemColor: CColors.muted,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          items: [
-            BottomNavigationBarItem(icon: const Icon(Icons.home_rounded), label: S.home),
-            BottomNavigationBarItem(icon: const Icon(Icons.receipt_long_rounded), label: S.orders),
-            BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: S.profile),
-          ],
-        ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ValueListenableBuilder<Map<String, dynamic>?>(
+            valueListenable: OrderNotificationService.instance.activeOrder,
+            builder: (context, order, _) {
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 320),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: order == null
+                    ? const SizedBox(key: ValueKey('no-order'), width: double.infinity)
+                    : OrderStatusBar(
+                        key: ValueKey(order['order_id']),
+                        order: order,
+                        onTap: () {
+                          final orderId = order['order_id']?.toString() ?? '';
+                          if (orderId.isEmpty) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderTrackingScreen(orderId: orderId),
+                            ),
+                          );
+                        },
+                      ),
+              );
+            },
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: context.card,
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, -4))],
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _index,
+              onTap: (i) => setState(() => _index = i),
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: CColors.orange,
+              unselectedItemColor: CColors.muted,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              items: [
+                BottomNavigationBarItem(icon: const Icon(Icons.home_rounded), label: S.home),
+                BottomNavigationBarItem(icon: const Icon(Icons.receipt_long_rounded), label: S.orders),
+                BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: S.profile),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
