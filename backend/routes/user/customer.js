@@ -25,6 +25,14 @@ db.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reply TEXT DEFAULT NULL`)
 db.query(`ALTER TABLE reviews MODIFY COLUMN customer_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
 db.query(`ALTER TABLE reviews MODIFY COLUMN order_id VARCHAR(36) DEFAULT NULL`).catch(() => {});
 
+// Clear old broken local image URLs (files no longer exist on Render)
+db.query(`UPDATE reviews SET images = NULL WHERE images LIKE '%onrender.com/uploads/%'`).catch(() => {});
+db.query(`UPDATE reviews SET images = NULL WHERE images LIKE '%localhost%'`).catch(() => {});
+db.query(`UPDATE restaurant SET imageUrl = NULL WHERE imageUrl LIKE '%onrender.com/uploads/%'`).catch(() => {});
+db.query(`UPDATE restaurant SET imageUrl = NULL WHERE imageUrl LIKE '%localhost%'`).catch(() => {});
+db.query(`UPDATE menu_items SET image_url = NULL WHERE image_url LIKE '%onrender.com/uploads/%'`).catch(() => {});
+db.query(`UPDATE menu_items SET image_url = NULL WHERE image_url LIKE '%localhost%'`).catch(() => {});
+
 // ─── GET stores (restaurant table) ───────────────────────────────────────────
 router.get('/stores', async (req, res) => {
   try {
