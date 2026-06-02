@@ -3,17 +3,10 @@ const router = express.Router();
 const db = require('../../db');
 const crypto = require('crypto');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-const _uploadDir = path.join(__dirname, '../../uploads/riders');
-fs.mkdirSync(_uploadDir, { recursive: true });
+const { uploadBuffer } = require('../../services/cloudinary');
 
 const _photoUpload = multer({
-  storage: multer.diskStorage({
-    destination: _uploadDir,
-    filename: (req, _file, cb) => cb(null, `rider_${req.params.riderId}_${Date.now()}.jpg`),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => cb(null, file.mimetype.startsWith('image/')),
 });
@@ -126,7 +119,8 @@ router.get('/profile/:riderId', async (req, res) => {
 // ── Upload rider profile photo ────────────────────────────────────────────────
 router.post('/:riderId/photo', _photoUpload.single('photo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-  const photoUrl = `/uploads/riders/${req.file.filename}`;
+  const photoUrl = await uploadBuffer(req.file.buffer, { folder: 'digio/riders', mimetype: req.file.mimetype });
+  if (!photoUrl) return res.status(500).json({ error: 'Upload failed' });
   try {
     await db.query('ALTER TABLE Rider ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(500) DEFAULT NULL').catch(() => {});
     await db.query('UPDATE Rider SET profile_photo = ? WHERE id = ?', [photoUrl, req.params.riderId]);

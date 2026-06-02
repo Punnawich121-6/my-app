@@ -3,21 +3,11 @@ const router = express.Router();
 const db = require('../../db');
 const crypto = require('crypto');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { uploadBuffer } = require('../../services/cloudinary');
 
-// ─── Review image upload setup ────────────────────────────────────────────────
-const reviewUploadDir = path.join(__dirname, '..', '..', 'uploads', 'reviews');
-if (!fs.existsSync(reviewUploadDir)) fs.mkdirSync(reviewUploadDir, { recursive: true });
-
-const reviewStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, reviewUploadDir),
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${path.extname(file.originalname)}`);
-  },
-});
+// ─── Review image upload — memory storage, upload to Cloudinary ──────────────
 const reviewUpload = multer({
-  storage: reviewStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -330,9 +320,14 @@ router.post('/review/store', reviewUpload.array('images', 5), async (req, res) =
     }
     if (existing) return res.status(409).json({ error: 'already_reviewed' });
 
-    const baseUrl = `https://${req.get('host')}`;
-    const imageUrls = (req.files || []).map(f => `${baseUrl}/uploads/reviews/${f.filename}`);
-    const imagesJson = imageUrls.length ? JSON.stringify(imageUrls) : null;
+    const imageUrls = await Promise.all(
+      (req.files || []).map(f => uploadBuffer(f.buffer, {
+        folder: 'digio/reviews',
+        mimetype: f.mimetype,
+      }))
+    );
+    const validUrls = imageUrls.filter(Boolean);
+    const imagesJson = validUrls.length ? JSON.stringify(validUrls) : null;
 
     await db.query(
       `INSERT INTO reviews (store_id, customer_id, customer_name, order_id, rating, comment, images)

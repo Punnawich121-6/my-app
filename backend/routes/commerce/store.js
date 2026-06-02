@@ -2,35 +2,14 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const { uploadBase64 } = require('../../services/cloudinary');
 
-function saveImage(base64Data, req) {
-  if (!base64Data) return null;
-  try {
-    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    let buffer, ext = '.jpg';
-    if (matches && matches.length === 3) {
-      buffer = Buffer.from(matches[2], 'base64');
-      if (matches[1].includes('png')) ext = '.png';
-    } else {
-      buffer = Buffer.from(base64Data, 'base64');
-    }
-    const filename = Date.now() + ext;
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    const filepath = path.join(uploadDir, filename);
-    fs.writeFileSync(filepath, buffer);
-    const baseUrl = req ? `http://${req.get('host')}` : 'http://localhost:3001';
-    return baseUrl + '/uploads/' + filename;
-  } catch (e) {
-    return null;
-  }
+async function saveImage(base64Data) {
+  return uploadBase64(base64Data, 'digio/stores');
 }
 
-function fixImageUrl(url, req) {
-  if (!url || !req) return url;
-  return url.replace(/^http:\/\/localhost:3001/, `http://${req.get('host')}`);
+function fixImageUrl(url) {
+  return url || null;
 }
 
 // ─── GET store by owner phone ─────────────────────────────────────────────────
@@ -126,7 +105,7 @@ router.get('/:storeId', async (req, res) => {
       [req.params.storeId]
     );
     if (!store) return res.status(404).json({ error: 'Not found' });
-    if (store.image_url) store.image_url = fixImageUrl(store.image_url, req);
+    if (store.image_url) store.image_url = fixImageUrl(store.image_url);
     res.json(store);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -158,7 +137,7 @@ router.post('/:storeId/image', async (req, res) => {
   const { image } = req.body;
   if (!image) return res.status(400).json({ error: 'image required' });
   try {
-    const url = saveImage(image, req);
+    const url = await saveImage(image);
     if (!url) return res.status(500).json({ error: 'Failed to save image' });
     await db.query('UPDATE restaurant SET imageUrl=? WHERE id=?', [url, req.params.storeId]);
     res.json({ image_url: url });

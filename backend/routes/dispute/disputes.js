@@ -2,21 +2,11 @@ const express  = require('express');
 const router   = express.Router();
 const db       = require('../../db');
 const multer   = require('multer');
-const path     = require('path');
-const fs       = require('fs');
 const { analyzeDispute } = require('../../services/disputeAI');
+const { uploadBuffer } = require('../../services/cloudinary');
 
-// ── Upload setup ──────────────────────────────────────────────────────────────
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'disputes');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename:    (req, file, cb) => {
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${path.extname(file.originalname)}`);
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+// ── Upload setup — memory storage, upload to Cloudinary ──────────────────────
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ── Table bootstrap ───────────────────────────────────────────────────────────
 let _ready = false;
@@ -142,7 +132,9 @@ router.post('/', upload.array('evidence', 5), async (req, res) => {
     const [items] = await db.query('SELECT name, price, quantity FROM order_items WHERE order_id = ?', [orderId]);
     const [[hist]] = await db.query('SELECT COUNT(*) AS cnt FROM disputes WHERE customer_id = ?', [customerId]);
     const orderAge = Math.round((Date.now() - new Date(order.createdAt).getTime()) / 60000);
-    const evidenceUrls = (req.files || []).map(f => `/uploads/disputes/${f.filename}`);
+    const evidenceUrls = await Promise.all(
+      (req.files || []).map(f => uploadBuffer(f.buffer, { folder: 'digio/disputes', mimetype: f.mimetype }))
+    ).then(urls => urls.filter(Boolean));
 
     const [result] = await db.query(`
       INSERT INTO disputes
