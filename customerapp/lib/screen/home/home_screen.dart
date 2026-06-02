@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    OrderNotificationService.instance.start(widget.customerId);
+    OrderNotificationService.instance.start(widget.customerId, widget.customerName);
   }
 
   @override

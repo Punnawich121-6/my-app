@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../config.dart';
 import '../../main.dart';
+import '../../services/order_notification_service.dart';
 import '../../services/socket_service.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -38,6 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
   int _lastCount = 0;
   XFile? _pickedImage;
   Uint8List? _pickedImageBytes;
+  StreamSubscription<Map<String, dynamic>>? _chatSub;
 
   @override
   void initState() {
@@ -45,22 +48,26 @@ class _ChatScreenState extends State<ChatScreen> {
     _loadMessages(initial: true);
     SocketService.instance.connect();
     SocketService.instance.joinOrder(widget.orderId);
-    SocketService.instance.on('new_message', _onSocketMessage);
+    OrderNotificationService.instance.setChatActive(true, orderId: widget.orderId);
+    _chatSub = SocketService.instance.chatUpdates
+        .where((d) =>
+            d['order_id']?.toString() == widget.orderId &&
+            d['chat_type'] == widget.chatType)
+        .listen(_onSocketMessage);
   }
 
   @override
   void dispose() {
-    SocketService.instance.off('new_message');
+    _chatSub?.cancel();
+    OrderNotificationService.instance.setChatActive(false);
     SocketService.instance.leaveOrder(widget.orderId);
     _ctrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
-  void _onSocketMessage(dynamic data) {
+  void _onSocketMessage(Map<String, dynamic> msg) {
     if (!mounted) return;
-    final msg = Map<String, dynamic>.from(data as Map);
-    if (msg['chat_type'] != widget.chatType) return;
     final id = msg['id']?.toString();
     if (id != null && _messages.any((m) => m['id']?.toString() == id)) return;
     setState(() => _messages.add(msg));

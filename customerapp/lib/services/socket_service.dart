@@ -12,10 +12,15 @@ class SocketService {
 
   final _orderUpdatesController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final _chatUpdatesController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
-  /// Stream of all order_updated events received globally.
   Stream<Map<String, dynamic>> get orderUpdates =>
       _orderUpdatesController.stream;
+
+  /// Stream of all new_message events received globally.
+  Stream<Map<String, dynamic>> get chatUpdates =>
+      _chatUpdatesController.stream;
 
   bool get connected => _socket?.connected == true;
 
@@ -33,10 +38,15 @@ class SocketService {
           .setExtraHeaders({'ngrok-skip-browser-warning': 'true'})
           .build(),
       );
-      // Global listener — feeds the broadcast stream for any subscriber.
+      // Global listeners — feed broadcast streams for any subscriber.
       _socket!.on('order_updated', (data) {
         if (!_orderUpdatesController.isClosed) {
           _orderUpdatesController.add(Map<String, dynamic>.from(data as Map));
+        }
+      });
+      _socket!.on('new_message', (data) {
+        if (!_chatUpdatesController.isClosed) {
+          _chatUpdatesController.add(Map<String, dynamic>.from(data as Map));
         }
       });
     }

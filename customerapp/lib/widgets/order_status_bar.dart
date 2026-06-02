@@ -12,7 +12,7 @@ class OrderStatusBar extends StatefulWidget {
     {'key': 'accepted',   'label': 'ร้านรับ'},
     {'key': 'preparing',  'label': 'กำลังทำ'},
     {'key': 'ready',      'label': 'พร้อมส่ง'},
-    {'key': 'delivering', 'label': 'กำลังส่ง'},
+    {'key': 'picking_up', 'label': 'กำลังส่ง'},
     {'key': 'completed',  'label': 'ส่งแล้ว'},
   ];
 
@@ -22,6 +22,7 @@ class OrderStatusBar extends StatefulWidget {
     'preparing':  'กำลังทำอาหาร...',
     'ready':      'อาหารพร้อมส่ง',
     'delivering': 'ไรเดอร์กำลังนำมาส่ง',
+    'picking_up': 'ไรเดอร์กำลังนำมาส่ง',
     'completed':  'ส่งเรียบร้อยแล้ว!',
     'cancelled':  'ออเดอร์ถูกยกเลิก',
   };
@@ -32,6 +33,7 @@ class OrderStatusBar extends StatefulWidget {
     'preparing':  Icons.restaurant_rounded,
     'ready':      Icons.inventory_2_rounded,
     'delivering': Icons.delivery_dining_rounded,
+    'picking_up': Icons.delivery_dining_rounded,
     'completed':  Icons.sentiment_satisfied_alt_rounded,
     'cancelled':  Icons.cancel_rounded,
   };
@@ -46,7 +48,7 @@ class _OrderStatusBarState extends State<OrderStatusBar>
 
   bool get _isActive {
     final s = widget.order['status']?.toString() ?? '';
-    return s != 'completed' && s != 'cancelled';
+    return s != 'completed' && s != 'cancelled' && s != 'picking_up';
   }
 
   @override
@@ -88,8 +90,9 @@ class _OrderStatusBarState extends State<OrderStatusBar>
             ? const Color(0xFF16A34A)
             : CColors.orange;
 
+    final normalizedStatus = status == 'delivering' ? 'picking_up' : status;
     final stepKeys    = OrderStatusBar.steps.map((s) => s['key']!).toList();
-    final stepIndex   = stepKeys.indexOf(status);
+    final stepIndex   = stepKeys.indexOf(normalizedStatus);
     final progressVal = stepIndex < 0 ? 0.0 : (stepIndex + 1) / stepKeys.length;
     final msg         = OrderStatusBar._statusMsg[status] ?? status;
     final icon        = OrderStatusBar._statusIcon[status] ?? Icons.receipt_long_rounded;

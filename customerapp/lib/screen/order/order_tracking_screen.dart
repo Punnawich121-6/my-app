@@ -32,7 +32,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     {'key': 'accepted',   'label': 'ร้านรับ',     'icon': Icons.store_rounded},
     {'key': 'preparing',  'label': 'กำลังทำ',    'icon': Icons.restaurant_rounded},
     {'key': 'ready',      'label': 'พร้อมส่ง',   'icon': Icons.inventory_2_rounded},
-    {'key': 'delivering', 'label': 'กำลังส่ง',   'icon': Icons.delivery_dining_rounded},
+    {'key': 'picking_up', 'label': 'กำลังส่ง',   'icon': Icons.delivery_dining_rounded},
     {'key': 'completed',  'label': 'ส่งแล้ว',    'icon': Icons.home_rounded},
   ];
 
@@ -42,6 +42,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     'preparing':  'กำลังทำอาหาร รอสักครู่...',
     'ready':      'อาหารพร้อม กำลังรอไรเดอร์',
     'delivering': 'ไรเดอร์กำลังนำอาหารมาส่ง!',
+    'picking_up': 'ไรเดอร์กำลังนำอาหารมาส่ง!',
     'completed':  'ส่งอาหารเรียบร้อยแล้ว ขอบคุณ 😊',
     'cancelled':  'ออเดอร์ถูกยกเลิก',
   };
@@ -52,6 +53,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     'preparing':  Icons.restaurant_rounded,
     'ready':      Icons.inventory_2_rounded,
     'delivering': Icons.delivery_dining_rounded,
+    'picking_up': Icons.delivery_dining_rounded,
     'completed':  Icons.sentiment_satisfied_alt_rounded,
     'cancelled':  Icons.cancel_rounded,
   };
@@ -124,9 +126,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final status = _order?['status'] ?? 'pending';
+    final rawStatus = _order?['status'] ?? 'pending';
+    final status = rawStatus == 'delivering' ? 'picking_up' : rawStatus;
     final stepIdx = _steps.indexWhere((s) => s['key'] == status);
-    final isActive = !['completed', 'cancelled'].contains(status);
+    final isActive = !['completed', 'cancelled', 'picking_up'].contains(status);
 
     return Scaffold(
       backgroundColor: CColors.bg,
@@ -189,7 +192,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           const SizedBox(height: 16),
                           _buildDisputeButton(),
                         ],
-                        if (status == 'delivering') ...[
+                        if (status == 'picking_up') ...[
                           const SizedBox(height: 16),
                           _buildRiderCard(),
                         ],

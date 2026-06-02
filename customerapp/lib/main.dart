@@ -14,6 +14,7 @@ final _navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AppSettings.instance.load();
   if (kDebugMode) {
     final host = kIsWeb ? 'localhost' : '10.0.2.2';
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);
@@ -34,7 +35,7 @@ void main() async {
       // Only suppress broken image/network 404 errors — NOT widget/logic errors
       if (msg.contains('failed to load network image') ||
           msg.contains('image codec') ||
-          msg.contains('exception: http error')) return;
+          msg.contains('exception: http error')) { return; }
       if (kDebugMode) { print('[ZoneError] $error\n$stack'); }
     },
   );

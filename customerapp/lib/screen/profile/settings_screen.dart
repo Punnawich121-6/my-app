@@ -10,9 +10,23 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _pushNotif = true;
-  bool _orderUpdates = true;
   bool _promoNotif = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AppSettings.instance.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    AppSettings.instance.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,18 +72,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               iconColor: CColors.orange,
               label: S.pushNotif,
               desc: S.pushNotifDesc,
-              value: _pushNotif,
-              onChanged: (v) => setState(() => _pushNotif = v),
+              value: settings.pushNotif,
+              onChanged: settings.setPushNotif,
             ),
             Divider(height: 1, indent: 60, color: context.divider),
             _SwitchTile(
               icon: Icons.receipt_long_rounded,
-              iconBg: context.orangeLight,
-              iconColor: CColors.orange,
+              iconBg: settings.pushNotif ? context.orangeLight : context.subtleBg,
+              iconColor: settings.pushNotif ? CColors.orange : CColors.muted,
               label: S.orderUpdates,
               desc: S.orderUpdatesDesc,
-              value: _orderUpdates,
-              onChanged: (v) => setState(() => _orderUpdates = v),
+              value: settings.orderUpdates,
+              onChanged: settings.pushNotif ? settings.setOrderUpdates : null,
             ),
             Divider(height: 1, indent: 60, color: context.divider),
             _SwitchTile(
@@ -125,27 +139,31 @@ class _SwitchTile extends StatelessWidget {
   final Color iconBg, iconColor;
   final String label, desc;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
   const _SwitchTile({required this.icon, required this.iconBg, required this.iconColor,
       required this.label, required this.desc, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.fg)),
-          Text(desc, style: TextStyle(fontSize: 11, color: context.muted)),
-        ])),
-        Switch(value: value, onChanged: onChanged, activeThumbColor: CColors.orange),
-      ]),
+    final enabled = onChanged != null;
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.45,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.fg)),
+            Text(desc, style: TextStyle(fontSize: 11, color: context.muted)),
+          ])),
+          Switch(value: value, onChanged: onChanged, activeThumbColor: CColors.orange),
+        ]),
+      ),
     );
   }
 }
