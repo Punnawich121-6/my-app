@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
@@ -18,15 +19,23 @@ void main() async {
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);
   }
 
-  // Suppress image loading errors (broken URLs, 404s) from crashing the app on web
-  FlutterError.onError = (FlutterErrorDetails details) {
+  FlutterError.onError = (details) {
     final lib = details.library ?? '';
     if (lib.contains('image') || lib.contains('painting')) return;
-    FlutterError.presentError(details);
+    FlutterError.dumpErrorToConsole(details);
   };
 
   OrderNotificationService.instance.navigatorKey = _navigatorKey;
-  runApp(const CustomerApp());
+
+  runZonedGuarded(
+    () => runApp(const CustomerApp()),
+    (error, stack) {
+      final msg = error.toString().toLowerCase();
+      if (msg.contains('image') || msg.contains('404') ||
+          msg.contains('http') || msg.contains('network')) return;
+      if (kDebugMode) { print('Zone error: $error'); }
+    },
+  );
 }
 
 class CustomerApp extends StatefulWidget {
