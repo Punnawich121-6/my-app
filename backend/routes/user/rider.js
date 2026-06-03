@@ -224,7 +224,14 @@ router.patch('/orders/:orderId/step', async (req, res) => {
         [latitude, longitude, rider_id]
       );
     }
-    req.app.get('io')?.to(`order_${orderId}`).emit('order_updated', { order_id: orderId, status: step });
+    const [[orderInfo]] = await db.query(
+      'SELECT o.customerId, r.name AS store_name FROM `Order` o JOIN restaurant r ON o.restaurantId = r.id WHERE o.id = ?',
+      [orderId]
+    );
+    const io = req.app.get('io');
+    const payload = { order_id: orderId, status: step, store_name: orderInfo?.store_name || 'ร้านอาหาร' };
+    io?.to(`order_${orderId}`).emit('order_updated', payload);
+    if (orderInfo?.customerId) io?.to(`customer_${orderInfo.customerId}`).emit('order_updated', payload);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -253,7 +260,15 @@ router.post('/orders/:orderId/accept', async (req, res) => {
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Already taken by another rider' });
 
     await db.query('UPDATE Rider SET status = ? WHERE id = ?', ['ON_DELIVERY', rider_id]);
-    req.app.get('io')?.to(`order_${orderId}`).emit('order_updated', { order_id: orderId, status: 'delivering' });
+
+    const [[orderInfo]] = await db.query(
+      'SELECT o.customerId, r.name AS store_name FROM `Order` o JOIN restaurant r ON o.restaurantId = r.id WHERE o.id = ?',
+      [orderId]
+    );
+    const io = req.app.get('io');
+    const payload = { order_id: orderId, status: 'delivering', store_name: orderInfo?.store_name || 'ร้านอาหาร' };
+    io?.to(`order_${orderId}`).emit('order_updated', payload);
+    if (orderInfo?.customerId) io?.to(`customer_${orderInfo.customerId}`).emit('order_updated', payload);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -279,7 +294,15 @@ router.post('/orders/:orderId/complete', async (req, res) => {
     }
 
     await db.query('UPDATE `Order` SET status = ? WHERE id = ?', ['completed', orderId]);
-    req.app.get('io')?.to(`order_${orderId}`).emit('order_updated', { order_id: orderId, status: 'completed' });
+
+    const [[orderMeta]] = await db.query(
+      'SELECT o.customerId, r.name AS store_name FROM `Order` o JOIN restaurant r ON o.restaurantId = r.id WHERE o.id = ?',
+      [orderId]
+    );
+    const io = req.app.get('io');
+    const completedPayload = { order_id: orderId, status: 'completed', store_name: orderMeta?.store_name || 'ร้านอาหาร' };
+    io?.to(`order_${orderId}`).emit('order_updated', completedPayload);
+    if (orderMeta?.customerId) io?.to(`customer_${orderMeta.customerId}`).emit('order_updated', completedPayload);
 
     // Store net payout (total - delivery fee - 15% commission)
     const foodAmount = parseFloat(order.totalAmount) - parseFloat(order.serviceFee || 0);
