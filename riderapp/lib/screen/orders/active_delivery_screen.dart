@@ -181,7 +181,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
           style: const TextStyle(fontSize: 13),
         ),
       ]),
-      backgroundColor: sent ? const Color(0xFF1565C0) : Colors.red,
+      backgroundColor: sent ? RiderColors.blue : Colors.red,
       duration: const Duration(seconds: 3),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
