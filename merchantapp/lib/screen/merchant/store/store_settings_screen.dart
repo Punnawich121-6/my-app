@@ -375,37 +375,50 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
             ),
           ),
           Divider(height: 1, indent: 64, endIndent: 0, color: dividerColor),
-          _buildFieldRow(
-            icon: Icons.location_on_outlined,
-            label: t('ที่อยู่', 'Address'),
-            fg: fg,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _field(_address, hint: t('ที่อยู่ร้าน', 'Store address'), maxLines: 2, isDark: isDark),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickLocation,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          GestureDetector(
+            onTap: _pickLocation,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(color: AppColors.orangeLight, borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.location_on_outlined, color: AppColors.orange, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(t('ที่อยู่', 'Address'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: fg)),
+                  const SizedBox(height: 4),
+                  Text(
+                    _address.text.isEmpty ? t('แตะเพื่อปักหมุดบนแผนที่', 'Tap to pin on map') : _address.text,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _address.text.isEmpty ? AppColors.muted : fg,
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ])),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.orangeLight,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppColors.orangeMid),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.map_rounded, color: AppColors.orange, size: 16),
-                    const SizedBox(width: 6),
+                    const Icon(Icons.map_rounded, color: AppColors.orange, size: 13),
+                    const SizedBox(width: 4),
                     Text(
-                      _lat != null ? t('เปลี่ยนตำแหน่งบนแผนที่', 'Change pin') : t('ปักหมุดบนแผนที่', 'Pin on map'),
-                      style: const TextStyle(fontSize: 13, color: AppColors.orange, fontWeight: FontWeight.w600),
+                      _lat != null ? t('เปลี่ยน', 'Change') : t('เลือก', 'Pick'),
+                      style: const TextStyle(fontSize: 11, color: AppColors.orange, fontWeight: FontWeight.w700),
                     ),
-                    if (_lat != null) ...[
-                      const SizedBox(width: 6),
-                      const Icon(Icons.check_circle_rounded, color: AppColors.orange, size: 14),
-                    ],
                   ]),
                 ),
-              ),
-            ]),
+              ]),
+            ),
           ),
         ]),
         const SizedBox(height: 16),
