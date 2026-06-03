@@ -100,23 +100,26 @@ router.get('/:storeId', async (req, res) => {
     const [[store]] = await db.query(
       `SELECT id, name, category AS type, address, imageUrl AS image_url,
               COALESCE(rating, 0) AS rating, status,
-              CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open
+              CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open,
+              open_time, close_time,
+              COALESCE(description, '') AS description
        FROM restaurant WHERE id = ?`,
       [req.params.storeId]
     );
     if (!store) return res.status(404).json({ error: 'Not found' });
     if (store.image_url) store.image_url = fixImageUrl(store.image_url);
 
-    // Extra fields — wrapped individually so a missing column won't break the whole response
-    const extras = ['open_time', 'close_time', 'bank_name', 'account_name', 'account_no'];
+    // bank fields — optional, may not exist in all DB versions
     try {
       const [[extra]] = await db.query(
-        `SELECT open_time, close_time, bank_name, account_name, account_no FROM restaurant WHERE id = ?`,
+        `SELECT bank_name, account_name, account_no FROM restaurant WHERE id = ?`,
         [req.params.storeId]
       );
-      extras.forEach(k => { store[k] = extra?.[k] ?? null; });
+      store.bank_name    = extra?.bank_name    ?? null;
+      store.account_name = extra?.account_name ?? null;
+      store.account_no   = extra?.account_no   ?? null;
     } catch (_) {
-      extras.forEach(k => { store[k] = null; });
+      store.bank_name = store.account_name = store.account_no = null;
     }
 
     try {
@@ -133,17 +136,17 @@ router.get('/:storeId', async (req, res) => {
 });
 
 router.put('/:storeId', async (req, res) => {
-  const { name, type, address, image_url, open_time, close_time, lat, lng } = req.body;
+  const { name, type, address, image_url, open_time, close_time, lat, lng, description } = req.body;
   try {
     if (image_url !== undefined) {
       await db.query(
-        'UPDATE restaurant SET name=?, category=?, address=?, imageUrl=?, open_time=?, close_time=?, lat=?, lng=? WHERE id=?',
-        [name, type, address, image_url || null, open_time || null, close_time || null, lat || null, lng || null, req.params.storeId]
+        'UPDATE restaurant SET name=?, category=?, address=?, imageUrl=?, open_time=?, close_time=?, lat=?, lng=?, description=? WHERE id=?',
+        [name, type, address, image_url || null, open_time || null, close_time || null, lat || null, lng || null, description || null, req.params.storeId]
       );
     } else {
       await db.query(
-        'UPDATE restaurant SET name=?, category=?, address=?, open_time=?, close_time=?, lat=?, lng=? WHERE id=?',
-        [name, type, address, open_time || null, close_time || null, lat || null, lng || null, req.params.storeId]
+        'UPDATE restaurant SET name=?, category=?, address=?, open_time=?, close_time=?, lat=?, lng=?, description=? WHERE id=?',
+        [name, type, address, open_time || null, close_time || null, lat || null, lng || null, description || null, req.params.storeId]
       );
     }
     res.json({ success: true });
@@ -169,22 +172,35 @@ router.post('/:storeId/image', async (req, res) => {
 // ─── GET reviews for a store ──────────────────────────────────────────────────
 router.get('/:storeId/reviews', async (req, res) => {
   try {
-    let reviews = [];
+    // Detect timestamp column name (createdAt vs created_at)
+    let tsCol = 'createdAt';
     try {
-      const [rows] = await db.query(
-        `SELECT r.id, r.rating, r.comment, r.reply,
-                COALESCE(r.images, NULL) AS images,
-                COALESCE(r.createdAt, r.created_at) AS created_at,
-                COALESCE(c.name, r.customer_name, 'Customer') AS customer_name
-         FROM reviews r
-         LEFT JOIN customer c ON r.customer_id = c.id
-         WHERE r.store_id = ?
-         ORDER BY COALESCE(r.createdAt, r.created_at) DESC
-         LIMIT 50`,
-        [req.params.storeId]
-      );
-      reviews = rows;
+      const [cols] = await db.query("SHOW COLUMNS FROM reviews LIKE 'created_at'");
+      if (cols.length > 0) tsCol = 'created_at';
     } catch (_) {}
+
+    // Detect images column existence
+    let hasImages = false;
+    try {
+      const [cols] = await db.query("SHOW COLUMNS FROM reviews LIKE 'images'");
+      hasImages = cols.length > 0;
+    } catch (_) {}
+
+    const imagesSel = hasImages ? 'r.images,' : 'NULL AS images,';
+
+    const [reviews] = await db.query(
+      `SELECT r.id, r.rating, r.comment, r.reply,
+              ${imagesSel}
+              r.${tsCol} AS created_at,
+              COALESCE(c.name, r.customer_name, 'Customer') AS customer_name,
+              COALESCE(c.phone, '') AS customer_phone
+       FROM reviews r
+       LEFT JOIN customer c ON r.customer_id = c.id
+       WHERE r.store_id = ?
+       ORDER BY r.${tsCol} DESC
+       LIMIT 50`,
+      [req.params.storeId]
+    );
 
     const baseUrl = `http://${req.get('host')}`;
     const fixedReviews = reviews.map(r => {
@@ -196,17 +212,12 @@ router.get('/:storeId/reviews', async (req, res) => {
       } catch (_) { return r; }
     });
 
-    let total = 0, average = '0.0';
-    try {
-      const [[agg]] = await db.query(
-        'SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average FROM reviews WHERE store_id = ?',
-        [req.params.storeId]
-      );
-      total = agg.total;
-      average = parseFloat(agg.average).toFixed(1);
-    } catch (_) {}
+    const [[agg]] = await db.query(
+      'SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average FROM reviews WHERE store_id = ?',
+      [req.params.storeId]
+    );
 
-    res.json({ reviews: fixedReviews, total, count: total, average });
+    res.json({ reviews: fixedReviews, total: agg.total, count: agg.total, average: parseFloat(agg.average).toFixed(1) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img_lib;
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart' hide Path;
 import '../../../app_settings.dart';
 import '../../../l10n.dart';
 import '../../../main.dart';
@@ -155,13 +159,14 @@ class _StoreInfoTab extends StatefulWidget {
 
 class _StoreInfoTabState extends State<_StoreInfoTab> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name, _address, _openTime, _closeTime;
+  late final TextEditingController _name, _address, _openTime, _closeTime, _description;
   late String _selectedType;
   bool _saving = false;
   bool _uploadingImage = false;
   bool _aiProcessing = false;
   String? _previewImageUrl;
   bool _generatingName = false;
+  double? _lat, _lng;
 
   static const _categories = [
     'อาหารไทย', 'อาหารจีน', 'อาหารญี่ปุ่น', 'อาหารเกาหลี',
@@ -180,7 +185,10 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     _address = TextEditingController(text: widget.store.address);
     _openTime = TextEditingController(text: widget.store.openTime);
     _closeTime = TextEditingController(text: widget.store.closeTime);
+    _description = TextEditingController(text: widget.store.description);
     _previewImageUrl = widget.store.imageUrl;
+    _lat = widget.store.lat;
+    _lng = widget.store.lng;
     AppSettings.instance.addListener(_onSettings);
   }
 
@@ -191,6 +199,7 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     AppSettings.instance.removeListener(_onSettings);
     _name.dispose(); _address.dispose();
     _openTime.dispose(); _closeTime.dispose();
+    _description.dispose();
     super.dispose();
   }
 
@@ -265,6 +274,15 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     setState(() => _generatingName = false);
   }
 
+  Future<void> _generateDescription() async {
+    final name = _name.text.trim().isEmpty ? _selectedType : _name.text.trim();
+    setState(() => _generatingName = true);
+    final result = await ApiService.generateDescription(storeName: name, context: 'store_description');
+    if (!mounted) return;
+    if (result != null && result['description'] != null) setState(() => _description.text = result['description']);
+    setState(() => _generatingName = false);
+  }
+
   Future<void> _pickTime(TextEditingController ctrl) async {
     final parts = ctrl.text.split(':');
     final initial = parts.length == 2
@@ -282,6 +300,25 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     setState(() => ctrl.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}');
   }
 
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _MLocationPickerScreen(
+          initial: (_lat != null && _lng != null) ? LatLng(_lat!, _lng!) : null,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _lat = result['lat'] as double;
+        _lng = result['lng'] as double;
+        _address.text = result['address'] as String;
+      });
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
@@ -292,8 +329,9 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
         'address': _address.text.trim(),
         'open_time': _openTime.text.trim(),
         'close_time': _closeTime.text.trim(),
-        'lat': widget.store.lat,
-        'lng': widget.store.lng,
+        'lat': _lat,
+        'lng': _lng,
+        'description': _description.text.trim(),
       });
       if (!mounted) return;
       widget.onSaved();
@@ -341,7 +379,64 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
             icon: Icons.location_on_outlined,
             label: t('ที่อยู่', 'Address'),
             fg: fg,
-            child: _field(_address, hint: t('ที่อยู่ร้าน', 'Store address'), maxLines: 2, isDark: isDark),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _field(_address, hint: t('ที่อยู่ร้าน', 'Store address'), maxLines: 2, isDark: isDark),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickLocation,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.orangeLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.orangeMid),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.map_rounded, color: AppColors.orange, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      _lat != null ? t('เปลี่ยนตำแหน่งบนแผนที่', 'Change pin') : t('ปักหมุดบนแผนที่', 'Pin on map'),
+                      style: const TextStyle(fontSize: 13, color: AppColors.orange, fontWeight: FontWeight.w600),
+                    ),
+                    if (_lat != null) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.check_circle_rounded, color: AppColors.orange, size: 14),
+                    ],
+                  ]),
+                ),
+              ),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        _MSection(title: t('คำอธิบายร้าน', 'Store Description'), children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(t('บอกเล่าความพิเศษของร้านคุณ', 'Tell your story'), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                GestureDetector(
+                  onTap: _generatingName ? null : _generateDescription,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: AppColors.orangeLight, borderRadius: BorderRadius.circular(20)),
+                    child: _generatingName
+                        ? const Row(mainAxisSize: MainAxisSize.min, children: [
+                            SizedBox(width: 10, height: 10, child: CircularProgressIndicator(color: AppColors.orange, strokeWidth: 1.5)),
+                            SizedBox(width: 5),
+                            Text('กำลังสร้าง...', style: TextStyle(fontSize: 11, color: AppColors.orange)),
+                          ])
+                        : const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.auto_awesome_rounded, color: AppColors.orange, size: 12),
+                            SizedBox(width: 4),
+                            Text('สร้างด้วย AI', style: TextStyle(fontSize: 11, color: AppColors.orange, fontWeight: FontWeight.w700)),
+                          ]),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              _field(_description, hint: t('เช่น บรรยากาศดี อาหารอร่อย...', 'e.g. Great atmosphere, delicious food...'), maxLines: 4, isDark: isDark),
+            ]),
           ),
         ]),
         const SizedBox(height: 16),
@@ -1102,6 +1197,7 @@ class _ReviewCardState extends State<_ReviewCard> {
   Widget build(BuildContext context) {
     final rating = (widget.review['rating'] as num?)?.toInt() ?? 0;
     final name = widget.review['customer_name']?.toString() ?? 'Customer';
+    final phone = widget.review['customer_phone']?.toString() ?? '';
     final comment = widget.review['comment']?.toString() ?? '';
     final existingReply = widget.review['reply']?.toString() ?? '';
     DateTime? date;
@@ -1120,11 +1216,17 @@ class _ReviewCardState extends State<_ReviewCard> {
         Row(children: [
           CircleAvatar(
             backgroundColor: AppColors.orangeLight, radius: 18,
-            child: Text(name[0], style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w700, fontSize: 15)),
+            child: Text(name[0].toUpperCase(), style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.w700, fontSize: 15)),
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            if (phone.isNotEmpty)
+              Row(children: [
+                const Icon(Icons.phone_outlined, size: 11, color: AppColors.muted),
+                const SizedBox(width: 3),
+                Text(phone, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+              ]),
             if (date != null) Text('${date.day}/${date.month}/${date.year}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
           ])),
           Row(children: List.generate(5, (i) => Icon(
@@ -1195,6 +1297,228 @@ class _ReviewCardState extends State<_ReviewCard> {
             ]),
           ),
         ],
+      ]),
+    );
+  }
+}
+
+// ─── Merchant Location Picker ─────────────────────────────────────────────────
+
+class _MLocationPickerScreen extends StatefulWidget {
+  final LatLng? initial;
+  const _MLocationPickerScreen({this.initial});
+  @override
+  State<_MLocationPickerScreen> createState() => _MLocationPickerScreenState();
+}
+
+class _MLocationPickerScreenState extends State<_MLocationPickerScreen> {
+  final _mapCtrl = MapController();
+  late LatLng _center;
+  String _address = 'กำลังระบุที่อยู่...';
+  bool _geocoding = false;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _center = widget.initial ?? const LatLng(13.7563, 100.5018);
+    _reverseGeocode(_center);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _reverseGeocode(LatLng ll) async {
+    if (!mounted) return;
+    setState(() { _geocoding = true; _address = 'กำลังระบุที่อยู่...'; });
+    try {
+      final res = await http.get(
+        Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?format=json'
+          '&lat=${ll.latitude}&lon=${ll.longitude}&accept-language=th',
+        ),
+        headers: {'User-Agent': 'MerchantApp/1.0'},
+      ).timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        setState(() {
+          _address = data['display_name'] as String? ?? '${ll.latitude.toStringAsFixed(5)}, ${ll.longitude.toStringAsFixed(5)}';
+          _geocoding = false;
+        });
+      } else {
+        setState(() { _address = '${ll.latitude.toStringAsFixed(5)}, ${ll.longitude.toStringAsFixed(5)}'; _geocoding = false; });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _address = '${ll.latitude.toStringAsFixed(5)}, ${ll.longitude.toStringAsFixed(5)}'; _geocoding = false; });
+    }
+  }
+
+  void _onMapEvent(MapEvent event) {
+    if (event is MapEventMove || event is MapEventScrollWheelZoom || event is MapEventFlingAnimation) {
+      final center = _mapCtrl.camera.center;
+      if (center != _center) {
+        setState(() => _center = center);
+        _debounce?.cancel();
+        _debounce = Timer(const Duration(milliseconds: 700), () => _reverseGeocode(center));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(children: [
+        FlutterMap(
+          mapController: _mapCtrl,
+          options: MapOptions(
+            initialCenter: _center,
+            initialZoom: 15,
+            onMapEvent: _onMapEvent,
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.merchantapp',
+            ),
+          ],
+        ),
+
+        // Center pin
+        Center(
+          child: Transform.translate(
+            offset: const Offset(0, -28),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.orange, shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: AppColors.orange.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: const Icon(Icons.store_rounded, color: Colors.white, size: 26),
+              ),
+              Container(width: 3, height: 12, color: AppColors.orange),
+              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.orange, shape: BoxShape.circle)),
+            ]),
+          ),
+        ),
+
+        // Back button
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white, shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
+                ),
+                child: const Icon(Icons.chevron_left_rounded, color: Color(0xFF1A1A1A), size: 26),
+              ),
+            ),
+          ),
+        ),
+
+        // Title
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
+                ),
+                child: const Text('เลื่อนแผนที่เพื่อปักหมุดร้าน',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+              ),
+            ),
+          ),
+        ),
+
+        // Zoom controls
+        Positioned(
+          right: 16, bottom: 200,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
+            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              GestureDetector(
+                onTap: () => _mapCtrl.move(_mapCtrl.camera.center, _mapCtrl.camera.zoom + 1),
+                child: Container(
+                  width: 44, height: 44,
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1))),
+                  child: const Icon(Icons.add_rounded, color: Color(0xFF1A1A1A), size: 22),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _mapCtrl.move(_mapCtrl.camera.center, _mapCtrl.camera.zoom - 1),
+                child: const SizedBox(width: 44, height: 44, child: Icon(Icons.remove_rounded, color: Color(0xFF1A1A1A), size: 22)),
+              ),
+            ]),
+          ),
+        ),
+
+        // Bottom confirm panel
+        Positioned(
+          bottom: 0, left: 0, right: 0,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, -4))],
+            ),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('ที่อยู่ร้าน', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+              const SizedBox(height: 8),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 2),
+                  child: Icon(Icons.location_on_rounded, color: AppColors.orange, size: 18),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _geocoding
+                      ? const Text('กำลังระบุที่อยู่...', style: TextStyle(fontSize: 14, color: AppColors.muted))
+                      : Text(_address,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                          maxLines: 3, overflow: TextOverflow.ellipsis),
+                ),
+              ]),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity, height: 52,
+                child: ElevatedButton(
+                  onPressed: _geocoding ? null : () => Navigator.pop(context, {
+                    'lat': _center.latitude,
+                    'lng': _center.longitude,
+                    'address': _address,
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    disabledBackgroundColor: AppColors.orangeMid,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('ยืนยันตำแหน่งร้าน', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ]),
+          ),
+        ),
       ]),
     );
   }

@@ -385,6 +385,15 @@ class _StoreScreenState extends State<StoreScreen> {
                               style: TextStyle(fontSize: context.sp(19), fontWeight: FontWeight.w800, color: CColors.text)),
                           ),
                         ]),
+                        if ((widget.store['description'] ?? '').toString().isNotEmpty) ...[
+                          SizedBox(height: context.wp(6)),
+                          Text(
+                            widget.store['description'].toString(),
+                            style: TextStyle(fontSize: context.sp(13), color: CColors.muted, height: 1.5),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                         SizedBox(height: context.wp(6)),
                         Row(children: [
                           GestureDetector(

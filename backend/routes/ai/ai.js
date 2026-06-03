@@ -537,28 +537,42 @@ router.post('/generate-description', async (req, res) => {
       const [existingRows] = await db.query('SELECT name FROM restaurant LIMIT 500');
       const existingNames = new Set(existingRows.map(r => (r.name || '').trim().toLowerCase()).filter(Boolean));
 
+      // Randomised naming styles — pick one per request to force variety
+      const styles = [
+        'ชื่อสั้น 1-2 คำ ฟังดูทันสมัย เก๋ เหมือนร้านในกรุงเทพ เช่น "Siam Bites", "Kao Kub"',
+        'ชื่อที่ใช้คำภาษาไทยล้วน ฟังดูอบอุ่น มีความเป็นบ้านๆ เช่น "ครัวสุขใจ", "โต๊ะกิน"',
+        'ชื่อที่ตลก เล่นคำ หรือน่ารัก คนอ่านแล้วยิ้ม เช่น "ข้าวเฮีย", "แม่ครัวซน"',
+        'ชื่อที่ฟังดูหรูหรา ระดับพรีเมียม เหมือนร้านในโรงแรม เช่น "Saffron House", "Royal Kitchen"',
+        'ชื่อที่ใช้ชื่อบุคคลหรือนามสกุลสมมติ ฟังดูเป็นร้านครอบครัว เช่น "ครัวคุณปู่วิชัย", "ร้านป้าสมศรี"',
+        'ชื่อที่อ้างอิงสถานที่หรือท้องถิ่น ทำให้ดูมีเอกลักษณ์ เช่น "ปากซอยครัว", "ท่าน้ำอร่อย"',
+        'ชื่อที่ฟังดูสนุก มีพลังงาน เหมือนแบรนด์สตรีทฟู้ด เช่น "Fire Wok", "หม้อร้อน"',
+        'ชื่อที่ใช้ภาษาอังกฤษผสมไทย ดูเก๋ทันสมัย เช่น "Noodle Lab", "ข้าว & More"',
+      ];
+      const chosenStyle = styles[Math.floor(Math.random() * styles.length)];
+
       const triedNames = [];
       let finalName = '';
 
       for (let attempt = 0; attempt < 5; attempt++) {
         const takenLine = triedNames.length > 0
-          ? `\nชื่อที่เคยแนะนำไปแล้วและยังซ้ำอยู่ (ห้ามใช้อีก): ${triedNames.join(', ')}`
+          ? `\nห้ามใช้ชื่อเหล่านี้อีก: ${triedNames.join(', ')}`
           : '';
         const avoidLine = existingRows.length > 0
-          ? `\nชื่อที่มีอยู่ในระบบแล้ว (ห้ามซ้ำ): ${existingRows.map(r => r.name).join(', ')}`
+          ? `\nชื่อที่มีในระบบแล้ว (ห้ามซ้ำ): ${existingRows.map(r => r.name).join(', ')}`
           : '';
-        const p = `ตั้งชื่อร้านอาหารไทยให้ฟังดูน่าสนใจและน่าจดจำ โดยอิงจากประเภทอาหาร: "${storeName || 'ร้านอาหาร'}"${avoidLine}${takenLine}\nตอบแค่ชื่อร้านเท่านั้น ไม่ต้องมีคำอธิบาย ตัวอย่างรูปแบบ: "ครัวคุณแม่", "บ้านข้าวหอม", "เตาถ่านสด"`;
+        const p = `ตั้งชื่อร้านอาหารประเภท "${storeName || 'อาหาร'}" โดยใช้สไตล์นี้: ${chosenStyle}${avoidLine}${takenLine}\nตอบแค่ชื่อร้านเท่านั้น 1 ชื่อ ไม่ต้องมีคำอธิบายหรือเครื่องหมายคำพูด`;
 
         const c = await client.chat.completions.create({
           model: 'gemini-2.5-flash-lite',
+          temperature: 1.8,
           stream: false,
           messages: [
-            { role: 'system', content: 'คุณเป็นผู้ตั้งชื่อร้านอาหาร ห้ามใช้ชื่อที่ซ้ำกับรายการที่ระบุ ตอบแค่ชื่อร้านเท่านั้น' },
+            { role: 'system', content: 'คุณเป็นนักสร้างสรรค์ชื่อแบรนด์ร้านอาหาร ตอบแค่ชื่อเดียว ห้ามอธิบายเพิ่ม' },
             { role: 'user', content: p },
           ],
         });
 
-        const candidate = c.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
+        const candidate = c.choices[0].message.content.trim().replace(/^["']|["']$/g, '').split('\n')[0].trim();
         triedNames.push(candidate);
 
         if (!existingNames.has(candidate.trim().toLowerCase())) {
@@ -567,11 +581,12 @@ router.post('/generate-description', async (req, res) => {
         }
       }
 
-      // last resort: append random suffix if all attempts were taken
-      if (!finalName) finalName = `${triedNames[0]} ${Math.floor(1000 + Math.random() * 9000)}`;
+      if (!finalName) finalName = `${triedNames[0]} ${Math.floor(10 + Math.random() * 90)}`;
 
       res.json({ description: finalName });
       return;
+    } else if (ctx === 'store_description') {
+      prompt = `เขียนคำอธิบายร้านอาหาร "${storeName || 'ร้านอาหาร'}" ให้น่าสนใจและดึงดูดลูกค้า 2-3 ประโยคภาษาไทย บอกถึงบรรยากาศ ความพิเศษ หรือจุดเด่นของร้าน ตอบแค่คำอธิบายเท่านั้น ไม่ต้องมีชื่อร้านนำหน้า`
     } else {
       prompt = `เขียนคำอธิบายเมนู "${itemName}"${storeName ? ` ร้าน ${storeName}` : ''} ให้น่าสนใจ 1-2 ประโยค ภาษาไทย บอกรสชาติหรือจุดเด่น ตอบแค่คำอธิบายเท่านั้น`
     }

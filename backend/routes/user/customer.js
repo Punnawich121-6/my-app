@@ -42,6 +42,7 @@ router.get('/stores', async (req, res) => {
       `SELECT id, name, category AS type, address,
               CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open,
               imageUrl AS image_url, COALESCE(rating, 0) AS rating,
+              COALESCE(description, '') AS description,
               0 AS review_count
        FROM restaurant
        ORDER BY is_open DESC, rating DESC`

@@ -16,6 +16,7 @@ class Store {
   String? accountName;
   String? accountNo;
   final String status;
+  String description;
 
   Store({
     required this.id,
@@ -35,6 +36,7 @@ class Store {
     this.accountName,
     this.accountNo,
     this.status = 'pending',
+    this.description = '',
   });
 
   factory Store.fromJson(Map<String, dynamic> j) => Store(
@@ -55,6 +57,7 @@ class Store {
         accountName: j['account_name'],
         accountNo: j['account_no'],
         status: j['status'] ?? 'pending',
+        description: j['description']?.toString() ?? '',
       );
 }
 
