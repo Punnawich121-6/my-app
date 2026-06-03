@@ -99,8 +99,11 @@ router.get('/:storeId', async (req, res) => {
   try {
     const [[store]] = await db.query(
       `SELECT id, name, category AS type, address, imageUrl AS image_url,
-              COALESCE(rating, 0) AS rating,
-              CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open
+              COALESCE(rating, 0) AS rating, status,
+              CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open,
+              open_time, close_time,
+              bank_name, account_name, account_no,
+              COALESCE(review_count, 0) AS review_count
        FROM restaurant WHERE id = ?`,
       [req.params.storeId]
     );

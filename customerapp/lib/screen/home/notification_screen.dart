@@ -31,7 +31,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     'preparing': Icons.restaurant_rounded,
     'ready': Icons.inventory_2_rounded,
     'delivering': Icons.delivery_dining_rounded,
-    'completed': Icons.sentiment_satisfied_alt_rounded,
+    'completed': Icons.lunch_dining,
     'cancelled': Icons.cancel_rounded,
   };
 

@@ -166,13 +166,24 @@ router.post('/orders', async (req, res) => {
         [orderId, item.menu_item_id, item.name, item.price, item.quantity]
       );
     }
-    req.app.get('io')?.to('admin').emit('new_order', {
+    const [[restaurant]] = await db.query('SELECT name FROM restaurant WHERE id = ?', [store_id]);
+    const storeName = restaurant?.name || 'ร้านอาหาร';
+
+    const io = req.app.get('io');
+    io?.to('admin').emit('new_order', {
       order_id: orderId,
       orderNumber,
       store_id,
       customer_name: customer_name || 'Customer',
       total: total.toFixed(2),
     });
+    if (customer_id) {
+      io?.to(`customer_${customer_id}`).emit('order_updated', {
+        order_id: orderId,
+        status: 'pending',
+        store_name: storeName,
+      });
+    }
     res.json({ success: true, order_id: orderId });
   } catch (e) {
     res.status(500).json({ error: e.message });

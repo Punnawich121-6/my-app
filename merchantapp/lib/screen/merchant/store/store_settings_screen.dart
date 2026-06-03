@@ -419,11 +419,15 @@ class _StoreInfoTabState extends State<_StoreInfoTab> {
     final status = widget.store.status;
     final statusColor = <String, Color>{
       'pending': AppColors.orange,
+      'active': Colors.green,
+      'inactive': Colors.grey,
       'approved': Colors.green,
       'rejected': Colors.red,
     }[status] ?? Colors.grey;
     final statusLabel = {
-      'pending': t('รอการตรวจสอบ', 'Pending Review'),
+      'pending': t('รอการอนุมัติ', 'Pending Approval'),
+      'active': t('เปิดใช้งาน', 'Active'),
+      'inactive': t('ปิดใช้งาน', 'Inactive'),
       'approved': t('อนุมัติแล้ว', 'Approved'),
       'rejected': t('ถูกปฏิเสธ', 'Rejected'),
     }[status] ?? status;

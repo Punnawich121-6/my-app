@@ -55,7 +55,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     'ready':      Icons.inventory_2_rounded,
     'delivering': Icons.delivery_dining_rounded,
     'picking_up': Icons.delivery_dining_rounded,
-    'completed':  Icons.sentiment_satisfied_alt_rounded,
+    'completed':  Icons.lunch_dining,
     'cancelled':  Icons.cancel_rounded,
   };
 
@@ -452,8 +452,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     );
   }
 
+  List<Map<String, dynamic>> get _items {
+    final raw = _order?['items'];
+    if (raw == null) return [];
+    return (raw as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   Widget _buildItemsCard() {
-    final items = _order?['items'] as List? ?? [];
+    final items = _items;
     final fmt = NumberFormat('#,##0.00');
     return Container(
       width: double.infinity,
@@ -465,8 +471,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         const Text('รายการอาหาร', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: CColors.muted, letterSpacing: 0.3)),
         const SizedBox(height: 8),
         ...items.map((item) {
-          final price = double.tryParse(item['price'].toString()) ?? 0;
-          final qty = item['quantity'] as int? ?? 1;
+          final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0;
+          final qty = int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(children: [
@@ -476,7 +482,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 child: Center(child: Text('$qty', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CColors.orange))),
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(item['name'] ?? '', style: const TextStyle(fontSize: 13, color: CColors.text))),
+              Expanded(child: Text(item['name']?.toString() ?? '', style: const TextStyle(fontSize: 13, color: CColors.text))),
               Text('฿${fmt.format(price * qty)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CColors.text)),
             ]),
           );
@@ -487,8 +493,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   Widget _buildTotalCard() {
     final fmt = NumberFormat('#,##0.00');
-    final items = _order?['items'] as List? ?? [];
-    final subtotal = items.fold<double>(0, (s, i) => s + (double.tryParse(i['price'].toString()) ?? 0) * (i['quantity'] as int? ?? 1));
+    final items = _items;
+    final subtotal = items.fold<double>(0, (s, i) => s + (double.tryParse(i['price']?.toString() ?? '0') ?? 0) * (int.tryParse(i['quantity']?.toString() ?? '1') ?? 1));
     final fee = double.tryParse(_order?['delivery_fee']?.toString() ?? '30') ?? 30;
     return Container(
       padding: const EdgeInsets.all(16),
