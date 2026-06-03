@@ -98,17 +98,34 @@ router.post('/register', async (req, res) => {
 router.get('/:storeId', async (req, res) => {
   try {
     const [[store]] = await db.query(
-      `SELECT r.id, r.name, r.category AS type, r.address, r.imageUrl AS image_url,
-              COALESCE(r.rating, 0) AS rating, r.status,
-              CASE WHEN r.status = 'active' THEN 1 ELSE 0 END AS is_open,
-              r.open_time, r.close_time,
-              r.bank_name, r.account_name, r.account_no,
-              (SELECT COUNT(*) FROM reviews WHERE store_id = r.id) AS review_count
-       FROM restaurant r WHERE r.id = ?`,
+      `SELECT id, name, category AS type, address, imageUrl AS image_url,
+              COALESCE(rating, 0) AS rating, status,
+              CASE WHEN status = 'active' THEN 1 ELSE 0 END AS is_open
+       FROM restaurant WHERE id = ?`,
       [req.params.storeId]
     );
     if (!store) return res.status(404).json({ error: 'Not found' });
     if (store.image_url) store.image_url = fixImageUrl(store.image_url);
+
+    // Extra fields — wrapped individually so a missing column won't break the whole response
+    const extras = ['open_time', 'close_time', 'bank_name', 'account_name', 'account_no'];
+    try {
+      const [[extra]] = await db.query(
+        `SELECT open_time, close_time, bank_name, account_name, account_no FROM restaurant WHERE id = ?`,
+        [req.params.storeId]
+      );
+      extras.forEach(k => { store[k] = extra?.[k] ?? null; });
+    } catch (_) {
+      extras.forEach(k => { store[k] = null; });
+    }
+
+    try {
+      const [[rc]] = await db.query('SELECT COUNT(*) AS cnt FROM reviews WHERE store_id = ?', [req.params.storeId]);
+      store.review_count = Number(rc?.cnt ?? 0);
+    } catch (_) {
+      store.review_count = 0;
+    }
+
     res.json(store);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -152,17 +169,23 @@ router.post('/:storeId/image', async (req, res) => {
 // ─── GET reviews for a store ──────────────────────────────────────────────────
 router.get('/:storeId/reviews', async (req, res) => {
   try {
-    const [reviews] = await db.query(
-      `SELECT r.id, r.rating, r.comment, r.reply, r.images,
-              r.createdAt AS created_at,
-              COALESCE(c.name, r.customer_name, 'Customer') AS customer_name
-       FROM reviews r
-       LEFT JOIN customer c ON r.customer_id = c.id
-       WHERE r.store_id = ?
-       ORDER BY r.createdAt DESC
-       LIMIT 50`,
-      [req.params.storeId]
-    );
+    let reviews = [];
+    try {
+      const [rows] = await db.query(
+        `SELECT r.id, r.rating, r.comment, r.reply,
+                COALESCE(r.images, NULL) AS images,
+                COALESCE(r.createdAt, r.created_at) AS created_at,
+                COALESCE(c.name, r.customer_name, 'Customer') AS customer_name
+         FROM reviews r
+         LEFT JOIN customer c ON r.customer_id = c.id
+         WHERE r.store_id = ?
+         ORDER BY COALESCE(r.createdAt, r.created_at) DESC
+         LIMIT 50`,
+        [req.params.storeId]
+      );
+      reviews = rows;
+    } catch (_) {}
+
     const baseUrl = `http://${req.get('host')}`;
     const fixedReviews = reviews.map(r => {
       if (!r.images) return r;
@@ -172,12 +195,18 @@ router.get('/:storeId/reviews', async (req, res) => {
         return { ...r, images: JSON.stringify(fixed) };
       } catch (_) { return r; }
     });
-    const [[agg]] = await db.query(
-      `SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average
-       FROM reviews WHERE store_id = ?`,
-      [req.params.storeId]
-    );
-    res.json({ reviews: fixedReviews, total: agg.total, count: agg.total, average: parseFloat(agg.average).toFixed(1) });
+
+    let total = 0, average = '0.0';
+    try {
+      const [[agg]] = await db.query(
+        'SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average FROM reviews WHERE store_id = ?',
+        [req.params.storeId]
+      );
+      total = agg.total;
+      average = parseFloat(agg.average).toFixed(1);
+    } catch (_) {}
+
+    res.json({ reviews: fixedReviews, total, count: total, average });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
