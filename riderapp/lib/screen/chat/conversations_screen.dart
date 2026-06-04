@@ -73,7 +73,7 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RiderColors.bg,
+      backgroundColor: context.rBg,
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: RiderColors.blue))
           : _convs.isEmpty
@@ -87,11 +87,11 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                         color: RiderColors.blue, size: 34),
                     ),
                     const SizedBox(height: 16),
-                    const Text('ยังไม่มีการสนทนา',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: RiderColors.text)),
+                    Text('ยังไม่มีการสนทนา',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.rFg)),
                     const SizedBox(height: 6),
-                    const Text('แชทจะปรากฏเมื่อคุณรับออเดอร์',
-                      style: TextStyle(color: RiderColors.muted, fontSize: 13)),
+                    Text('แชทจะปรากฏเมื่อคุณรับออเดอร์',
+                      style: TextStyle(color: context.rMuted, fontSize: 13)),
                   ]),
                 )
               : RefreshIndicator(
@@ -108,9 +108,9 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                       final msgCount = (c['msg_count'] ?? 0) as int;
                       return Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.rCard,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+                          border: Border.all(color: context.rDiv, width: 1),
                           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 8, offset: const Offset(0, 2))],
                         ),
                         child: ListTile(
@@ -125,14 +125,14 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                           Expanded(
                             child: Text(
                               c['customer_name'] ?? 'ลูกค้า',
-                              style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700, color: RiderColors.text),
+                              style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w700, color: context.rFg),
                               maxLines: 1, overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
                             _formatTime(c['last_msg_at']),
-                            style: const TextStyle(fontSize: 11, color: RiderColors.muted),
+                            style: TextStyle(fontSize: 11, color: context.rMuted),
                           ),
                         ]),
                         subtitle: Column(
@@ -148,12 +148,12 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 lastSender != null ? '$lastSender: $lastMsg' : lastMsg,
-                                style: const TextStyle(fontSize: 12, color: RiderColors.muted),
+                                style: TextStyle(fontSize: 12, color: context.rMuted),
                                 maxLines: 1, overflow: TextOverflow.ellipsis,
                               ),
                             ] else if (msgCount == 0)
-                              const Text('ยังไม่มีข้อความ',
-                                style: TextStyle(fontSize: 12, color: RiderColors.muted, fontStyle: FontStyle.italic)),
+                              Text('ยังไม่มีข้อความ',
+                                style: TextStyle(fontSize: 12, color: context.rMuted, fontStyle: FontStyle.italic)),
                           ],
                         ),
                         trailing: msgCount > 0

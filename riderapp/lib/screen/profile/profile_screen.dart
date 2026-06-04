@@ -190,10 +190,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  BoxDecoration _card(BuildContext context) => BoxDecoration(
+    color: context.rCard,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: context.rDiv),
+    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.08), blurRadius: 10, offset: const Offset(0, 3))],
+  );
+
   @override
   Widget build(BuildContext context) {
     final runs = _profile?['runsCompleted'] ?? 0;
     final rating = double.tryParse(_profile?['rating']?.toString() ?? '0') ?? 0.0;
+    final fg = context.rFg;
+    final muted = context.rMuted;
+    final isDark = context.isDark;
+    final fieldBg = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F8FF);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -228,69 +239,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               width: 28, height: 28,
               decoration: BoxDecoration(
-                color: RiderColors.blue,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                color: RiderColors.blue, shape: BoxShape.circle,
+                border: Border.all(color: context.rCard, width: 2),
               ),
               child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
             ),
           ]),
         ),
         const SizedBox(height: 12),
-        Text(widget.riderName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: RiderColors.text)),
+        Text(widget.riderName, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: fg)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(color: RiderColors.blueLight, borderRadius: BorderRadius.circular(20)),
-          child: const Text('Rider Partner', style: TextStyle(color: RiderColors.blue, fontWeight: FontWeight.w600, fontSize: 13)),
+          child: Text(rt('Rider Partner', 'Rider Partner'), style: const TextStyle(color: RiderColors.blue, fontWeight: FontWeight.w600, fontSize: 13)),
         ),
         const SizedBox(height: 20),
 
-        // Stats row
+        // Stats
         Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
-          ),
+          decoration: _card(context),
           child: Row(children: [
-            _StatCol(label: 'รอบที่ส่ง', value: '$runs รอบ'),
+            _StatCol(label: rt('รอบที่ส่ง', 'Deliveries'), value: rt('$runs รอบ', '$runs trips')),
             _Divider(),
-            _StatCol(
-              label: 'คะแนน',
-              value: rating > 0 ? rating.toStringAsFixed(1) : '-',
-              icon: rating > 0 ? Icons.star_rounded : null,
-            ),
+            _StatCol(label: rt('คะแนน', 'Rating'), value: rating > 0 ? rating.toStringAsFixed(1) : '-', icon: rating > 0 ? Icons.star_rounded : null),
             _Divider(),
-            _StatCol(label: 'สถานะ', value: 'ใช้งาน', valueColor: RiderColors.blue),
+            _StatCol(label: rt('สถานะ', 'Status'), value: rt('ใช้งาน', 'Active'), valueColor: RiderColors.blue),
           ]),
         ),
         const SizedBox(height: 16),
 
-        // Bio / Description
+        // Bio
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
-          ),
+          decoration: _card(context),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text('Bio ของฉัน', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RiderColors.text)),
+              Text(rt('Bio ของฉัน', 'My Bio'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: fg)),
               GestureDetector(
                 onTap: _generating ? null : _generateBio,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(color: RiderColors.blueLight, borderRadius: BorderRadius.circular(20)),
                   child: _generating
-                      ? const Row(mainAxisSize: MainAxisSize.min, children: [
-                          SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 1.5)),
-                          SizedBox(width: 6),
-                          Text('Generating...', style: TextStyle(fontSize: 11, color: RiderColors.blue)),
+                      ? Row(mainAxisSize: MainAxisSize.min, children: [
+                          const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 1.5)),
+                          const SizedBox(width: 6),
+                          Text(rt('กำลังสร้าง...', 'Generating...'), style: const TextStyle(fontSize: 11, color: RiderColors.blue)),
                         ])
                       : const Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.auto_awesome_rounded, color: RiderColors.blue, size: 13),
@@ -304,13 +300,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: _descCtrl,
               maxLines: 3,
-              style: const TextStyle(fontSize: 14, color: RiderColors.text),
+              style: TextStyle(fontSize: 14, color: fg),
               decoration: InputDecoration(
-                hintText: 'แนะนำตัวเองสักเล็กน้อย เช่น ส่งเร็ว ตรงเวลา ไว้วางใจได้...',
-                hintStyle: const TextStyle(color: RiderColors.muted, fontSize: 13),
+                hintText: rt('แนะนำตัวเองสักเล็กน้อย...', 'Introduce yourself briefly...'),
+                hintStyle: TextStyle(color: muted, fontSize: 13),
                 filled: true,
-                fillColor: const Color(0xFFF5F8FF),
+                fillColor: fieldBg,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: RiderColors.blue, width: 1.5)),
                 contentPadding: const EdgeInsets.all(12),
               ),
             ),
@@ -320,7 +317,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: ElevatedButton(
                 onPressed: _saving ? null : _saveBio,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: isDark ? const Color(0xFF1C1C1C) : Colors.white,
                   foregroundColor: RiderColors.blue,
                   elevation: 0,
                   side: const BorderSide(color: RiderColors.blue, width: 1.5),
@@ -328,58 +325,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _saving
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('บันทึก Bio', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
+                    : Text(rt('บันทึก Bio', 'Save Bio'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               ),
             ),
           ]),
         ),
         const SizedBox(height: 16),
 
-        // Reviews card
         _ReviewsCard(reviewData: _reviewData),
         const SizedBox(height: 16),
 
         // Info card
         Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
-          ),
+          decoration: _card(context),
           child: Column(children: [
             _ProfileTile(icon: Icons.badge_rounded, label: 'Rider ID', value: '#${widget.riderId.substring(0, 8)}'),
           ]),
         ),
         const SizedBox(height: 16),
 
-        // Settings
+        // Menu card
         Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
-          ),
+          decoration: _card(context),
           child: Column(children: [
             _ActionTile(
               icon: Icons.account_balance_wallet_rounded,
-              label: 'วอลเล็ต Pre-Paid',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => WalletScreen(riderId: widget.riderId, riderName: widget.riderName)),
-              ),
+              label: rt('วอลเล็ต Pre-Paid', 'Pre-Paid Wallet'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WalletScreen(riderId: widget.riderId, riderName: widget.riderName))),
             ),
-            const Divider(height: 1, indent: 56, color: Color(0xFFE0E0E0)),
-            _ActionTile(icon: Icons.help_outline_rounded, label: 'ความช่วยเหลือ', onTap: () {}),
-            const Divider(height: 1, indent: 56, color: Color(0xFFE0E0E0)),
-            _ActionTile(icon: Icons.policy_outlined, label: 'นโยบายและเงื่อนไข', onTap: () {}),
+            Divider(height: 1, indent: 56, color: context.rDiv),
+            _ActionTile(icon: Icons.help_outline_rounded, label: rt('ความช่วยเหลือ', 'Help'), onTap: () {}),
+            Divider(height: 1, indent: 56, color: context.rDiv),
+            _ActionTile(icon: Icons.policy_outlined, label: rt('นโยบายและเงื่อนไข', 'Terms & Policy'), onTap: () {}),
           ]),
         ),
         const SizedBox(height: 16),
 
-        // ── การแสดงผล ─────────────────────────────────────────────
+        // Display settings
         _SettingsCard(children: [
           _SwitchTile(
             icon: Icons.dark_mode_rounded,
@@ -390,7 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             value: RiderSettings.instance.isDark,
             onChanged: (_) => RiderSettings.instance.toggleTheme(),
           ),
-          const Divider(height: 1, indent: 56, color: Color(0xFFE0E0E0)),
+          Divider(height: 1, indent: 56, color: context.rDiv),
           _SwitchTile(
             icon: Icons.language_rounded,
             iconBg: const Color(0xFFE3F2FD),
@@ -446,10 +429,10 @@ class _ReviewsCardState extends State<_ReviewsCard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
+        border: Border.all(color: context.rDiv, width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.10), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Header
@@ -464,16 +447,16 @@ class _ReviewsCardState extends State<_ReviewsCard> {
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('รีวิวที่ได้รับ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RiderColors.text)),
+              Text('รีวิวที่ได้รับ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.rFg)),
               Text('$total รีวิว · คะแนนเฉลี่ย ${avg > 0 ? avg.toStringAsFixed(1) : "-"}',
-                  style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+                  style: TextStyle(fontSize: 12, color: context.rMuted)),
             ])),
             if (avg > 0) ...[
               Row(children: [
                 const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
                 const SizedBox(width: 2),
                 Text(avg.toStringAsFixed(1),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RiderColors.text)),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.rFg)),
               ]),
               const SizedBox(width: 8),
             ],
@@ -527,19 +510,19 @@ class _RiderReviewTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RiderColors.text)),
+            Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.rFg)),
             if (date != null)
               Text('${date.day}/${date.month}/${date.year}',
-                  style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
+                  style: TextStyle(fontSize: 11, color: context.rMuted)),
           ])),
           Row(children: List.generate(5, (i) => Icon(
             i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: i < rating ? Colors.amber : RiderColors.muted, size: 13,
+            color: i < rating ? Colors.amber : context.rMuted, size: 13,
           ))),
         ]),
         if (comment.isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text(comment, style: const TextStyle(fontSize: 13, color: RiderColors.text)),
+          Text(comment, style: TextStyle(fontSize: 13, color: context.rFg)),
         ],
       ]),
     );
@@ -564,16 +547,16 @@ class _StatCol extends StatelessWidget {
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: valueColor ?? RiderColors.text)),
         ])
       else
-        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: valueColor ?? RiderColors.text)),
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: valueColor ?? context.rFg)),
       const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
+      Text(label, style: TextStyle(fontSize: 11, color: context.rMuted)),
     ]),
   );
 }
 
 class _Divider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 36, color: const Color(0xFFD0D0D0));
+  Widget build(BuildContext context) => Container(width: 1, height: 36, color: context.rDiv);
 }
 
 class _ProfileTile extends StatelessWidget {
@@ -588,8 +571,8 @@ class _ProfileTile extends StatelessWidget {
     child: Row(children: [
       Container(width: 36, height: 36, decoration: BoxDecoration(color: RiderColors.blueLight, borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: RiderColors.blue, size: 18)),
       const SizedBox(width: 12),
-      Expanded(child: Text(label, style: const TextStyle(fontSize: 14, color: RiderColors.text))),
-      Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor ?? RiderColors.muted)),
+      Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: context.rFg))),
+      Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor ?? context.rMuted)),
     ]),
   );
 }
@@ -619,20 +602,20 @@ class _RiderCropChoiceSheetState extends State<_RiderCropChoiceSheet> {
     final previewBytes = widget.aiCroppedBytes ?? (widget.originalBytes.isNotEmpty ? widget.originalBytes : null);
     final hasAI = widget.aiCroppedBytes != null;
     return Container(
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      decoration: BoxDecoration(color: context.rCard, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 16),
         Row(children: [
           const Icon(Icons.auto_awesome_rounded, color: RiderColors.blue, size: 18),
           const SizedBox(width: 8),
           Text(hasAI ? 'AI ตัดรูปให้อัตโนมัติแล้ว' : 'เลือกการตัดรูป',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: RiderColors.text)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.rFg)),
         ]),
         const SizedBox(height: 4),
         Text(hasAI ? 'ต้องการใช้ผลลัพธ์นี้ หรือต้องการ Crop เองแทน?' : 'AI วิเคราะห์ไม่สำเร็จ — กรุณา Crop เองหรือใช้รูปเต็ม',
-            style: const TextStyle(fontSize: 13, color: RiderColors.muted)),
+            style: TextStyle(fontSize: 13, color: context.rMuted)),
         const SizedBox(height: 14),
         if (previewBytes != null)
           ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(previewBytes, height: 200, width: double.infinity, fit: BoxFit.cover)),
@@ -842,8 +825,8 @@ class _ActionTile extends StatelessWidget {
       child: Row(children: [
         Container(width: 36, height: 36, decoration: BoxDecoration(color: RiderColors.blueLight, borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: RiderColors.blue, size: 18)),
         const SizedBox(width: 12),
-        Expanded(child: Text(label, style: const TextStyle(fontSize: 14, color: RiderColors.text))),
-        const Icon(Icons.chevron_right_rounded, color: RiderColors.muted),
+        Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: context.rFg))),
+        Icon(Icons.chevron_right_rounded, color: context.rMuted),
       ]),
     ),
   );

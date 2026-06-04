@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../main.dart';
 import '../../services/socket_service.dart';
 import '../../config.dart';
 
@@ -149,7 +150,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F5),
+      backgroundColor: context.rBg,
       appBar: AppBar(
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -202,11 +203,11 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
                             color: Colors.white, size: 36),
                         ),
                         const SizedBox(height: 16),
-                        const Text('ยังไม่มีข้อความ',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                        Text('ยังไม่มีข้อความ',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.rFg)),
                         const SizedBox(height: 6),
-                        const Text('ส่งข้อความเพื่อเริ่มสนทนากับลูกค้า',
-                          style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
+                        Text('ส่งข้อความเพื่อเริ่มสนทนากับลูกค้า',
+                          style: TextStyle(color: context.rMuted, fontSize: 13)),
                       ]),
                     )
                   : ListView.builder(
@@ -239,7 +240,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
     return Container(
       padding: EdgeInsets.fromLTRB(12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 12, offset: const Offset(0, -3))],
       ),
       child: Row(children: [
@@ -247,16 +248,16 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
           child: Container(
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF3EE),
+              color: context.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFF3EE),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFFFD0BB)),
+              border: Border.all(color: context.isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFD0BB)),
             ),
             child: TextField(
               controller: _ctrl,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
-              decoration: const InputDecoration(
+              style: TextStyle(fontSize: 14, color: context.rFg),
+              decoration: InputDecoration(
                 hintText: 'พิมพ์ข้อความ...',
-                hintStyle: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
+                hintStyle: TextStyle(color: context.rMuted, fontSize: 14),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
@@ -337,7 +338,7 @@ class _RiderMsgBubble extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isMe ? const Color(0xFFFF6B35) : Colors.white,
+                      color: isMe ? const Color(0xFFFF6B35) : context.rCard,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(18),
                         topRight: const Radius.circular(18),
@@ -355,14 +356,14 @@ class _RiderMsgBubble extends StatelessWidget {
                     child: Text(message,
                       style: TextStyle(
                         fontSize: 14,
-                        color: isMe ? Colors.white : const Color(0xFF1A1A1A),
+                        color: isMe ? Colors.white : context.rFg,
                         height: 1.4,
                       )),
                   ),
                 ),
                 const SizedBox(height: 3),
                 Row(children: [
-                  Text(time, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                  Text(time, style: TextStyle(fontSize: 11, color: context.rMuted)),
                   if (showSent) ...[
                     const SizedBox(width: 4),
                     const Icon(Icons.done_all_rounded, size: 14, color: Color(0xFFFF6B35)),

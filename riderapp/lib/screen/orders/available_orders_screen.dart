@@ -126,9 +126,9 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
               child: const Icon(Icons.wifi_off_rounded, color: RiderColors.muted, size: 40),
             ),
             const SizedBox(height: 16),
-            const Text('คุณอยู่ในโหมด Offline', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: RiderColors.text)),
+            Text('คุณอยู่ในโหมด Offline', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
             const SizedBox(height: 8),
-            const Text('เปิด Online เพื่อรับงานส่ง', style: TextStyle(color: RiderColors.muted)),
+            Text('เปิด Online เพื่อรับงานส่ง', style: TextStyle(color: context.rMuted)),
           ],
         ),
       );
@@ -156,9 +156,9 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
                       child: const Icon(Icons.search_off_rounded, color: RiderColors.muted, size: 40),
                     ),
                     const SizedBox(height: 16),
-                    const Text('ยังไม่มีงานใหม่', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: RiderColors.text)),
+                    Text('ยังไม่มีงานใหม่', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
                     const SizedBox(height: 8),
-                    const Text('ระบบจะแจ้งเตือนอัตโนมัติเมื่อมีงาน', style: TextStyle(color: RiderColors.muted)),
+                    Text('ระบบจะแจ้งเตือนอัตโนมัติเมื่อมีงาน', style: TextStyle(color: context.rMuted)),
                   ],
                 ),
               ),
@@ -193,7 +193,7 @@ class _OrderCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: RiderColors.blue.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
       ),
@@ -213,7 +213,7 @@ class _OrderCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     order['store_name'] ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: RiderColors.text),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: context.rFg),
                   ),
                 ),
                 Container(
@@ -279,9 +279,9 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         SizedBox(
           width: 60,
-          child: Text(label, style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+          child: Text(label, style: TextStyle(fontSize: 12, color: context.rMuted)),
         ),
-        Expanded(child: Text(value, style: const TextStyle(fontSize: 13, color: RiderColors.text, fontWeight: FontWeight.w500))),
+        Expanded(child: Text(value, style: TextStyle(fontSize: 13, color: context.rFg, fontWeight: FontWeight.w500))),
       ],
     );
   }

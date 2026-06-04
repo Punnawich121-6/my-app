@@ -256,9 +256,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: context.rCard,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
@@ -266,7 +266,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
             height: 4,
             margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              color: const Color(0xFFE0E0E0),
+              color: context.rDiv,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -281,16 +281,15 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                 color: RiderColors.blue, size: 40),
           ),
           const SizedBox(height: 12),
-          const Text('ส่งสำเร็จ!',
+          Text('ส่งสำเร็จ!',
               style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: RiderColors.text)),
+                  color: context.rFg)),
           const SizedBox(height: 4),
           Text(
               'ออเดอร์ #${order['orderNumber'] ?? order['id'].toString().substring(0, 8)}',
-              style:
-                  const TextStyle(fontSize: 13, color: RiderColors.muted)),
+              style: TextStyle(fontSize: 13, color: context.rMuted)),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(20),
@@ -419,9 +418,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
           ),
         ),
         Container(
-          color: Colors.white,
+          color: context.rCard,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-          child: _buildStepAction(),
+          child: _buildStepAction(context),
         ),
       ],
     );
@@ -437,9 +436,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       (Icons.check_circle_rounded, 'ส่งแล้ว'),
     ];
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+      decoration: BoxDecoration(
+        color: context.rCard,
+        border: Border(bottom: BorderSide(color: context.rDiv, width: 1)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
       child: Row(
@@ -502,9 +501,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E8E8), width: 1),
+        border: Border.all(color: context.rDiv, width: 1),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 12, offset: const Offset(0, 3))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -516,9 +515,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: const TextStyle(fontSize: 12, color: RiderColors.muted, fontWeight: FontWeight.w500)),
+            Text(label, style: TextStyle(fontSize: 12, color: context.rMuted, fontWeight: FontWeight.w500)),
             const SizedBox(height: 2),
-            Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: RiderColors.text)),
+            Text(name, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
           ])),
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(
@@ -536,7 +535,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.rCard,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: RiderColors.blue, width: 1.5),
               ),
@@ -549,13 +548,13 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
           ),
         ]),
         const SizedBox(height: 12),
-        const Divider(height: 1, color: Color(0xFFE0E0E0)),
+        Divider(height: 1, color: context.rDiv),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(Icons.location_on_rounded, color: iconColor, size: 16),
           const SizedBox(width: 8),
           Expanded(child: Text(address,
-              style: const TextStyle(fontSize: 13, color: RiderColors.text, height: 1.45))),
+              style: TextStyle(fontSize: 13, color: context.rFg, height: 1.45))),
         ]),
       ]),
     );
@@ -566,9 +565,9 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E8E8), width: 1),
+        border: Border.all(color: context.rDiv, width: 1),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 12, offset: const Offset(0, 3))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -576,7 +575,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
           const Icon(Icons.person_outline_rounded, size: 16, color: RiderColors.muted),
           const SizedBox(width: 8),
           Text(order['customer_name'] ?? '-',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RiderColors.text)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.rFg)),
           const Spacer(),
           const Icon(Icons.phone_outlined, size: 14, color: RiderColors.muted),
           const SizedBox(width: 4),
@@ -584,13 +583,13 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               style: const TextStyle(fontSize: 13, color: RiderColors.muted)),
         ]),
         const SizedBox(height: 10),
-        const Divider(height: 1, color: Color(0xFFE0E0E0)),
+        Divider(height: 1, color: context.rDiv),
         const SizedBox(height: 10),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Icon(Icons.receipt_long_rounded, size: 16, color: RiderColors.muted),
           const SizedBox(width: 8),
           Expanded(child: Text(order['items_summary'] ?? '-',
-              style: const TextStyle(fontSize: 13, color: RiderColors.text, height: 1.4))),
+              style: TextStyle(fontSize: 13, color: context.rFg, height: 1.4))),
         ]),
         if ((order['note'] ?? '').toString().isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -598,7 +597,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
             const Icon(Icons.sticky_note_2_outlined, size: 16, color: RiderColors.muted),
             const SizedBox(width: 8),
             Expanded(child: Text(order['note'],
-                style: const TextStyle(fontSize: 13, color: RiderColors.muted, fontStyle: FontStyle.italic))),
+                style: TextStyle(fontSize: 13, color: context.rMuted, fontStyle: FontStyle.italic))),
           ]),
         ],
       ]),
@@ -652,17 +651,17 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
   }
 
   // ── Action button per step ────────────────────────────────────────────────
-  ButtonStyle get _actionBtnStyle => ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
+  ButtonStyle _actionBtnStyle(BuildContext ctx) => ElevatedButton.styleFrom(
+        backgroundColor: ctx.rCard,
         foregroundColor: RiderColors.blue,
-        disabledBackgroundColor: const Color(0xFFF5F5F5),
+        disabledBackgroundColor: ctx.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
         disabledForegroundColor: RiderColors.blueMid,
         elevation: 0,
         side: const BorderSide(color: RiderColors.blue, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       );
 
-  Widget _buildStepAction() {
+  Widget _buildStepAction(BuildContext context) {
     final busy = _updatingStep || _completing;
     if (_step == _OrderStep.goToStore) {
       return SizedBox(
@@ -670,7 +669,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         height: 56,
         child: ElevatedButton.icon(
           onPressed: busy ? null : () => _updateStep('at_store', _OrderStep.atStore),
-          style: _actionBtnStyle,
+          style: _actionBtnStyle(context),
           icon: busy
               ? SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
@@ -685,7 +684,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         height: 56,
         child: ElevatedButton.icon(
           onPressed: busy ? null : () => _updateStep('picking_up', _OrderStep.delivering),
-          style: _actionBtnStyle,
+          style: _actionBtnStyle(context),
           icon: busy
               ? SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
@@ -700,7 +699,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
         height: 56,
         child: ElevatedButton.icon(
           onPressed: busy ? null : _completeDelivery,
-          style: _actionBtnStyle,
+          style: _actionBtnStyle(context),
           icon: busy
               ? SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
@@ -735,9 +734,9 @@ class _ActionChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.rCard,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE8E8E8), width: 1),
+            border: Border.all(color: context.rDiv, width: 1),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -750,7 +749,7 @@ class _ActionChip extends StatelessWidget {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF333333), fontWeight: FontWeight.w600)),
+            Text(label, style: TextStyle(fontSize: 12, color: context.rFg, fontWeight: FontWeight.w600)),
           ]),
         ),
       );

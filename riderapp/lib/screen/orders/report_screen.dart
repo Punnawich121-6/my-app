@@ -80,7 +80,7 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RiderColors.bg,
+      backgroundColor: context.rBg,
       appBar: AppBar(
         backgroundColor: RiderColors.blue,
         foregroundColor: Colors.white,
@@ -186,10 +186,10 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: sel ? RiderColors.blue : Colors.white,
+                  color: sel ? RiderColors.blue : context.rCard,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: sel ? RiderColors.blue : const Color(0xFFEEEEEE),
+                    color: sel ? RiderColors.blue : context.rDiv,
                     width: sel ? 2 : 1,
                   ),
                   boxShadow: sel
@@ -204,7 +204,7 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: sel ? Colors.white : RiderColors.text,
+                        color: sel ? Colors.white : context.rFg,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -227,17 +227,17 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
           style: const TextStyle(fontSize: 14, color: RiderColors.text),
           decoration: InputDecoration(
             hintText: 'เช่น โทรหาลูกค้า 3 ครั้งแต่ไม่รับ รอ 10 นาทีแล้วส่งคืนร้าน...',
-            hintStyle: const TextStyle(fontSize: 13, color: RiderColors.muted),
+            hintStyle: TextStyle(fontSize: 13, color: context.rMuted),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: context.rCard,
             contentPadding: const EdgeInsets.all(14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+              borderSide: BorderSide(color: context.rDiv),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+              borderSide: BorderSide(color: context.rDiv),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -262,14 +262,14 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
               child: Container(
                 width: 76, height: 76,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.rCard,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFEEEEEE)),
+                  border: Border.all(color: context.rDiv),
                 ),
-                child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.add_a_photo_rounded, color: RiderColors.blue, size: 26),
-                  SizedBox(height: 4),
-                  Text('เพิ่มรูป', style: TextStyle(fontSize: 12, color: RiderColors.muted, fontWeight: FontWeight.w600)),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(Icons.add_a_photo_rounded, color: RiderColors.blue, size: 26),
+                  const SizedBox(height: 4),
+                  Text('เพิ่มรูป', style: TextStyle(fontSize: 12, color: context.rMuted, fontWeight: FontWeight.w600)),
                 ]),
               ),
             ),

@@ -178,22 +178,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
             child: Row(children: [
               _CircleBtn(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: RiderColors.text),
+                child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: context.rFg),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.rCard,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
                   ),
                   child: Row(children: [
                     const Icon(Icons.navigation_rounded, size: 15, color: RiderColors.blue),
                     const SizedBox(width: 6),
-                    const Text('เส้นทางการส่ง',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: RiderColors.text)),
+                    Text('เส้นทางการส่ง',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: context.rFg)),
                     if (_loading) ...[
                       const Spacer(),
                       const SizedBox(
@@ -222,7 +222,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.rCard,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
                 ),
@@ -234,18 +234,18 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           _mapController.camera.center, (_mapController.camera.zoom + 1).clamp(1.0, 50.0)),
                       child: Container(
                         width: 44, height: 44,
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: context.rDiv, width: 1)),
                         ),
-                        child: const Icon(Icons.add_rounded, color: RiderColors.text, size: 22),
+                        child: Icon(Icons.add_rounded, color: context.rFg, size: 22),
                       ),
                     ),
                     GestureDetector(
                       onTap: () => _mapController.move(
                           _mapController.camera.center, _mapController.camera.zoom - 1),
-                      child: const SizedBox(
+                      child: SizedBox(
                         width: 44, height: 44,
-                        child: Icon(Icons.remove_rounded, color: RiderColors.text, size: 22),
+                        child: Icon(Icons.remove_rounded, color: context.rFg, size: 22),
                       ),
                     ),
                   ],
@@ -298,7 +298,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   Widget _buildPanel() => Container(
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.rCard,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, -4))],
     ),
@@ -306,7 +306,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       Container(
         width: 36, height: 4,
         margin: const EdgeInsets.only(top: 10, bottom: 12),
-        decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2)),
+        decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2)),
       ),
 
       if (!_loading)
@@ -358,8 +358,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
           child: OutlinedButton.icon(
             onPressed: () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE0E0E0)),
-              foregroundColor: RiderColors.muted,
+              side: BorderSide(color: context.rDiv),
+              foregroundColor: context.rMuted,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             icon: const Icon(Icons.close_rounded, size: 16),
@@ -398,7 +398,7 @@ class _CircleBtn extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         shape: BoxShape.circle,
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
       ),
@@ -417,7 +417,7 @@ class _StatChip extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFFFE0CC), width: 1.5),
       ),
@@ -425,8 +425,8 @@ class _StatChip extends StatelessWidget {
         Icon(icon, color: RiderColors.blue, size: 20),
         const SizedBox(width: 8),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: RiderColors.text)),
-          Text(sub, style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+          Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: context.rFg)),
+          Text(sub, style: TextStyle(fontSize: 12, color: context.rMuted)),
         ]),
       ]),
     ),
@@ -459,12 +459,12 @@ class _WaypointRow extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(bottom: showLine ? 0 : 8),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(tag, style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
+          Text(tag, style: TextStyle(fontSize: 11, color: context.rMuted)),
           const SizedBox(height: 2),
-          Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RiderColors.text)),
+          Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.rFg)),
           const SizedBox(height: 2),
           Text(address,
-              style: const TextStyle(fontSize: 12, color: RiderColors.muted),
+              style: TextStyle(fontSize: 12, color: context.rMuted),
               maxLines: 2, overflow: TextOverflow.ellipsis),
         ]),
       ),

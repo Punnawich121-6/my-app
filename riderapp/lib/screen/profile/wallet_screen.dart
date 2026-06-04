@@ -88,9 +88,9 @@ class _WalletScreenState extends State<WalletScreen> {
     final isNegative = _balance < 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FF),
+      backgroundColor: context.rBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F8FF),
+        backgroundColor: context.rBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
@@ -102,14 +102,14 @@ class _WalletScreenState extends State<WalletScreen> {
               onTap: () => Navigator.pop(context),
               child: Container(
                 width: 38, height: 38,
-                decoration: const BoxDecoration(color: Color(0xFFEEEEEE), shape: BoxShape.circle),
-                child: const Icon(Icons.chevron_left_rounded, color: RiderColors.text, size: 22),
+                decoration: BoxDecoration(color: context.rDiv, shape: BoxShape.circle),
+                child: Icon(Icons.chevron_left_rounded, color: context.rFg, size: 22),
               ),
             ),
-            const Expanded(
+            Expanded(
               child: Text('วอลเล็ตของฉัน',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: RiderColors.text)),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
             ),
             const SizedBox(width: 38),
           ]),
@@ -342,9 +342,9 @@ class _TxRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.15 : 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(children: [
         Container(
@@ -497,22 +497,22 @@ class _TopupSheetState extends State<_TopupSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.rCard,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2))),
+                decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
 
-            const Text('เติมเงินเข้า Wallet',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: RiderColors.text)),
+            Text('เติมเงินเข้า Wallet',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.rFg)),
             const SizedBox(height: 6),
-            const Text('กรอกจำนวนเงินที่ต้องการเติม',
-                style: TextStyle(fontSize: 13, color: RiderColors.muted)),
+            Text('กรอกจำนวนเงินที่ต้องการเติม',
+                style: TextStyle(fontSize: 13, color: context.rMuted)),
             const SizedBox(height: 20),
 
             // Amount input
@@ -579,10 +579,10 @@ class _TopupSheetState extends State<_TopupSheet> {
             const SizedBox(height: 24),
 
             // Payment method
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text('วิธีชำระเงิน',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RiderColors.text)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.rFg)),
             ),
             const SizedBox(height: 10),
             Row(children: [
@@ -643,9 +643,9 @@ class _MethodCard extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: selected ? _kOrangeLight : Colors.white,
+        color: selected ? _kOrangeLight : context.rCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: selected ? _kOrange : const Color(0xFFE8E8E8), width: selected ? 2 : 1),
+        border: Border.all(color: selected ? _kOrange : context.rDiv, width: selected ? 2 : 1),
       ),
       child: Row(children: [
         Icon(icon, color: selected ? _kOrange : RiderColors.muted, size: 22),
@@ -765,18 +765,18 @@ class _QrSheetState extends State<_QrSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      decoration: BoxDecoration(color: context.rCard, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 24),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 40, height: 4,
-            decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2))),
+            decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 20),
         Container(width: 64, height: 64,
             decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(20)),
             child: const Icon(Icons.qr_code_rounded, color: _kOrange, size: 32)),
         const SizedBox(height: 14),
-        const Text('ชำระเงินด้วย PromptPay',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: RiderColors.text)),
+        Text('ชำระเงินด้วย PromptPay',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
         const SizedBox(height: 4),
         Text('${widget.amount} THB',
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: _kOrange)),
@@ -794,9 +794,9 @@ class _QrSheetState extends State<_QrSheet> {
             child: QrImageView(data: _qrCode!, version: QrVersions.auto, size: 220, backgroundColor: Colors.white),
           ),
           const SizedBox(height: 10),
-          const Text('สแกน QR ด้านบนด้วยแอปธนาคารของคุณ',
+          Text('สแกน QR ด้านบนด้วยแอปธนาคารของคุณ',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RiderColors.text)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.rFg)),
         ] else ...[
           Container(
             width: double.infinity, padding: const EdgeInsets.all(14),
@@ -959,18 +959,18 @@ class _CardSheetState extends State<_CardSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      decoration: BoxDecoration(color: context.rCard, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 24),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 40, height: 4,
-            decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2))),
+            decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 20),
         Container(width: 64, height: 64,
             decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(20)),
             child: const Icon(Icons.credit_card_rounded, color: _kOrange, size: 32)),
         const SizedBox(height: 14),
-        const Text('ชำระเงินด้วยบัตรเครดิต',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: RiderColors.text)),
+        Text('ชำระเงินด้วยบัตรเครดิต',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
         const SizedBox(height: 4),
         Text('${widget.amount} THB',
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: _kOrange)),
@@ -1101,25 +1101,25 @@ class _LoanSheetState extends State<_LoanSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.rCard,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2))),
+                decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
             Container(width: 56, height: 56,
                 decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(16)),
                 child: const Icon(Icons.handshake_rounded, color: _kOrange, size: 28)),
             const SizedBox(height: 14),
-            const Text('ขอยืมเงินจากบริษัท',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: RiderColors.text)),
+            Text('ขอยืมเงินจากบริษัท',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.rFg)),
             const SizedBox(height: 6),
-            const Text('Admin จะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง',
-                style: TextStyle(fontSize: 13, color: RiderColors.muted)),
+            Text('Admin จะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง',
+                style: TextStyle(fontSize: 13, color: context.rMuted)),
             const SizedBox(height: 20),
 
             // Amount input
@@ -1269,10 +1269,10 @@ class _LoanHistorySheetState extends State<_LoanHistorySheet> {
       padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 24),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 40, height: 4,
-            decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2))),
+            decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 16),
-        const Text('ประวัติการขอยืมเงิน',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: RiderColors.text)),
+        Text('ประวัติการขอยืมเงิน',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
         const SizedBox(height: 16),
         if (_loans == null)
           const Padding(
@@ -1318,14 +1318,14 @@ class _LoanHistorySheetState extends State<_LoanHistorySheet> {
                 return Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9F9F9),
+                    color: context.rCard,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFEEEEEE)),
+                    border: Border.all(color: context.rDiv),
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Text('฿${fmt.format(amount)}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: RiderColors.text)),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.rFg)),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

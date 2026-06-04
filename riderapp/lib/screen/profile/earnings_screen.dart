@@ -69,13 +69,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? RiderColors.blue : const Color(0xFFF0F0F0),
+          color: isSelected ? RiderColors.blue : context.rCard,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
           style: TextStyle(
             fontSize: 11, fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : RiderColors.muted,
+            color: isSelected ? Colors.white : context.rMuted,
           )),
       ),
     );
@@ -187,22 +187,22 @@ class _EarningsScreenState extends State<EarningsScreen> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.rCard,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 12, offset: const Offset(0, 4))],
+              border: Border.all(color: context.rDiv, width: 1),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.10), blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [
-                Icon(Icons.insights_rounded, color: RiderColors.blue, size: 18),
-                SizedBox(width: 8),
-                Text('วางแผนรายได้วันนี้', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RiderColors.text)),
+              Row(children: [
+                const Icon(Icons.insights_rounded, color: RiderColors.blue, size: 18),
+                const SizedBox(width: 8),
+                Text('วางแผนรายได้วันนี้', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.rFg)),
               ]),
               const SizedBox(height: 14),
 
               // Goal input
               Row(children: [
-                const Text('เป้าหมาย', style: TextStyle(fontSize: 13, color: RiderColors.muted)),
+                Text('เป้าหมาย', style: TextStyle(fontSize: 13, color: context.rMuted)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () {
@@ -356,7 +356,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
           // History header + date selector
           Row(children: [
-            const Text('ประวัติการส่ง', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: RiderColors.text)),
+            Text('ประวัติการส่ง', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.rFg)),
             const Spacer(),
             _buildDateChip('วันนี้', DateTime.now()),
             const SizedBox(width: 6),
@@ -367,17 +367,17 @@ class _EarningsScreenState extends State<EarningsScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: _isCustomDate ? RiderColors.blue : const Color(0xFFF0F0F0),
+                  color: _isCustomDate ? RiderColors.blue : context.rCard,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.calendar_month_rounded, size: 13,
-                      color: _isCustomDate ? Colors.white : RiderColors.muted),
+                      color: _isCustomDate ? Colors.white : context.rMuted),
                   const SizedBox(width: 4),
                   Text(
                     _isCustomDate ? DateFormat('d MMM').format(_selectedDate) : 'เลือก',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                        color: _isCustomDate ? Colors.white : RiderColors.muted),
+                        color: _isCustomDate ? Colors.white : context.rMuted),
                   ),
                 ]),
               ),
@@ -388,7 +388,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
           if (_filteredHistory.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: context.rCard, borderRadius: BorderRadius.circular(16)),
               child: Center(
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   const Icon(Icons.inbox_rounded, color: RiderColors.muted, size: 32),
@@ -439,7 +439,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
       widgets.add(Padding(
         padding: const EdgeInsets.only(bottom: 6, top: 4),
         child: Text(entry.key,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: RiderColors.muted)),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.rMuted)),
       ));
       // compact card group
       widgets.add(Container(
@@ -569,19 +569,19 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.rCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
+        border: Border.all(color: context.rDiv, width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.10), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+          Text(label, style: TextStyle(fontSize: 12, color: context.rMuted)),
           const SizedBox(height: 6),
           Text('฿${fmt.format(amount)}',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: RiderColors.blue)),
-          Text('$count งาน', style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+          Text('$count งาน', style: TextStyle(fontSize: 12, color: context.rMuted)),
         ],
       ),
     );
@@ -601,11 +601,11 @@ class _PlanStat extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w800,
-          color: highlight ? RiderColors.blue : RiderColors.text,
+          color: highlight ? RiderColors.blue : context.rFg,
         ),
       ),
       const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 12, color: RiderColors.muted), textAlign: TextAlign.center),
+      Text(label, style: TextStyle(fontSize: 12, color: context.rMuted), textAlign: TextAlign.center),
     ]),
   );
 }
@@ -654,9 +654,9 @@ class _CompactHistoryRow extends StatelessWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(order['store_name'] ?? '-',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: RiderColors.text)),
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.rFg)),
                   Text(order['address'] ?? '-',
-                      style: const TextStyle(fontSize: 11, color: RiderColors.muted),
+                      style: TextStyle(fontSize: 11, color: context.rMuted),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 ]),
               ),
@@ -666,14 +666,14 @@ class _CompactHistoryRow extends StatelessWidget {
                   Text('฿${fmt.format(deliveryFee)}',
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: RiderColors.blue))
                 else
-                  const Text('ยกเลิก',
-                      style: TextStyle(fontSize: 12, color: RiderColors.muted)),
-                Text(timeStr, style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
+                  Text('ยกเลิก',
+                      style: TextStyle(fontSize: 12, color: context.rMuted)),
+                Text(timeStr, style: TextStyle(fontSize: 11, color: context.rMuted)),
               ]),
             ]),
           ),
         ),
-        if (!isLast) const Divider(height: 1, indent: 56, color: Color(0xFFF0F0F0)),
+        if (!isLast) Divider(height: 1, indent: 56, color: context.rDiv),
       ],
     );
   }
