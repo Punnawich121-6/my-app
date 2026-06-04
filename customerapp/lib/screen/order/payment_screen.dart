@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../config.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app_settings.dart';
@@ -27,6 +29,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _processing = false;
   double _walletBalance = 0;
   SavedCard? _savedCard;
+
+  void _playSuccessSound() {
+    final p = AudioPlayer();
+    p.play(UrlSource('$kBackendUrl/public/audio/sound-payment.mp3'));
+    p.onPlayerComplete.first.then((_) => p.dispose());
+  }
 
   final _nameCtrl   = TextEditingController();
   final _last4Ctrl  = TextEditingController();
@@ -75,6 +83,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     if (widget.onConfirm == null) {
+      _playSuccessSound();
       Navigator.pushReplacement(context,
           MaterialPageRoute(builder: (_) => const PaymentResultScreen(
             orderId: '-', success: true, amount: 0, paymentMethod: 'Cash')));
@@ -110,6 +119,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return;
       }
       widget.onSuccess?.call();
+      _playSuccessSound();
       nav.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => PaymentResultScreen(
           orderId: orderId, success: true,
@@ -153,6 +163,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } else {
       setState(() => _processing = false);
       widget.onSuccess?.call();
+      _playSuccessSound();
       nav.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => PaymentResultScreen(
           orderId: orderId,
@@ -176,6 +187,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         qrResult: qrResult,
         onPaid: (result) {
           widget.onSuccess?.call();
+          if (result['status'] == 'APPROVED') _playSuccessSound();
           nav.pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => PaymentResultScreen(
               orderId: orderId,
