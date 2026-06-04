@@ -30,10 +30,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
   double _walletBalance = 0;
   SavedCard? _savedCard;
 
-  void _playSuccessSound() {
+  Future<void> _playSuccessSound() async {
     final p = AudioPlayer();
-    p.play(UrlSource('$kBackendUrl/public/audio/sound-payment.mp3'));
-    p.onPlayerComplete.first.then((_) => p.dispose());
+    try {
+      await p.play(UrlSource('$kBackendUrl/public/audio/sound-payment.mp3'));
+      await p.onPlayerComplete.first
+          .timeout(const Duration(seconds: 30), onTimeout: () {});
+    } catch (_) {}
+    try { await p.dispose(); } catch (_) {}
   }
 
   final _nameCtrl   = TextEditingController();
