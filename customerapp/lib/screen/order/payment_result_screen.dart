@@ -1,6 +1,4 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import '../../config.dart';
 import '../../main.dart';
 import 'order_tracking_screen.dart';
 
@@ -29,7 +27,6 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
   late AnimationController _ctrl;
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
-  final _player = AudioPlayer();
 
   @override
   void initState() {
@@ -39,15 +36,11 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
     _scaleAnim = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
     _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
-    if (widget.success) {
-      _player.play(UrlSource('$kBackendUrl/public/audio/sound-payment.mp3'));
-    }
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
-    _player.dispose();
     super.dispose();
   }
 
