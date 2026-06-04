@@ -128188,7 +128188,7 @@ var $async$zq=A.v(function(a,b){if(a===1){o.push(b)
 s=p}for(;;)switch(s){case 0:if(n.d){s=1
 break}p=4
 n.d=!0
-m=new A.a3a("assets/audio/new_order.mp3",null)
+m=new A.a3a("/assets/audio/new_order.mp3",null)
 l=n.a
 s=7
 return A.t(l.C8(0,m),$async$zq)

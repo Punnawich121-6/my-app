@@ -49,9 +49,9 @@ class OrderAlertService {
     if (_playing) return;
     try {
       _playing = true;
-      // Web: AssetSource doubles the prefix → use UrlSource with relative path
+      // Web: AssetSource doubles prefix → use absolute UrlSource
       final source = kIsWeb
-          ? UrlSource('assets/audio/new_order.mp3')
+          ? UrlSource('/assets/audio/new_order.mp3')
           : AssetSource('audio/new_order.mp3');
       await _player.play(source);
       _player.onPlayerComplete.first.then((_) => _playing = false);
