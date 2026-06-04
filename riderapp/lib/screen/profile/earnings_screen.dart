@@ -24,9 +24,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
   Map<String, dynamic>? _aiInsight;
   bool _loadingAi = false;
 
+  late DateTime _selectedDate;
+
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month, now.day);
     _load();
   }
 
@@ -34,6 +38,33 @@ class _EarningsScreenState extends State<EarningsScreen> {
   void dispose() {
     _targetCtrl.dispose();
     super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredHistory {
+    return _history.where((order) {
+      final date = DateTime.tryParse(order['created_at'] ?? '');
+      if (date == null) return false;
+      final d = DateTime(date.year, date.month, date.day);
+      return d == _selectedDate;
+    }).toList();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: RiderColors.blue),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = DateTime(picked.year, picked.month, picked.day));
+    }
   }
 
   Future<void> _load() async {
@@ -291,20 +322,55 @@ class _EarningsScreenState extends State<EarningsScreen> {
           ),
           const SizedBox(height: 20),
 
-          // History grouped by date
-          const Text('ประวัติการส่ง', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: RiderColors.text)),
+          // History header + date selector
+          Row(children: [
+            const Text('ประวัติการส่ง', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: RiderColors.text)),
+            const Spacer(),
+            _buildDateChip('วันนี้', DateTime.now()),
+            const SizedBox(width: 6),
+            _buildDateChip('เมื่อวาน', DateTime.now().subtract(const Duration(days: 1))),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _isCustomDate ? RiderColors.blue : const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.calendar_month_rounded, size: 13,
+                      color: _isCustomDate ? Colors.white : RiderColors.muted),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isCustomDate ? DateFormat('d MMM').format(_selectedDate) : 'เลือก',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                        color: _isCustomDate ? Colors.white : RiderColors.muted),
+                  ),
+                ]),
+              ),
+            ),
+          ]),
           const SizedBox(height: 12),
 
-          if (_history.isEmpty)
+          if (_filteredHistory.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-              child: const Center(
-                child: Text('ยังไม่มีประวัติการส่ง', style: TextStyle(color: RiderColors.muted)),
+              child: Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.inbox_rounded, color: RiderColors.muted, size: 32),
+                  const SizedBox(height: 8),
+                  Text(
+                    'ไม่มีการส่งในวันที่ ${DateFormat('d MMM yy').format(_selectedDate)}',
+                    style: const TextStyle(color: RiderColors.muted, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ]),
               ),
             )
           else
-            ..._buildGroupedHistory(_history, fmt),
+            ..._buildGroupedHistory(_filteredHistory, fmt),
         ],
       ),
     );
