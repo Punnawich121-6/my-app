@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../app_settings.dart';
 import '../../main.dart';
 import '../../config.dart';
 import 'chat_screen.dart';
@@ -87,10 +88,10 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                         color: RiderColors.blue, size: 34),
                     ),
                     const SizedBox(height: 16),
-                    Text('ยังไม่มีการสนทนา',
+                    Text(rt('ยังไม่มีการสนทนา', 'No conversations yet'),
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.rFg)),
                     const SizedBox(height: 6),
-                    Text('แชทจะปรากฏเมื่อคุณรับออเดอร์',
+                    Text(rt('แชทจะปรากฏเมื่อคุณรับออเดอร์', 'Chats will appear when you accept orders'),
                       style: TextStyle(color: context.rMuted, fontSize: 13)),
                   ]),
                 )
@@ -124,7 +125,7 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                         title: Row(children: [
                           Expanded(
                             child: Text(
-                              c['customer_name'] ?? 'ลูกค้า',
+                              c['customer_name'] ?? rt('ลูกค้า', 'Customer'),
                               style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w700, color: context.rFg),
                               maxLines: 1, overflow: TextOverflow.ellipsis,
@@ -152,7 +153,7 @@ class _RiderConversationsScreenState extends State<RiderConversationsScreen> {
                                 maxLines: 1, overflow: TextOverflow.ellipsis,
                               ),
                             ] else if (msgCount == 0)
-                              Text('ยังไม่มีข้อความ',
+                              Text(rt('ยังไม่มีข้อความ', 'No messages yet'),
                                 style: TextStyle(fontSize: 12, color: context.rMuted, fontStyle: FontStyle.italic)),
                           ],
                         ),

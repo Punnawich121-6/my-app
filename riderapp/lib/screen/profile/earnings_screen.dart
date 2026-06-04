@@ -196,13 +196,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
               Row(children: [
                 const Icon(Icons.insights_rounded, color: RiderColors.blue, size: 18),
                 const SizedBox(width: 8),
-                Text('วางแผนรายได้วันนี้', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.rFg)),
+                Text(rt('วางแผนรายได้วันนี้', "Plan Today's Earnings"), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.rFg)),
               ]),
               const SizedBox(height: 14),
 
               // Goal input
               Row(children: [
-                Text('เป้าหมาย', style: TextStyle(fontSize: 13, color: context.rMuted)),
+                Text(rt('เป้าหมาย', 'Target'), style: TextStyle(fontSize: 13, color: context.rMuted)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () {
@@ -262,10 +262,10 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
               // Stats row
               Row(children: [
-                _PlanStat(label: 'วิ่งแล้ว', value: '$todayCount รอบ'),
-                _PlanStat(label: 'ต้องวิ่งทั้งหมด', value: '$tripsNeeded รอบ'),
-                _PlanStat(label: 'เหลืออีก', value: '$remaining รอบ', highlight: true),
-                _PlanStat(label: 'เฉลี่ย/รอบ', value: '฿$avgPerRun'),
+                _PlanStat(label: rt('วิ่งแล้ว', 'Done'), value: '$todayCount ${rt('รอบ', 'trips')}'),
+                _PlanStat(label: rt('ต้องวิ่งทั้งหมด', 'Total needed'), value: '$tripsNeeded ${rt('รอบ', 'trips')}'),
+                _PlanStat(label: rt('เหลืออีก', 'Remaining'), value: '$remaining ${rt('รอบ', 'trips')}', highlight: true),
+                _PlanStat(label: rt('เฉลี่ย/รอบ', 'Avg/trip'), value: '฿$avgPerRun'),
               ]),
               const SizedBox(height: 14),
 
@@ -332,7 +332,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
             ),
             child: Column(
               children: [
-                const Text('รายได้วันนี้', style: TextStyle(color: Colors.white, fontSize: 14)),
+                Text(rt('รายได้วันนี้', "Today's Earnings"), style: const TextStyle(color: Colors.white, fontSize: 14)),
                 const SizedBox(height: 8),
                 Text(
                   '฿${fmt.format(today)}',
@@ -347,20 +347,20 @@ class _EarningsScreenState extends State<EarningsScreen> {
           // Weekly & Total
           Row(
             children: [
-              Expanded(child: _SummaryCard(label: '7 วันที่ผ่านมา', amount: week, count: weekCount, fmt: fmt)),
+              Expanded(child: _SummaryCard(label: rt('7 วันที่ผ่านมา', 'Last 7 Days'), amount: week, count: weekCount, fmt: fmt)),
               const SizedBox(width: 12),
-              Expanded(child: _SummaryCard(label: 'รายได้รวม', amount: total, count: totalCount, fmt: fmt)),
+              Expanded(child: _SummaryCard(label: rt('รายได้รวม', 'Total Earnings'), amount: total, count: totalCount, fmt: fmt)),
             ],
           ),
           const SizedBox(height: 20),
 
           // History header + date selector
           Row(children: [
-            Text('ประวัติการส่ง', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.rFg)),
+            Text(rt('ประวัติการส่ง', 'Delivery History'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.rFg)),
             const Spacer(),
-            _buildDateChip('วันนี้', DateTime.now()),
+            _buildDateChip(rt('วันนี้', 'Today'), DateTime.now()),
             const SizedBox(width: 6),
-            _buildDateChip('เมื่อวาน', DateTime.now().subtract(const Duration(days: 1))),
+            _buildDateChip(rt('เมื่อวาน', 'Yesterday'), DateTime.now().subtract(const Duration(days: 1))),
             const SizedBox(width: 6),
             GestureDetector(
               onTap: _pickDate,
@@ -375,7 +375,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       color: _isCustomDate ? Colors.white : context.rMuted),
                   const SizedBox(width: 4),
                   Text(
-                    _isCustomDate ? DateFormat('d MMM').format(_selectedDate) : 'เลือก',
+                    _isCustomDate ? DateFormat('d MMM').format(_selectedDate) : rt('เลือก', 'Pick'),
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                         color: _isCustomDate ? Colors.white : context.rMuted),
                   ),
@@ -394,7 +394,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   const Icon(Icons.inbox_rounded, color: RiderColors.muted, size: 32),
                   const SizedBox(height: 8),
                   Text(
-                    'ไม่มีการส่งในวันที่ ${DateFormat('d MMM yy').format(_selectedDate)}',
+                    rt('ไม่มีการส่งในวันที่ ', 'No deliveries on ') + DateFormat('d MMM yy').format(_selectedDate),
                     style: const TextStyle(color: RiderColors.muted, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
@@ -423,9 +423,9 @@ class _EarningsScreenState extends State<EarningsScreen> {
       } else {
         final d = DateTime(date.year, date.month, date.day);
         if (d == today) {
-          key = 'วันนี้';
+          key = rt('วันนี้', 'Today');
         } else if (d == yesterday) {
-          key = 'เมื่อวาน';
+          key = rt('เมื่อวาน', 'Yesterday');
         } else {
           key = DateFormat('d MMM yy').format(date);
         }
@@ -502,7 +502,7 @@ class _InsightContent extends StatelessWidget {
             child: Text(scoreLabel, style: const TextStyle(color: orange, fontWeight: FontWeight.w700, fontSize: 12)),
           ),
           const SizedBox(height: 4),
-          const Text('คะแนนประสิทธิภาพ', style: TextStyle(fontSize: 11, color: RiderColors.muted)),
+          Text(rt('คะแนนประสิทธิภาพ', 'Performance Score'), style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
         ]),
       ]),
       if (insights.isNotEmpty) ...[
@@ -524,7 +524,7 @@ class _InsightContent extends StatelessWidget {
       ],
       if (recs.isNotEmpty) ...[
         const SizedBox(height: 8),
-        const Text('คำแนะนำ', style: TextStyle(fontSize: 11, color: RiderColors.muted, fontWeight: FontWeight.w600)),
+        Text(rt('คำแนะนำ', 'Recommendations'), style: const TextStyle(fontSize: 11, color: RiderColors.muted, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         ...recs.asMap().entries.map((e) => Padding(
           padding: const EdgeInsets.only(bottom: 5),
@@ -581,7 +581,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text('฿${fmt.format(amount)}',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: RiderColors.blue)),
-          Text('$count งาน', style: TextStyle(fontSize: 12, color: context.rMuted)),
+          Text('$count ${rt('งาน', 'jobs')}', style: TextStyle(fontSize: 12, color: context.rMuted)),
         ],
       ),
     );

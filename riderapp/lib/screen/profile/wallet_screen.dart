@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../app_settings.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 import '../../services/socket_service.dart';
@@ -107,7 +108,7 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             ),
             Expanded(
-              child: Text('วอลเล็ตของฉัน',
+              child: Text(rt('วอลเล็ตของฉัน', 'My Wallet'),
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
             ),
@@ -172,12 +173,12 @@ class _WalletScreenState extends State<WalletScreen> {
                                       color: Colors.white.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Text('ติดหนี้', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    child: Text(rt('ติดหนี้', 'In Debt'), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                                   ),
                               ]),
                               const SizedBox(height: 20),
-                              const Text('ยอดคงเหลือ',
-                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                              Text(rt('ยอดคงเหลือ', 'Balance'),
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
                               const SizedBox(height: 4),
                               Text(
                                 '${isNegative ? '-' : ''}฿${fmt.format(_balance.abs())}',
@@ -185,9 +186,10 @@ class _WalletScreenState extends State<WalletScreen> {
                               ),
                               if (isNegative) ...[
                                 const SizedBox(height: 6),
-                                const Text(
-                                  'บริษัทออกเงินให้ล่วงหน้า — กรุณาเติมเงินชำระคืน',
-                                  style: TextStyle(color: Colors.white, fontSize: 12),
+                                Text(
+                                  rt('บริษัทออกเงินให้ล่วงหน้า — กรุณาเติมเงินชำระคืน',
+                                     'Company issued advance — please topup to repay'),
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
                                 ),
                               ],
                             ]),
@@ -202,7 +204,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           child: ElevatedButton.icon(
                             onPressed: _showTopup,
                             icon: const Icon(Icons.add_rounded, size: 20),
-                            label: const Text('เติมเงิน', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                            label: Text(rt('เติมเงิน', 'Top Up'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _kOrange,
                               foregroundColor: Colors.white,
@@ -220,7 +222,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             child: OutlinedButton.icon(
                               onPressed: _showLoan,
                               icon: const Icon(Icons.handshake_rounded, size: 18),
-                              label: const Text('ขอยืมเงิน', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                              label: Text(rt('ขอยืมเงิน', 'Request Loan'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: _kOrange,
                                 side: const BorderSide(color: _kOrange, width: 1.5),
@@ -252,13 +254,14 @@ class _WalletScreenState extends State<WalletScreen> {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: _kOrange.withValues(alpha: 0.2)),
                           ),
-                          child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Icon(Icons.info_outline_rounded, color: _kOrange, size: 16),
-                            SizedBox(width: 8),
+                          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const Icon(Icons.info_outline_rounded, color: _kOrange, size: 16),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Pre-Paid คือระบบที่บริษัทออกค่าส่งให้ล่วงหน้า เมื่อเติมเงินเข้าวอลเล็ต ยอดหนี้จะถูกหักคืนอัตโนมัติ',
-                                style: TextStyle(color: _kOrange, fontSize: 12, height: 1.5),
+                                rt('Pre-Paid คือระบบที่บริษัทออกค่าส่งให้ล่วงหน้า เมื่อเติมเงินเข้าวอลเล็ต ยอดหนี้จะถูกหักคืนอัตโนมัติ',
+                                   'Pre-Paid: company issues delivery fees in advance. When you topup, debt is auto-deducted.'),
+                                style: const TextStyle(color: _kOrange, fontSize: 12, height: 1.5),
                               ),
                             ),
                           ]),
@@ -267,8 +270,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         const SizedBox(height: 24),
 
                         Row(children: [
-                          const Text('ประวัติธุรกรรม',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: RiderColors.text)),
+                          Text(rt('ประวัติธุรกรรม', 'Transaction History'),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.rFg)),
                           const Spacer(),
                           Text('${_transactions.length} รายการ',
                               style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
@@ -289,11 +292,11 @@ class _WalletScreenState extends State<WalletScreen> {
                             child: const Icon(Icons.receipt_long_rounded, color: _kOrange, size: 36),
                           ),
                           const SizedBox(height: 14),
-                          const Text('ยังไม่มีประวัติธุรกรรม',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RiderColors.text)),
+                          Text(rt('ยังไม่มีประวัติธุรกรรม', 'No transactions yet'),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.rFg)),
                           const SizedBox(height: 4),
-                          const Text('บริษัทยังไม่ได้ออกเงินล่วงหน้า',
-                              style: TextStyle(fontSize: 13, color: RiderColors.muted)),
+                          Text(rt('บริษัทยังไม่ได้ออกเงินล่วงหน้า', 'No advance issued yet'),
+                              style: TextStyle(fontSize: 13, color: context.rMuted)),
                         ]),
                       ),
                     )
@@ -333,7 +336,7 @@ class _TxRow extends StatelessWidget {
     final bgColor = isTopup ? const Color(0xFFE8F5E9) : isAdvance ? const Color(0xFFFFEBEE) : _kOrangeLight;
     final icon = isTopup ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
     final sign = isTopup ? '+' : '-';
-    final label = isAdvance ? 'บริษัทออกเงิน' : isTopup ? 'เติมเงิน' : 'หัก';
+    final label = isAdvance ? rt('บริษัทออกเงิน', 'Advance') : isTopup ? rt('เติมเงิน', 'Topup') : rt('หัก', 'Debit');
 
     DateTime? createdAt;
     try { createdAt = DateTime.parse(tx['created_at'] as String? ?? ''); } catch (_) {}
@@ -456,7 +459,7 @@ class _TopupSheetState extends State<_TopupSheet> {
         widget.onSuccess(newBal);
         if (mounted && Navigator.canPop(context)) Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('เติมเงิน ฿$amt สำเร็จ'),
+          content: Text('${rt('เติมเงิน', 'Topup')} ฿$amt ${rt('สำเร็จ', 'successful')}'),
           backgroundColor: _kOrange,
         ));
       }
@@ -508,10 +511,10 @@ class _TopupSheetState extends State<_TopupSheet> {
                 decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
 
-            Text('เติมเงินเข้า Wallet',
+            Text(rt('เติมเงินเข้า Wallet', 'Top Up Wallet'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.rFg)),
             const SizedBox(height: 6),
-            Text('กรอกจำนวนเงินที่ต้องการเติม',
+            Text(rt('กรอกจำนวนเงินที่ต้องการเติม', 'Enter amount to top up'),
                 style: TextStyle(fontSize: 13, color: context.rMuted)),
             const SizedBox(height: 20),
 
@@ -581,20 +584,20 @@ class _TopupSheetState extends State<_TopupSheet> {
             // Payment method
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('วิธีชำระเงิน',
+              child: Text(rt('วิธีชำระเงิน', 'Payment Method'),
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.rFg)),
             ),
             const SizedBox(height: 10),
             Row(children: [
               Expanded(child: _MethodCard(
-                label: 'PromptPay', subtitle: 'สแกน QR Code',
+                label: 'PromptPay', subtitle: rt('สแกน QR Code', 'Scan QR Code'),
                 icon: Icons.qr_code_rounded,
                 selected: _method == 'PromptPay',
                 onTap: () => setState(() => _method = 'PromptPay'),
               )),
               const SizedBox(width: 10),
               Expanded(child: _MethodCard(
-                label: 'Mastercard', subtitle: 'บัตรเครดิต/เดบิต',
+                label: 'Mastercard', subtitle: rt('บัตรเครดิต/เดบิต', 'Credit/Debit Card'),
                 icon: Icons.credit_card_rounded,
                 selected: _method == 'Mastercard',
                 onTap: () => setState(() => _method = 'Mastercard'),
@@ -617,7 +620,7 @@ class _TopupSheetState extends State<_TopupSheet> {
                     ? const SizedBox(width: 22, height: 22,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                     : Text(
-                        hasAmount ? 'ชำระเงิน ฿${_amountCtrl.text}' : 'กรอกจำนวนเงิน',
+                        hasAmount ? '${rt('ชำระเงิน', 'Pay')} ฿${_amountCtrl.text}' : rt('กรอกจำนวนเงิน', 'Enter amount'),
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                       ),
               ),
@@ -775,7 +778,7 @@ class _QrSheetState extends State<_QrSheet> {
             decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(20)),
             child: const Icon(Icons.qr_code_rounded, color: _kOrange, size: 32)),
         const SizedBox(height: 14),
-        Text('ชำระเงินด้วย PromptPay',
+        Text(rt('ชำระเงินด้วย PromptPay', 'Pay with PromptPay'),
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
         const SizedBox(height: 4),
         Text('${widget.amount} THB',
@@ -794,7 +797,7 @@ class _QrSheetState extends State<_QrSheet> {
             child: QrImageView(data: _qrCode!, version: QrVersions.auto, size: 220, backgroundColor: Colors.white),
           ),
           const SizedBox(height: 10),
-          Text('สแกน QR ด้านบนด้วยแอปธนาคารของคุณ',
+          Text(rt('สแกน QR ด้านบนด้วยแอปธนาคารของคุณ', 'Scan QR above with your banking app'),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.rFg)),
         ] else ...[
@@ -822,7 +825,7 @@ class _QrSheetState extends State<_QrSheet> {
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.timer_outlined, size: 14, color: RiderColors.muted),
           const SizedBox(width: 4),
-          Text('หมดอายุใน $_timeLabel', style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+          Text('${rt('หมดอายุใน', 'Expires in')} $_timeLabel', style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
         ]),
 
         if (_qrCode == null) ...[
@@ -831,8 +834,8 @@ class _QrSheetState extends State<_QrSheet> {
             child: ElevatedButton.icon(
               onPressed: _openUrl,
               icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-              label: const Text('เปิดหน้าชำระเงิน PromptPay',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              label: Text(rt('เปิดหน้าชำระเงิน PromptPay', 'Open PromptPay Payment'),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white,
                   elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
             ),
@@ -849,7 +852,7 @@ class _QrSheetState extends State<_QrSheet> {
               icon: _confirming
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.check_circle_outline_rounded, size: 20),
-              label: Text(_confirming ? 'กำลังบันทึก...' : 'ฉันโอนแล้ว',
+              label: Text(_confirming ? rt('กำลังบันทึก...', 'Saving...') : rt('ฉันโอนแล้ว', "I've transferred"),
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kOrange,
@@ -860,8 +863,8 @@ class _QrSheetState extends State<_QrSheet> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text('กดหลังจากโอนเงินสำเร็จแล้ว',
-              style: TextStyle(fontSize: 11, color: RiderColors.muted)),
+          Text(rt('กดหลังจากโอนเงินสำเร็จแล้ว', 'Tap after transfer is complete'),
+              style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
         ],
       ]),
     );
@@ -969,7 +972,7 @@ class _CardSheetState extends State<_CardSheet> {
             decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(20)),
             child: const Icon(Icons.credit_card_rounded, color: _kOrange, size: 32)),
         const SizedBox(height: 14),
-        Text('ชำระเงินด้วยบัตรเครดิต',
+        Text(rt('ชำระเงินด้วยบัตรเครดิต', 'Pay with Credit Card'),
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
         const SizedBox(height: 4),
         Text('${widget.amount} THB',
@@ -997,15 +1000,15 @@ class _CardSheetState extends State<_CardSheet> {
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.timer_outlined, size: 14, color: RiderColors.muted),
           const SizedBox(width: 4),
-          Text('หมดอายุใน $_timeLabel', style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
+          Text('${rt('หมดอายุใน', 'Expires in')} $_timeLabel', style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
         ]),
         const SizedBox(height: 16),
         SizedBox(width: double.infinity, height: 50,
           child: ElevatedButton.icon(
             onPressed: _openUrl,
             icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-            label: const Text('เปิดหน้าชำระเงิน',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            label: Text(rt('เปิดหน้าชำระเงิน', 'Open Payment Page'),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white,
                 elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           ),
@@ -1021,7 +1024,7 @@ class _CardSheetState extends State<_CardSheet> {
               icon: _confirming
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.check_circle_outline_rounded, size: 20),
-              label: Text(_confirming ? 'กำลังบันทึก...' : 'ฉันชำระแล้ว',
+              label: Text(_confirming ? rt('กำลังบันทึก...', 'Saving...') : rt('ฉันชำระแล้ว', "I've paid"),
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kOrange,
@@ -1032,8 +1035,8 @@ class _CardSheetState extends State<_CardSheet> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text('กดหลังจากชำระบัตรสำเร็จแล้ว',
-              style: TextStyle(fontSize: 11, color: RiderColors.muted)),
+          Text(rt('กดหลังจากชำระบัตรสำเร็จแล้ว', 'Tap after card payment is complete'),
+              style: const TextStyle(fontSize: 11, color: RiderColors.muted)),
         ],
       ]),
     );
@@ -1083,13 +1086,13 @@ class _LoanSheetState extends State<_LoanSheet> {
     if (ok) {
       widget.onSubmitted();
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('ส่งคำขอยืมเงินแล้ว รอ Admin อนุมัติ'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(rt('ส่งคำขอยืมเงินแล้ว รอ Admin อนุมัติ', 'Loan request sent, waiting for admin approval')),
         backgroundColor: _kOrange,
       ));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(rt('เกิดข้อผิดพลาด กรุณาลองใหม่', 'An error occurred, please try again')),
         backgroundColor: _kOrange,
       ));
     }
@@ -1115,10 +1118,10 @@ class _LoanSheetState extends State<_LoanSheet> {
                 decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(16)),
                 child: const Icon(Icons.handshake_rounded, color: _kOrange, size: 28)),
             const SizedBox(height: 14),
-            Text('ขอยืมเงินจากบริษัท',
+            Text(rt('ขอยืมเงินจากบริษัท', 'Request Loan from Company'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.rFg)),
             const SizedBox(height: 6),
-            Text('Admin จะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง',
+            Text(rt('Admin จะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง', 'Admin will review and approve within 24 hours'),
                 style: TextStyle(fontSize: 13, color: context.rMuted)),
             const SizedBox(height: 20),
 
@@ -1182,7 +1185,7 @@ class _LoanSheetState extends State<_LoanSheet> {
               maxLines: 3,
               style: const TextStyle(fontSize: 14, color: RiderColors.text),
               decoration: InputDecoration(
-                hintText: 'เหตุผลในการขอยืม (ไม่บังคับ) เช่น ค่าน้ำมัน ค่าซ่อมรถ...',
+                hintText: rt('เหตุผลในการขอยืม (ไม่บังคับ) เช่น ค่าน้ำมัน ค่าซ่อมรถ...', 'Reason (optional) e.g. gas, car repair...'),
                 hintStyle: const TextStyle(color: RiderColors.muted, fontSize: 13),
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
@@ -1202,12 +1205,13 @@ class _LoanSheetState extends State<_LoanSheet> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFFFE082)),
               ),
-              child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.warning_amber_rounded, color: Color(0xFFF57F17), size: 16),
-                SizedBox(width: 8),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.warning_amber_rounded, color: Color(0xFFF57F17), size: 16),
+                const SizedBox(width: 8),
                 Expanded(child: Text(
-                  'เงินที่ยืมจะถูกบันทึกเป็นยอดหนี้ในวอลเล็ต และหักคืนเมื่อเติมเงิน',
-                  style: TextStyle(color: Color(0xFFF57F17), fontSize: 12, height: 1.5),
+                  rt('เงินที่ยืมจะถูกบันทึกเป็นยอดหนี้ในวอลเล็ต และหักคืนเมื่อเติมเงิน',
+                     'Borrowed amount is recorded as wallet debt and deducted when you top up'),
+                  style: const TextStyle(color: Color(0xFFF57F17), fontSize: 12, height: 1.5),
                 )),
               ]),
             ),
@@ -1226,7 +1230,7 @@ class _LoanSheetState extends State<_LoanSheet> {
                 ),
                 child: _loading
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                    : Text(hasAmount ? 'ส่งคำขอยืม ฿${_amountCtrl.text}' : 'กรอกจำนวนเงิน',
+                    : Text(hasAmount ? '${rt('ส่งคำขอยืม', 'Request')} ฿${_amountCtrl.text}' : rt('กรอกจำนวนเงิน', 'Enter amount'),
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               ),
             ),
@@ -1271,7 +1275,7 @@ class _LoanHistorySheetState extends State<_LoanHistorySheet> {
         Container(width: 40, height: 4,
             decoration: BoxDecoration(color: context.rDiv, borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 16),
-        Text('ประวัติการขอยืมเงิน',
+        Text(rt('ประวัติการขอยืมเงิน', 'Loan History'),
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.rFg)),
         const SizedBox(height: 16),
         if (_loans == null)
@@ -1280,12 +1284,12 @@ class _LoanHistorySheetState extends State<_LoanHistorySheet> {
             child: CircularProgressIndicator(color: _kOrange),
           )
         else if (_loans!.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Column(children: [
-              Icon(Icons.handshake_rounded, color: RiderColors.muted, size: 40),
-              SizedBox(height: 8),
-              Text('ยังไม่มีประวัติการขอยืมเงิน', style: TextStyle(color: RiderColors.muted)),
+              const Icon(Icons.handshake_rounded, color: RiderColors.muted, size: 40),
+              const SizedBox(height: 8),
+              Text(rt('ยังไม่มีประวัติการขอยืมเงิน', 'No loan history'), style: TextStyle(color: context.rMuted)),
             ]),
           )
         else
@@ -1310,7 +1314,7 @@ class _LoanHistorySheetState extends State<_LoanHistorySheet> {
                 final statusBg = status == 'approved'
                     ? const Color(0xFFE8F5E9)
                     : status == 'rejected' ? const Color(0xFFFFEBEE) : const Color(0xFFFFF8E1);
-                final statusLabel = status == 'approved' ? 'อนุมัติแล้ว' : status == 'rejected' ? 'ปฏิเสธ' : 'รออนุมัติ';
+                final statusLabel = status == 'approved' ? rt('อนุมัติแล้ว', 'Approved') : status == 'rejected' ? rt('ปฏิเสธ', 'Rejected') : rt('รออนุมัติ', 'Pending');
                 final statusIcon = status == 'approved'
                     ? Icons.check_circle_rounded
                     : status == 'rejected' ? Icons.cancel_rounded : Icons.schedule_rounded;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../app_settings.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 
@@ -60,17 +61,17 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('รับงานนี้?', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(rt('รับงานนี้?', 'Accept this job?'), style: const TextStyle(fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ร้าน: ${order['store_name']}', style: const TextStyle(fontSize: 15)),
+            Text('${rt('ร้าน', 'Store')}: ${order['store_name']}', style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 4),
-            Text('ส่งไป: ${order['address']}', style: const TextStyle(fontSize: 14, color: RiderColors.muted)),
+            Text('${rt('ส่งไป', 'Deliver to')}: ${order['address']}', style: const TextStyle(fontSize: 14, color: RiderColors.muted)),
             const SizedBox(height: 8),
             Text(
-              'ค่าส่ง: ฿${order['delivery_fee']}',
+              '${rt('ค่าส่ง', 'Fee')}: ฿${order['delivery_fee']}',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: RiderColors.blue),
             ),
           ],
@@ -78,7 +79,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('ยกเลิก', style: TextStyle(color: RiderColors.muted)),
+            child: Text(rt('ยกเลิก', 'Cancel'), style: const TextStyle(color: RiderColors.muted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -87,7 +88,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('รับงาน'),
+            child: Text(rt('รับงาน', 'Accept')),
           ),
         ],
       ),
@@ -100,14 +101,14 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
     if (success) {
       widget.onOrderAccepted();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('รับงานสำเร็จ! ไปรับอาหารที่ร้านได้เลย'),
+        SnackBar(
+          content: Text(rt('รับงานสำเร็จ! ไปรับอาหารที่ร้านได้เลย', 'Accepted! Go pick up the food')),
           backgroundColor: RiderColors.blue,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('รับงานไม่สำเร็จ อาจถูกรับไปแล้ว'), backgroundColor: Colors.red),
+        SnackBar(content: Text(rt('รับงานไม่สำเร็จ อาจถูกรับไปแล้ว', 'Failed to accept, may already be taken')), backgroundColor: Colors.red),
       );
       _loadOrders();
     }
@@ -126,9 +127,9 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
               child: const Icon(Icons.wifi_off_rounded, color: RiderColors.muted, size: 40),
             ),
             const SizedBox(height: 16),
-            Text('คุณอยู่ในโหมด Offline', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
+            Text(rt('คุณอยู่ในโหมด Offline', 'You are Offline'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
             const SizedBox(height: 8),
-            Text('เปิด Online เพื่อรับงานส่ง', style: TextStyle(color: context.rMuted)),
+            Text(rt('เปิด Online เพื่อรับงานส่ง', 'Go Online to receive jobs'), style: TextStyle(color: context.rMuted)),
           ],
         ),
       );
@@ -156,9 +157,9 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
                       child: const Icon(Icons.search_off_rounded, color: RiderColors.muted, size: 40),
                     ),
                     const SizedBox(height: 16),
-                    Text('ยังไม่มีงานใหม่', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
+                    Text(rt('ยังไม่มีงานใหม่', 'No new jobs yet'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
                     const SizedBox(height: 8),
-                    Text('ระบบจะแจ้งเตือนอัตโนมัติเมื่อมีงาน', style: TextStyle(color: context.rMuted)),
+                    Text(rt('ระบบจะแจ้งเตือนอัตโนมัติเมื่อมีงาน', 'System will notify when jobs arrive'), style: TextStyle(color: context.rMuted)),
                   ],
                 ),
               ),
@@ -232,14 +233,14 @@ class _OrderCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _InfoRow(icon: Icons.restaurant_rounded, label: 'รับจาก', value: order['store_address'] ?? '-'),
+                _InfoRow(icon: Icons.restaurant_rounded, label: rt('รับจาก', 'Pick up'), value: order['store_address'] ?? '-'),
                 const SizedBox(height: 10),
-                _InfoRow(icon: Icons.location_on_rounded, label: 'ส่งไป', value: order['address'] ?? '-'),
+                _InfoRow(icon: Icons.location_on_rounded, label: rt('ส่งไป', 'Deliver to'), value: order['address'] ?? '-'),
                 const SizedBox(height: 10),
-                _InfoRow(icon: Icons.receipt_long_rounded, label: 'รายการ', value: order['items_summary'] ?? '-'),
+                _InfoRow(icon: Icons.receipt_long_rounded, label: rt('รายการ', 'Items'), value: order['items_summary'] ?? '-'),
                 if ((order['note'] ?? '').isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  _InfoRow(icon: Icons.note_rounded, label: 'หมายเหตุ', value: order['note']),
+                  _InfoRow(icon: Icons.note_rounded, label: rt('หมายเหตุ', 'Note'), value: order['note']),
                 ],
                 const SizedBox(height: 16),
                 SizedBox(
@@ -252,7 +253,7 @@ class _OrderCard extends StatelessWidget {
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text('รับงานนี้', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    child: Text(rt('รับงานนี้', 'Accept Job'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],

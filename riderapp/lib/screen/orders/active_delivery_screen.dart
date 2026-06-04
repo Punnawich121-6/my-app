@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import '../../app_settings.dart';
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
@@ -198,14 +199,14 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('ยืนยันส่งสำเร็จ?',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text('กรุณายืนยันเมื่อส่งอาหารถึงมือลูกค้าแล้ว'),
+        title: Text(rt('ยืนยันส่งสำเร็จ?', 'Confirm delivery?'),
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+        content: Text(rt('กรุณายืนยันเมื่อส่งอาหารถึงมือลูกค้าแล้ว', 'Please confirm when food has been delivered')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('ยังไม่ส่ง',
-                style: TextStyle(color: RiderColors.muted)),
+            child: Text(rt('ยังไม่ส่ง', 'Not yet'),
+                style: const TextStyle(color: RiderColors.muted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -215,7 +216,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('ยืนยัน'),
+            child: Text(rt('ยืนยัน', 'Confirm')),
           ),
         ],
       ),
@@ -234,8 +235,8 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       if (mounted) widget.onDeliveryComplete();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่'),
+        SnackBar(
+            content: Text(rt('เกิดข้อผิดพลาด กรุณาลองใหม่', 'An error occurred, please try again')),
             backgroundColor: Colors.red),
       );
     }
@@ -281,14 +282,14 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                 color: RiderColors.blue, size: 40),
           ),
           const SizedBox(height: 12),
-          Text('ส่งสำเร็จ!',
+          Text(rt('ส่งสำเร็จ!', 'Delivered!'),
               style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: context.rFg)),
           const SizedBox(height: 4),
           Text(
-              'ออเดอร์ #${order['orderNumber'] ?? order['id'].toString().substring(0, 8)}',
+              '${rt('ออเดอร์', 'Order')} #${order['orderNumber'] ?? order['id'].toString().substring(0, 8)}',
               style: TextStyle(fontSize: 13, color: context.rMuted)),
           const SizedBox(height: 24),
           Container(
@@ -298,8 +299,8 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(children: [
-              const Text('รายได้ของคุณ',
-                  style: TextStyle(fontSize: 13, color: Colors.white)),
+              Text(rt('รายได้ของคุณ', 'Your Earnings'),
+                  style: const TextStyle(fontSize: 13, color: Colors.white)),
               const SizedBox(height: 4),
               Text('฿${fmt.format(deliveryFee)}',
                   style: const TextStyle(
@@ -310,17 +311,17 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               Container(height: 1, color: Colors.white.withValues(alpha: 0.2)),
               const SizedBox(height: 16),
               _EarningRow(
-                  label: 'ยอดอาหาร',
+                  label: rt('ยอดอาหาร', 'Food amount'),
                   value: '฿${fmt.format(foodAmount)}'),
               const SizedBox(height: 8),
               _EarningRow(
-                label: 'ค่าส่ง (รายได้คุณ)',
+                label: rt('ค่าส่ง (รายได้คุณ)', 'Delivery fee (your income)'),
                 value: '฿${fmt.format(deliveryFee)}',
                 highlight: true,
               ),
               const SizedBox(height: 8),
               _EarningRow(
-                  label: 'ยอดรวมออเดอร์',
+                  label: rt('ยอดรวมออเดอร์', 'Order total'),
                   value: '฿${fmt.format(totalAmount)}'),
             ]),
           ),
@@ -331,23 +332,24 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               color: RiderColors.blueLight,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
-                  Icon(Icons.calculate_rounded,
+                  const Icon(Icons.calculate_rounded,
                       color: RiderColors.blue, size: 16),
-                  SizedBox(width: 6),
-                  Text('วิธีคิดค่าส่ง',
-                      style: TextStyle(
+                  const SizedBox(width: 6),
+                  Text(rt('วิธีคิดค่าส่ง', 'Fee calculation'),
+                      style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: RiderColors.blue)),
                 ]),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'ค่าส่งพื้นฐาน ฿20 + ระยะทาง × ฿5/กม.\n(ขั้นต่ำ ฿30)',
-                  style: TextStyle(
+                  rt('ค่าส่งพื้นฐาน ฿20 + ระยะทาง × ฿5/กม.\n(ขั้นต่ำ ฿30)',
+                     'Base ฿20 + distance × ฿5/km\n(min ฿30)'),
+                  style: const TextStyle(
                       fontSize: 12, color: RiderColors.muted, height: 1.6),
                 ),
               ],
@@ -366,9 +368,8 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
               ),
-              child: const Text('รับเงินแล้ว ปิดหน้าต่าง',
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              child: Text(rt('รับเงินแล้ว ปิดหน้าต่าง', 'Got paid, close'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ),
         ]),
@@ -391,10 +392,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
             child: const Icon(Icons.directions_bike_rounded, color: RiderColors.muted, size: 40),
           ),
           const SizedBox(height: 16),
-          const Text('ไม่มีงานที่กำลังส่ง',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: RiderColors.text)),
+          Text(rt('ไม่มีงานที่กำลังส่ง', 'No active delivery'),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.rFg)),
           const SizedBox(height: 8),
-          const Text('รับงานจากหน้า "งานใหม่"', style: TextStyle(color: RiderColors.muted)),
+          Text(rt('รับงานจากหน้า "งานใหม่"', 'Accept a job from "New Jobs"'), style: TextStyle(color: context.rMuted)),
         ]),
       );
     }
@@ -430,10 +431,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
   Widget _buildStepStrip() {
     final stepIdx = _step.index;
     final steps = [
-      (Icons.store_rounded, 'ไปร้าน'),
-      (Icons.shopping_bag_rounded, 'รับอาหาร'),
-      (Icons.directions_bike_rounded, 'กำลังส่ง'),
-      (Icons.check_circle_rounded, 'ส่งแล้ว'),
+      (Icons.store_rounded, rt('ไปร้าน', 'Go to Store')),
+      (Icons.shopping_bag_rounded, rt('รับอาหาร', 'Pick Up')),
+      (Icons.directions_bike_rounded, rt('กำลังส่ง', 'Delivering')),
+      (Icons.check_circle_rounded, rt('ส่งแล้ว', 'Done')),
     ];
     return Container(
       decoration: BoxDecoration(
@@ -491,7 +492,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
   // ── Current destination card ─────────────────────────────────────────────
   Widget _buildDestCard(Map<String, dynamic> order) {
     final isDelivering = _step == _OrderStep.delivering;
-    final label = isDelivering ? 'ส่งถึงลูกค้า' : (_step == _OrderStep.atStore ? 'รับอาหารที่ร้าน' : 'ไปรับที่ร้าน');
+    final label = isDelivering ? rt('ส่งถึงลูกค้า', 'Deliver to Customer') : (_step == _OrderStep.atStore ? rt('รับอาหารที่ร้าน', 'Pick Up at Store') : rt('ไปรับที่ร้าน', 'Go to Store'));
     final name = isDelivering ? (order['customer_name'] ?? '-') : (order['store_name'] ?? '-');
     final address = isDelivering ? (order['address'] ?? '-') : (order['store_address'] ?? '-');
     final icon = isDelivering ? Icons.home_rounded : Icons.store_rounded;
@@ -539,10 +540,10 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: RiderColors.blue, width: 1.5),
               ),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.navigation_rounded, color: RiderColors.blue, size: 14),
-                SizedBox(width: 5),
-                Text('นำทาง', style: TextStyle(color: RiderColors.blue, fontSize: 13, fontWeight: FontWeight.w700)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.navigation_rounded, color: RiderColors.blue, size: 14),
+                const SizedBox(width: 5),
+                Text(rt('นำทาง', 'Navigate'), style: const TextStyle(color: RiderColors.blue, fontSize: 13, fontWeight: FontWeight.w700)),
               ]),
             ),
           ),
@@ -609,13 +610,13 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
     return Row(children: [
       Expanded(child: _ActionChip(
         icon: Icons.person_rounded,
-        label: 'ลูกค้า',
+        label: rt('ลูกค้า', 'Customer'),
         onTap: () => Navigator.push(context, MaterialPageRoute(
           builder: (_) => RiderChatScreen(
             orderId: order['id'].toString(), riderId: widget.riderId,
             riderName: widget.riderName,
-            customerName: order['customer_name'] ?? 'ลูกค้า',
-            storeName: order['store_name'] ?? 'ร้านค้า',
+            customerName: order['customer_name'] ?? rt('ลูกค้า', 'Customer'),
+            storeName: order['store_name'] ?? rt('ร้านค้า', 'Store'),
             chatType: 'rider',
           ),
         )),
@@ -623,13 +624,13 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       const SizedBox(width: 8),
       Expanded(child: _ActionChip(
         icon: Icons.store_rounded,
-        label: 'ร้านค้า',
+        label: rt('ร้านค้า', 'Store'),
         onTap: () => Navigator.push(context, MaterialPageRoute(
           builder: (_) => RiderChatScreen(
             orderId: order['id'].toString(), riderId: widget.riderId,
             riderName: widget.riderName,
-            customerName: order['customer_name'] ?? 'ลูกค้า',
-            storeName: order['store_name'] ?? 'ร้านค้า',
+            customerName: order['customer_name'] ?? rt('ลูกค้า', 'Customer'),
+            storeName: order['store_name'] ?? rt('ร้านค้า', 'Store'),
             chatType: 'store',
           ),
         )),
@@ -637,7 +638,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
       const SizedBox(width: 8),
       Expanded(child: _ActionChip(
         icon: Icons.flag_rounded,
-        label: 'รายงาน',
+        label: rt('รายงาน', 'Report'),
         color: RiderColors.red,
         onTap: () => Navigator.push(context, MaterialPageRoute(
           builder: (_) => RiderReportScreen(
@@ -674,7 +675,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               ? SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
               : const Icon(Icons.store_rounded, size: 20),
-          label: Text(busy ? 'กำลังอัพเดท...' : 'ถึงร้านแล้ว',
+          label: Text(busy ? rt('กำลังอัพเดท...', 'Updating...') : rt('ถึงร้านแล้ว', 'Arrived at Store'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         ),
       );
@@ -689,7 +690,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               ? SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
               : const Icon(Icons.check_rounded, size: 20),
-          label: Text(busy ? 'กำลังอัพเดท...' : 'รับอาหารแล้ว ออกเดินทาง',
+          label: Text(busy ? rt('กำลังอัพเดท...', 'Updating...') : rt('รับอาหารแล้ว ออกเดินทาง', 'Food picked up, heading out'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         ),
       );
@@ -704,7 +705,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
               ? SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(color: RiderColors.blue, strokeWidth: 2))
               : const Icon(Icons.flag_rounded, size: 20),
-          label: Text(busy ? 'กำลังบันทึก...' : 'ส่งสำเร็จ รับเงิน!',
+          label: Text(busy ? rt('กำลังบันทึก...', 'Saving...') : rt('ส่งสำเร็จ รับเงิน!', 'Delivered! Get paid!'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         ),
       );

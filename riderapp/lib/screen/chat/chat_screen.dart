@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../app_settings.dart';
 import '../../main.dart';
 import '../../services/socket_service.dart';
 import '../../config.dart';
@@ -182,7 +183,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                 maxLines: 1, overflow: TextOverflow.ellipsis),
               Text(
-                widget.chatType == 'store' ? 'แชทกับร้านค้า' : 'แชทกับลูกค้า',
+                widget.chatType == 'store' ? rt('แชทกับร้านค้า', 'Chat with Store') : rt('แชทกับลูกค้า', 'Chat with Customer'),
                 style: const TextStyle(fontSize: 11, color: Colors.white),
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             ]),
@@ -206,10 +207,10 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
                             color: Colors.white, size: 36),
                         ),
                         const SizedBox(height: 16),
-                        Text('ยังไม่มีข้อความ',
+                        Text(rt('ยังไม่มีข้อความ', 'No messages yet'),
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.rFg)),
                         const SizedBox(height: 6),
-                        Text('ส่งข้อความเพื่อเริ่มสนทนากับลูกค้า',
+                        Text(rt('ส่งข้อความเพื่อเริ่มสนทนา', 'Send a message to start chatting'),
                           style: TextStyle(color: context.rMuted, fontSize: 13)),
                       ]),
                     )
@@ -259,7 +260,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
               controller: _ctrl,
               style: TextStyle(fontSize: 14, color: context.rFg),
               decoration: InputDecoration(
-                hintText: 'พิมพ์ข้อความ...',
+                hintText: rt('พิมพ์ข้อความ...', 'Type a message...'),
                 hintStyle: TextStyle(color: context.rMuted, fontSize: 14),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -371,8 +372,8 @@ class _RiderMsgBubble extends StatelessWidget {
                     const SizedBox(width: 4),
                     const Icon(Icons.done_all_rounded, size: 14, color: Color(0xFFFF6B35)),
                     const SizedBox(width: 2),
-                    const Text('ส่งแล้ว',
-                      style: TextStyle(fontSize: 12, color: Color(0xFFFF6B35), fontWeight: FontWeight.w600)),
+                    Text(rt('ส่งแล้ว', 'Sent'),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFFF6B35), fontWeight: FontWeight.w600)),
                   ],
                 ]),
               ],

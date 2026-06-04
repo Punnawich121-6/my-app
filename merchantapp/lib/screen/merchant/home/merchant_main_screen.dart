@@ -25,14 +25,14 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
   List<Widget> _screens = [];
 
   void setTab(int index) {
-    if (!mounted) return;
-    // เมื่อเปิดหน้า orders → หยุดเสียงแจ้งเตือน
-    if (index == 1) OrderAlertService.instance.dismiss();
-    setState(() => _currentIndex = index);
+    if (mounted) setState(() => _currentIndex = index);
   }
 
   void updatePendingBadge(int count) {
-    if (mounted) setState(() => _pendingOrders = count);
+    if (!mounted) return;
+    setState(() => _pendingOrders = count);
+    // เสียงหยุดเมื่อ pending = 0 เท่านั้น (หลังรับออเดอร์ครบ)
+    OrderAlertService.instance.syncWithPendingCount(count);
   }
 
   Future<void> _refreshPromoBadge() async {
@@ -51,8 +51,7 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
 
   @override
   void dispose() {
-    SocketService.instance.on('new_order', (_) {}); // clear handler
-    OrderAlertService.instance.dismiss();
+    SocketService.instance.on('new_order', (_) {});
     super.dispose();
   }
 
@@ -63,12 +62,14 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
     // join store socket room & listen for new orders
     SocketService.instance.connect();
     SocketService.instance.joinStoreRoom(ApiService.storeId);
-    SocketService.instance.on('new_order', (data) async {
+    SocketService.instance.on('new_order', (data) {
       if (!mounted) return;
       final storeId = data['store_id']?.toString();
-      if (storeId != ApiService.storeId) return; // กรอง event ของร้านตัวเอง
-      await OrderAlertService.instance.onNewOrder();
-      if (mounted) setState(() => _pendingOrders++);
+      if (storeId != ApiService.storeId) return;
+      // เพิ่ม count แล้ว sync — dashboard poll จะ confirm ตัวเลขจริงอีกที
+      final newCount = _pendingOrders + 1;
+      if (mounted) setState(() => _pendingOrders = newCount);
+      OrderAlertService.instance.syncWithPendingCount(newCount);
     });
 
     // pre-fetch เสียงจาก Botnoi ล่วงหน้า

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../app_settings.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 
@@ -27,13 +28,13 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
   bool _submitting = false;
   bool _done = false;
 
-  static const _reasons = [
-    {'key': 'customer_not_answering', 'label': 'ลูกค้าไม่รับสาย/ไม่รับของ', 'icon': Icons.phone_missed_rounded},
-    {'key': 'wrong_address',          'label': 'ที่อยู่ผิด/หาไม่เจอ',        'icon': Icons.location_off_rounded},
-    {'key': 'unfair_rating',          'label': 'โดนรีวิวไม่เป็นธรรม',         'icon': Icons.star_border_rounded},
-    {'key': 'customer_refused',       'label': 'ลูกค้าปฏิเสธรับออเดอร์',     'icon': Icons.cancel_rounded},
-    {'key': 'dangerous_area',         'label': 'พื้นที่ไม่ปลอดภัย',           'icon': Icons.warning_rounded},
-    {'key': 'other',                  'label': 'ปัญหาอื่นๆ',                   'icon': Icons.help_outline_rounded},
+  List<Map<String, dynamic>> get _reasons => [
+    {'key': 'customer_not_answering', 'label': rt('ลูกค้าไม่รับสาย/ไม่รับของ', 'Customer not answering'), 'icon': Icons.phone_missed_rounded},
+    {'key': 'wrong_address',          'label': rt('ที่อยู่ผิด/หาไม่เจอ', 'Wrong address'),              'icon': Icons.location_off_rounded},
+    {'key': 'unfair_rating',          'label': rt('โดนรีวิวไม่เป็นธรรม', 'Unfair review'),              'icon': Icons.star_border_rounded},
+    {'key': 'customer_refused',       'label': rt('ลูกค้าปฏิเสธรับออเดอร์', 'Customer refused order'),  'icon': Icons.cancel_rounded},
+    {'key': 'dangerous_area',         'label': rt('พื้นที่ไม่ปลอดภัย', 'Unsafe area'),                  'icon': Icons.warning_rounded},
+    {'key': 'other',                  'label': rt('ปัญหาอื่นๆ', 'Other issues'),                         'icon': Icons.help_outline_rounded},
   ];
 
   @override
@@ -56,7 +57,7 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
   Future<void> _submit() async {
     if (_selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณาเลือกประเภทปัญหาก่อน')),
+        SnackBar(content: Text(rt('กรุณาเลือกประเภทปัญหาก่อน', 'Please select a problem type'))),
       );
       return;
     }
@@ -72,7 +73,7 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
     setState(() { _submitting = false; _done = ok; });
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ส่งคำร้องไม่สำเร็จ กรุณาลองใหม่')),
+        SnackBar(content: Text(rt('ส่งคำร้องไม่สำเร็จ กรุณาลองใหม่', 'Failed to submit, please try again'))),
       );
     }
   }
@@ -91,8 +92,8 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
           ),
         ),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('แจ้งปัญหา', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          Text('ออเดอร์ ${widget.orderNumber}',
+          Text(rt('แจ้งปัญหา', 'Report Issue'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text('${rt('ออเดอร์', 'Order')} ${widget.orderNumber}',
               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.white)),
         ]),
       ),
@@ -111,13 +112,14 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
             child: const Icon(Icons.check_circle_rounded, color: RiderColors.blue, size: 44),
           ),
           const SizedBox(height: 20),
-          const Text('ส่งคำร้องสำเร็จ!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: RiderColors.text)),
+          Text(rt('ส่งคำร้องสำเร็จ!', 'Report Submitted!'),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: context.rFg)),
           const SizedBox(height: 10),
-          const Text(
-            'AI กำลังวิเคราะห์หลักฐาน\nจะได้รับการแจ้งผลภายใน 30 วินาที',
+          Text(
+            rt('AI กำลังวิเคราะห์หลักฐาน\nจะได้รับการแจ้งผลภายใน 30 วินาที',
+               'AI is analyzing evidence\nResult will be notified within 30 seconds'),
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: RiderColors.muted, height: 1.5),
+            style: TextStyle(fontSize: 14, color: context.rMuted, height: 1.5),
           ),
           const SizedBox(height: 32),
           SizedBox(
@@ -131,8 +133,8 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              child: const Text('กลับหน้าออเดอร์',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              child: Text(rt('กลับหน้าออเดอร์', 'Back to Order'),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),
         ]),
@@ -152,21 +154,22 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: RiderColors.blue.withValues(alpha: 0.3)),
           ),
-          child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Icons.smart_toy_rounded, color: RiderColors.blue, size: 20),
-            SizedBox(width: 10),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.smart_toy_rounded, color: RiderColors.blue, size: 20),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'AI จะวิเคราะห์คำร้องของคุณและแจ้งผลภายใน 30 วินาที — confidence ≥80% AI แก้เอง ต่ำกว่านั้น admin ตรวจสอบ',
-                style: TextStyle(fontSize: 12, color: RiderColors.blue, height: 1.5, fontWeight: FontWeight.w500),
+                rt('AI จะวิเคราะห์คำร้องของคุณและแจ้งผลภายใน 30 วินาที — confidence ≥80% AI แก้เอง ต่ำกว่านั้น admin ตรวจสอบ',
+                   'AI will analyze your report within 30 seconds — confidence ≥80% auto-resolved, else admin reviews'),
+                style: const TextStyle(fontSize: 12, color: RiderColors.blue, height: 1.5, fontWeight: FontWeight.w500),
               ),
             ),
           ]),
         ),
         const SizedBox(height: 24),
 
-        const Text('ประเภทปัญหา *',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: RiderColors.text, letterSpacing: 0.2)),
+        Text(rt('ประเภทปัญหา *', 'Problem Type *'),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.rFg, letterSpacing: 0.2)),
         const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 2,
@@ -217,16 +220,16 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
         ),
         const SizedBox(height: 24),
 
-        const Text('อธิบายเพิ่มเติม (ไม่บังคับ)',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: RiderColors.text, letterSpacing: 0.2)),
+        Text(rt('อธิบายเพิ่มเติม (ไม่บังคับ)', 'Additional details (optional)'),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.rFg, letterSpacing: 0.2)),
         const SizedBox(height: 10),
         TextField(
           controller: _descCtrl,
           maxLines: 3,
           maxLength: 300,
-          style: const TextStyle(fontSize: 14, color: RiderColors.text),
+          style: TextStyle(fontSize: 14, color: context.rFg),
           decoration: InputDecoration(
-            hintText: 'เช่น โทรหาลูกค้า 3 ครั้งแต่ไม่รับ รอ 10 นาทีแล้วส่งคืนร้าน...',
+            hintText: rt('เช่น โทรหาลูกค้า 3 ครั้งแต่ไม่รับ...', 'e.g. called customer 3 times, no answer...'),
             hintStyle: TextStyle(fontSize: 13, color: context.rMuted),
             filled: true,
             fillColor: context.rCard,
@@ -248,8 +251,8 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
         const SizedBox(height: 20),
 
         Row(children: [
-          const Text('แนบรูปหลักฐาน',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: RiderColors.text, letterSpacing: 0.2)),
+          Text(rt('แนบรูปหลักฐาน', 'Attach Evidence'),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.rFg, letterSpacing: 0.2)),
           const SizedBox(width: 6),
           Text('(${_photos.length}/3)',
               style: const TextStyle(fontSize: 12, color: RiderColors.muted)),
@@ -269,7 +272,7 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   const Icon(Icons.add_a_photo_rounded, color: RiderColors.blue, size: 26),
                   const SizedBox(height: 4),
-                  Text('เพิ่มรูป', style: TextStyle(fontSize: 12, color: context.rMuted, fontWeight: FontWeight.w600)),
+                  Text(rt('เพิ่มรูป', 'Add Photo'), style: TextStyle(fontSize: 12, color: context.rMuted, fontWeight: FontWeight.w600)),
                 ]),
               ),
             ),
@@ -311,7 +314,7 @@ class _RiderReportScreenState extends State<RiderReportScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.send_rounded, size: 18),
             label: Text(
-              _submitting ? 'กำลังส่งคำร้อง...' : 'ส่งคำร้องแจ้งปัญหา',
+              _submitting ? rt('กำลังส่งคำร้อง...', 'Submitting...') : rt('ส่งคำร้องแจ้งปัญหา', 'Submit Report'),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
             ),
             style: ElevatedButton.styleFrom(

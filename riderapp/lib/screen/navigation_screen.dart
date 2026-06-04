@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import '../app_settings.dart';
 import '../main.dart';
 
 const _kBangkok = LatLng(13.7563, 100.5018);
@@ -95,9 +96,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
   String _etaText(double? km) {
     if (km == null) return '—';
     final min = (km / _kAvgSpeedKmh * 60).ceil();
-    if (min <= 0) return '< 1 นาที';
-    if (min < 60) return '$min นาที';
-    return '${min ~/ 60} ชม. ${min % 60} นาที';
+    if (min <= 0) return rt('< 1 นาที', '< 1 min');
+    if (min < 60) return '$min ${rt('นาที', 'min')}';
+    return '${min ~/ 60} ${rt('ชม.', 'hr')} ${min % 60} ${rt('นาที', 'min')}';
   }
 
   Future<LatLng?> _geocode(String address) async {
@@ -192,7 +193,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   child: Row(children: [
                     const Icon(Icons.navigation_rounded, size: 15, color: RiderColors.blue),
                     const SizedBox(width: 6),
-                    Text('เส้นทางการส่ง',
+                    Text(rt('เส้นทางการส่ง', 'Delivery Route'),
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: context.rFg)),
                     if (_loading) ...[
                       const Spacer(),
@@ -316,13 +317,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
             _StatChip(
               icon: Icons.route_rounded,
               label: _distKm != null ? '${_distKm!.toStringAsFixed(1)} กม.' : '—',
-              sub: 'ระยะทาง',
+              sub: rt('ระยะทาง', 'Distance'),
             ),
             const SizedBox(width: 10),
             _StatChip(
               icon: Icons.access_time_rounded,
               label: _etaText(_distKm),
-              sub: 'โดยประมาณ',
+              sub: rt('โดยประมาณ', 'Estimated'),
             ),
           ]),
         ),
@@ -333,7 +334,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         child: _WaypointRow(
           icon: Icons.store_rounded,
           color: RiderColors.blue,
-          tag: 'จุดรับอาหาร',
+          tag: rt('จุดรับอาหาร', 'Pickup'),
           name: widget.storeName,
           address: widget.storeAddress,
           showLine: true,
@@ -344,7 +345,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         child: _WaypointRow(
           icon: Icons.location_on_rounded,
           color: RiderColors.red,
-          tag: 'จุดส่งอาหาร',
+          tag: rt('จุดส่งอาหาร', 'Dropoff'),
           name: widget.customerName,
           address: widget.customerAddress,
           showLine: false,
@@ -363,7 +364,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             icon: const Icon(Icons.close_rounded, size: 16),
-            label: const Text('ปิดแผนที่', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            label: Text(rt('ปิดแผนที่', 'Close Map'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ),
         ),
       ),
