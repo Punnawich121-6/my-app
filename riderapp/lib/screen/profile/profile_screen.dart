@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img_lib;
+import '../../app_settings.dart';
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
@@ -372,6 +373,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _ActionTile(icon: Icons.policy_outlined, label: 'นโยบายและเงื่อนไข', onTap: () {}),
           ]),
         ),
+        const SizedBox(height: 16),
+
+        // ── การแสดงผล ─────────────────────────────────────────────
+        _SettingsCard(children: [
+          _SwitchTile(
+            icon: Icons.dark_mode_rounded,
+            iconBg: const Color(0xFF2D2D44),
+            iconColor: const Color(0xFFB39DDB),
+            label: 'โหมดมืด',
+            labelEn: 'Dark Mode',
+            value: RiderSettings.instance.isDark,
+            onChanged: (_) => RiderSettings.instance.toggleTheme(),
+          ),
+          const Divider(height: 1, indent: 56, color: Color(0xFFE0E0E0)),
+          _SwitchTile(
+            icon: Icons.language_rounded,
+            iconBg: const Color(0xFFE3F2FD),
+            iconColor: const Color(0xFF1976D2),
+            label: 'English',
+            labelEn: 'English',
+            value: RiderSettings.instance.isEnglish,
+            onChanged: (v) => RiderSettings.instance.setEnglish(v),
+          ),
+        ]),
         const SizedBox(height: 24),
 
         SizedBox(
@@ -755,6 +780,40 @@ class _RiderCropPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(_RiderCropPainter old) => old.cropRect != cropRect;
+}
+
+class _SettingsCard extends StatelessWidget {
+  final List<Widget> children;
+  const _SettingsCard({required this.children});
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFEEEEEE)),
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
+    ),
+    child: Column(children: children),
+  );
+}
+
+class _SwitchTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg, iconColor;
+  final String label, labelEn;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _SwitchTile({required this.icon, required this.iconBg, required this.iconColor, required this.label, required this.labelEn, required this.value, required this.onChanged});
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    child: Row(children: [
+      Container(width: 36, height: 36, decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: iconColor, size: 20)),
+      const SizedBox(width: 12),
+      Expanded(child: Text(RiderSettings.instance.isEnglish ? labelEn : label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: RiderColors.text))),
+      Switch(value: value, onChanged: onChanged, activeThumbColor: RiderColors.blue, activeTrackColor: RiderColors.blueMid),
+    ]),
+  );
 }
 
 class _ActionTile extends StatelessWidget {

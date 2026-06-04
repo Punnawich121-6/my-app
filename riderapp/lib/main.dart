@@ -3,12 +3,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_settings.dart';
 import 'firebase_options.dart';
 import 'screen/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await RiderSettings.instance.load();
   if (kDebugMode) {
     final host = kIsWeb ? 'localhost' : '10.0.2.2';
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);
@@ -16,22 +18,65 @@ void main() async {
   runApp(const RiderApp());
 }
 
-class RiderApp extends StatelessWidget {
+class RiderApp extends StatefulWidget {
   const RiderApp({super.key});
+  @override
+  State<RiderApp> createState() => _RiderAppState();
+}
+
+class _RiderAppState extends State<RiderApp> {
+  @override
+  void initState() {
+    super.initState();
+    RiderSettings.instance.addListener(_onSettings);
+  }
+
+  @override
+  void dispose() {
+    RiderSettings.instance.removeListener(_onSettings);
+    super.dispose();
+  }
+
+  void _onSettings() { if (mounted) setState(() {}); }
+
+  ThemeData _buildTheme(bool dark) {
+    final base = dark ? ThemeData.dark() : ThemeData.light();
+    final bg   = dark ? const Color(0xFF0D0D0D) : RiderColors.bg;
+    final card = dark ? const Color(0xFF1C1C1C) : Colors.white;
+    final fg   = dark ? const Color(0xFFF0F0F0) : RiderColors.text;
+    return base.copyWith(
+      scaffoldBackgroundColor: bg,
+      cardColor: card,
+      textTheme: GoogleFonts.notoSansThaiTextTheme(base.textTheme).apply(bodyColor: fg, displayColor: fg),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: RiderColors.blue,
+        brightness: dark ? Brightness.dark : Brightness.light,
+        primary: RiderColors.blue,
+        surface: card,
+        onSurface: fg,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: card,
+        foregroundColor: fg,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dividerColor: dark ? const Color(0xFF2D2D2D) : const Color(0xFFEEEEEE),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final dark = RiderSettings.instance.isDark;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Zest & Savory Rider',
-      theme: ThemeData(
-        textTheme: GoogleFonts.notoSansThaiTextTheme(ThemeData().textTheme),
-        scaffoldBackgroundColor: RiderColors.bg,
-        colorScheme: ColorScheme.fromSeed(seedColor: RiderColors.blue),
-      ),
+      themeMode: RiderSettings.instance.themeMode,
+      theme: _buildTheme(false),
+      darkTheme: _buildTheme(true),
       builder: (context, child) {
         return Container(
-          color: const Color(0xFFD0D0D0),
+          color: dark ? const Color(0xFF000000) : const Color(0xFFD0D0D0),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 430),
