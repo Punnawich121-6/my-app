@@ -103,6 +103,17 @@ class RiderService {
     return null;
   }
 
+  static Future<Map<String, dynamic>?> autoCropImage(String base64Image) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$kBackendUrl/api/ai/auto-crop'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'image': base64Image}),
+      ).timeout(const Duration(seconds: 20));
+      return jsonDecode(res.body);
+    } catch (_) { return null; }
+  }
+
   static Future<String?> uploadProfilePhoto(String riderId, Uint8List bytes, String filename) async {
     try {
       final req = http.MultipartRequest('POST', Uri.parse('$_base/$riderId/photo'));

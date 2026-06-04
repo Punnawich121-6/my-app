@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img_lib;
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
@@ -70,6 +73,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ));
   }
 
+  String _b64(Uint8List bytes) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    final buf = StringBuffer();
+    for (var i = 0; i < bytes.length; i += 3) {
+      final b0 = bytes[i], b1 = i+1 < bytes.length ? bytes[i+1] : 0, b2 = i+2 < bytes.length ? bytes[i+2] : 0;
+      buf.write(chars[(b0 >> 2) & 63]);
+      buf.write(chars[((b0 & 3) << 4) | ((b1 >> 4) & 15)]);
+      buf.write(i+1 < bytes.length ? chars[((b1 & 15) << 2) | ((b2 >> 6) & 3)] : '=');
+      buf.write(i+2 < bytes.length ? chars[b2 & 63] : '=');
+    }
+    return buf.toString();
+  }
+
   Future<void> _generateBio() async {
     setState(() => _generating = true);
     final runs = _profile?['runsCompleted']?.toString() ?? '0';
@@ -81,35 +97,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAndUploadPhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 512);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200);
     if (picked == null || !mounted) return;
 
+    Uint8List originalBytes = Uint8List(0);
+    Uint8List? aiCroppedBytes;
+
     setState(() => _uploadingPhoto = true);
-    final bytes = await picked.readAsBytes();
-    final url = await RiderService.uploadProfilePhoto(widget.riderId, bytes, picked.name);
-    if (!mounted) return;
-    if (url != null) {
-      setState(() => _profile = {...?_profile, 'profile_photo': url});
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Row(children: [
-          Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-          SizedBox(width: 8),
-          Text('อัปโหลดรูปโปรไฟล์เรียบร้อย'),
-        ]),
-        backgroundColor: RiderColors.blue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('อัปโหลดไม่สำเร็จ กรุณาลองใหม่'),
-        backgroundColor: RiderColors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ));
-    }
+    try {
+      originalBytes = await picked.readAsBytes();
+      final ext = picked.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+      final dataUri = 'data:image/$ext;base64,${_b64(originalBytes)}';
+      final cropData = await RiderService.autoCropImage(dataUri);
+      if (cropData != null) {
+        final srcImg = img_lib.decodeImage(originalBytes);
+        if (srcImg != null) {
+          final cx = ((cropData['x'] as num? ?? 0).toDouble() * srcImg.width).round().clamp(0, srcImg.width - 1);
+          final cy = ((cropData['y'] as num? ?? 0).toDouble() * srcImg.height).round().clamp(0, srcImg.height - 1);
+          final cw = ((cropData['w'] as num? ?? 1).toDouble() * srcImg.width).round().clamp(1, srcImg.width - cx);
+          final ch = ((cropData['h'] as num? ?? 1).toDouble() * srcImg.height).round().clamp(1, srcImg.height - cy);
+          final cropped = img_lib.copyCrop(srcImg, x: cx, y: cy, width: cw, height: ch);
+          aiCroppedBytes = Uint8List.fromList(img_lib.encodeJpg(cropped, quality: 85));
+        }
+      }
+    } catch (_) {}
+    if (!mounted) { setState(() => _uploadingPhoto = false); return; }
+    setState(() => _uploadingPhoto = false);
+
+    final result = await showModalBottomSheet<Uint8List>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RiderCropChoiceSheet(aiCroppedBytes: aiCroppedBytes, originalBytes: originalBytes),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final url = await RiderService.uploadProfilePhoto(widget.riderId, result, 'profile.jpg');
+      if (!mounted) return;
+      if (url != null) {
+        setState(() => _profile = {...?_profile, 'profile_photo': url});
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Row(children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text('อัปโหลดรูปโปรไฟล์เรียบร้อย'),
+          ]),
+          backgroundColor: RiderColors.blue,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('อัปโหลดไม่สำเร็จ กรุณาลองใหม่'),
+          backgroundColor: RiderColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _uploadingPhoto = false);
     setState(() => _uploadingPhoto = false);
   }
 
@@ -152,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             () {
               final photoPath = _profile?['profile_photo']?.toString();
               final photoUrl = (photoPath != null && photoPath.isNotEmpty)
-                  ? '$kBackendUrl$photoPath'
+                  ? (photoPath.startsWith('http') ? photoPath : '$kBackendUrl$photoPath')
                   : null;
               return Container(
                 width: 90, height: 90,
@@ -513,6 +563,198 @@ class _ProfileTile extends StatelessWidget {
       Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor ?? RiderColors.muted)),
     ]),
   );
+}
+
+// ─── Crop Choice Sheet ────────────────────────────────────────────────────────
+
+class _RiderCropChoiceSheet extends StatefulWidget {
+  final Uint8List? aiCroppedBytes;
+  final Uint8List originalBytes;
+  const _RiderCropChoiceSheet({this.aiCroppedBytes, required this.originalBytes});
+  @override
+  State<_RiderCropChoiceSheet> createState() => _RiderCropChoiceSheetState();
+}
+
+class _RiderCropChoiceSheetState extends State<_RiderCropChoiceSheet> {
+  Future<void> _openManualCrop() async {
+    if (widget.originalBytes.isEmpty) return;
+    final result = await Navigator.push<Uint8List>(
+      context,
+      MaterialPageRoute(builder: (_) => _RiderManualCropScreen(imageBytes: widget.originalBytes)),
+    );
+    if (result != null && mounted) Navigator.pop(context, result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final previewBytes = widget.aiCroppedBytes ?? (widget.originalBytes.isNotEmpty ? widget.originalBytes : null);
+    final hasAI = widget.aiCroppedBytes != null;
+    return Container(
+      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+        const SizedBox(height: 16),
+        Row(children: [
+          const Icon(Icons.auto_awesome_rounded, color: RiderColors.blue, size: 18),
+          const SizedBox(width: 8),
+          Text(hasAI ? 'AI ตัดรูปให้อัตโนมัติแล้ว' : 'เลือกการตัดรูป',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: RiderColors.text)),
+        ]),
+        const SizedBox(height: 4),
+        Text(hasAI ? 'ต้องการใช้ผลลัพธ์นี้ หรือต้องการ Crop เองแทน?' : 'AI วิเคราะห์ไม่สำเร็จ — กรุณา Crop เองหรือใช้รูปเต็ม',
+            style: const TextStyle(fontSize: 13, color: RiderColors.muted)),
+        const SizedBox(height: 14),
+        if (previewBytes != null)
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(previewBytes, height: 200, width: double.infinity, fit: BoxFit.cover)),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _openManualCrop,
+              icon: const Icon(Icons.crop, size: 16),
+              label: const Text('Crop เอง'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: RiderColors.blue,
+                side: const BorderSide(color: RiderColors.blue),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: previewBytes != null ? () => Navigator.pop(context, previewBytes) : null,
+              icon: const Icon(Icons.check, size: 16, color: Colors.white),
+              label: Text(hasAI ? 'ใช้รูปนี้' : 'ใช้รูปเต็ม', style: const TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: RiderColors.blue,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ),
+            ),
+          ),
+        ]),
+        SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+      ]),
+    );
+  }
+}
+
+// ─── Manual Crop Screen ───────────────────────────────────────────────────────
+
+class _RiderManualCropScreen extends StatefulWidget {
+  final Uint8List imageBytes;
+  const _RiderManualCropScreen({required this.imageBytes});
+  @override
+  State<_RiderManualCropScreen> createState() => _RiderManualCropScreenState();
+}
+
+class _RiderManualCropScreenState extends State<_RiderManualCropScreen> {
+  double _l = 0.05, _t = 0.05, _r = 0.95, _b = 0.95;
+  img_lib.Image? _srcImg;
+
+  @override
+  void initState() {
+    super.initState();
+    _srcImg = img_lib.decodeImage(widget.imageBytes);
+  }
+
+  void _updateL(double dx, double bw) => setState(() => _l = (_l + dx / bw).clamp(0.0, _r - 0.05));
+  void _updateT(double dy, double bh) => setState(() => _t = (_t + dy / bh).clamp(0.0, _b - 0.05));
+  void _updateR(double dx, double bw) => setState(() => _r = (_r + dx / bw).clamp(_l + 0.05, 1.0));
+  void _updateB(double dy, double bh) => setState(() => _b = (_b + dy / bh).clamp(_t + 0.05, 1.0));
+
+  Rect _imageBounds(Size size) {
+    if (_srcImg == null) return Rect.fromLTWH(0, 0, size.width, size.height);
+    final imgA = _srcImg!.width / _srcImg!.height;
+    final cA = size.width / size.height;
+    double w, h;
+    if (imgA > cA) { w = size.width; h = size.width / imgA; }
+    else            { h = size.height; w = size.height * imgA; }
+    return Rect.fromLTWH((size.width - w) / 2, (size.height - h) / 2, w, h);
+  }
+
+  void _applyCrop() {
+    if (_srcImg == null) { Navigator.pop(context); return; }
+    final x = (_l * _srcImg!.width).round().clamp(0, _srcImg!.width - 1);
+    final y = (_t * _srcImg!.height).round().clamp(0, _srcImg!.height - 1);
+    final w = ((_r - _l) * _srcImg!.width).round().clamp(1, _srcImg!.width - x);
+    final h = ((_b - _t) * _srcImg!.height).round().clamp(1, _srcImg!.height - y);
+    final cropped = img_lib.copyCrop(_srcImg!, x: x, y: y, width: w, height: h);
+    final bytes = Uint8List.fromList(img_lib.encodeJpg(cropped, quality: 85));
+    if (mounted) Navigator.pop(context, bytes);
+  }
+
+  Widget _handle(Offset pos, void Function(DragUpdateDetails, double, double) onDrag, Rect bounds) {
+    const r = 22.0;
+    return Positioned(
+      left: pos.dx - r, top: pos.dy - r, width: r * 2, height: r * 2,
+      child: GestureDetector(
+        onPanUpdate: (d) => onDrag(d, bounds.width, bounds.height),
+        child: Container(decoration: const BoxDecoration(color: RiderColors.blue, shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)])),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black, foregroundColor: Colors.white,
+        title: const Text('Crop รูปโปรไฟล์', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+        actions: [TextButton(onPressed: _applyCrop, child: const Text('ยืนยัน', style: TextStyle(color: RiderColors.blue, fontWeight: FontWeight.w700, fontSize: 15)))],
+      ),
+      body: LayoutBuilder(builder: (ctx, c) {
+        final size = Size(c.maxWidth, c.maxHeight);
+        final bounds = _imageBounds(size);
+        final tl = Offset(bounds.left + _l * bounds.width, bounds.top + _t * bounds.height);
+        final br = Offset(bounds.left + _r * bounds.width, bounds.top + _b * bounds.height);
+        final tr = Offset(br.dx, tl.dy);
+        final bl = Offset(tl.dx, br.dy);
+        return Stack(children: [
+          Positioned.fill(child: Image.memory(widget.imageBytes, fit: BoxFit.contain)),
+          Positioned.fill(child: CustomPaint(painter: _RiderCropPainter(Rect.fromPoints(tl, br)))),
+          _handle(tl, (d, bw, bh) { _updateL(d.delta.dx, bw); _updateT(d.delta.dy, bh); }, bounds),
+          _handle(tr, (d, bw, bh) { _updateR(d.delta.dx, bw); _updateT(d.delta.dy, bh); }, bounds),
+          _handle(bl, (d, bw, bh) { _updateL(d.delta.dx, bw); _updateB(d.delta.dy, bh); }, bounds),
+          _handle(br, (d, bw, bh) { _updateR(d.delta.dx, bw); _updateB(d.delta.dy, bh); }, bounds),
+          Positioned(bottom: 20, left: 0, right: 0,
+            child: Center(child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+              child: const Text('ลากมุมสีส้มเพื่อปรับขนาด', style: TextStyle(color: Colors.white, fontSize: 12)),
+            ))),
+        ]);
+      }),
+    );
+  }
+}
+
+class _RiderCropPainter extends CustomPainter {
+  final Rect cropRect;
+  const _RiderCropPainter(this.cropRect);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRect(cropRect)
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, Paint()..color = Colors.black54);
+    canvas.drawRect(cropRect, Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 1.5);
+    final grid = Paint()..color = Colors.white38..strokeWidth = 0.7;
+    for (int i = 1; i <= 2; i++) {
+      canvas.drawLine(Offset(cropRect.left + cropRect.width/3*i, cropRect.top), Offset(cropRect.left + cropRect.width/3*i, cropRect.bottom), grid);
+      canvas.drawLine(Offset(cropRect.left, cropRect.top + cropRect.height/3*i), Offset(cropRect.right, cropRect.top + cropRect.height/3*i), grid);
+    }
+  }
+  @override
+  bool shouldRepaint(_RiderCropPainter old) => old.cropRect != cropRect;
 }
 
 class _ActionTile extends StatelessWidget {
