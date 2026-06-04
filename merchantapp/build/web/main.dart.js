@@ -128183,21 +128183,20 @@ if(s!=null)s.aE(0)
 r.b=null
 r.a.cO(0)
 r.d=!1},
-zq(){var s=0,r=A.z(t.H),q,p=2,o=[],n=this,m,l,k,j
+zq(){var s=0,r=A.z(t.H),q,p=2,o=[],n=this,m,l,k
 var $async$zq=A.v(function(a,b){if(a===1){o.push(b)
 s=p}for(;;)switch(s){case 0:if(n.d){s=1
 break}p=4
 n.d=!0
-m=new A.a3a("/assets/audio/new_order.mp3",null)
-l=n.a
+m=n.a
 s=7
-return A.t(l.C8(0,m),$async$zq)
-case 7:l.gaaI().gac(0).bI(new A.aw8(n),t.y)
+return A.t(m.C8(0,new A.a3a("https://backend-gqls.onrender.com/public/audio/new_order.mp3",null)),$async$zq)
+case 7:m.gaaI().gac(0).bI(new A.aw8(n),t.y)
 p=2
 s=6
 break
 case 4:p=3
-j=o.pop()
+k=o.pop()
 n.d=!1
 s=6
 break

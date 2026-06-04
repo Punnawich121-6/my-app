@@ -27,6 +27,7 @@ app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
 app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
+app.use('/public',  express.static(require('path').join(__dirname, 'public')));
 
 app.get('/', (_req, res) => res.json({ status: 'ok' }));
 
