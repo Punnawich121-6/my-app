@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../config.dart';
 
@@ -101,10 +102,10 @@ class RiderService {
     return null;
   }
 
-  static Future<String?> uploadProfilePhoto(String riderId, File imageFile) async {
+  static Future<String?> uploadProfilePhoto(String riderId, Uint8List bytes, String filename) async {
     try {
       final req = http.MultipartRequest('POST', Uri.parse('$_base/$riderId/photo'));
-      req.files.add(await http.MultipartFile.fromPath('photo', imageFile.path));
+      req.files.add(http.MultipartFile.fromBytes('photo', bytes, filename: filename));
       final streamed = await req.send().timeout(const Duration(seconds: 30));
       final body = jsonDecode(await streamed.stream.bytesToString());
       if (streamed.statusCode == 200) return body['photo_url'] as String?;

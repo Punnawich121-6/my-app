@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config.dart';
@@ -86,7 +85,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (picked == null || !mounted) return;
 
     setState(() => _uploadingPhoto = true);
-    final url = await RiderService.uploadProfilePhoto(widget.riderId, File(picked.path));
+    final bytes = await picked.readAsBytes();
+    final url = await RiderService.uploadProfilePhoto(widget.riderId, bytes, picked.name);
     if (!mounted) return;
     if (url != null) {
       setState(() => _profile = {...?_profile, 'profile_photo': url});
