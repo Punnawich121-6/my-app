@@ -49,6 +49,33 @@ class _EarningsScreenState extends State<EarningsScreen> {
     }).toList();
   }
 
+  bool get _isCustomDate {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    return _selectedDate != today && _selectedDate != yesterday;
+  }
+
+  Widget _buildDateChip(String label, DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    final isSelected = _selectedDate == d;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedDate = d),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? RiderColors.blue : const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+          style: TextStyle(
+            fontSize: 11, fontWeight: FontWeight.w700,
+            color: isSelected ? Colors.white : RiderColors.muted,
+          )),
+      ),
+    );
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
