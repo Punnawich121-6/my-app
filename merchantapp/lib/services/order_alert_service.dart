@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 class OrderAlertService {
   static final instance = OrderAlertService._();
@@ -49,11 +48,7 @@ class OrderAlertService {
     if (_playing) return;
     try {
       _playing = true;
-      // Web: AssetSource doubles prefix → use absolute UrlSource
-      final source = kIsWeb
-          ? UrlSource('/assets/audio/new_order.mp3')
-          : AssetSource('audio/new_order.mp3');
-      await _player.play(source);
+      await _player.play(AssetSource(_asset));
       _player.onPlayerComplete.first.then((_) => _playing = false);
     } catch (_) {
       _playing = false;
