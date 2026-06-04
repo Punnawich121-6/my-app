@@ -8,7 +8,12 @@ const { uploadBuffer } = require('../../services/cloudinary');
 const _photoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(null, file.mimetype.startsWith('image/')),
+  fileFilter: (_req, file, cb) => {
+    const ok = file.mimetype.startsWith('image/') ||
+               file.mimetype === 'application/octet-stream' ||
+               /\.(jpg|jpeg|png|gif|webp)$/i.test(file.originalname || '');
+    cb(null, ok);
+  },
 });
 
 // ── Register rider ────────────────────────────────────────────────────────────
