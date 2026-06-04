@@ -11,25 +11,40 @@ class OrderAlertService {
 
   final _player = AudioPlayer();
   Timer? _timer;
-  int    _pendingCount = 0;
-  bool   _playing = false;
+  int  _pendingCount = 0;
+  int  _prevCount    = -1; // -1 = ยังไม่เคย sync
+  bool _playing      = false;
 
   int get pendingCount => _pendingCount;
 
-  /// เรียกทุกครั้งที่รู้จำนวน pending orders (จาก dashboard poll หรือ socket)
+  /// เรียกจาก dashboard poll และ socket
+  /// เสียงจะเริ่มเฉพาะตอน count เพิ่มขึ้น (order ใหม่เข้า)
+  /// เสียงจะหยุดเมื่อ count = 0 เท่านั้น
   void syncWithPendingCount(int count) {
+    final isNewOrder = _prevCount >= 0 && count > _prevCount;
+    _prevCount    = count;
     _pendingCount = count;
-    if (count > 0) {
-      _ensureAlertRunning();
-    } else {
+
+    if (count == 0) {
       _stop();
+    } else if (isNewOrder) {
+      _startAlert(); // มี order ใหม่จริงๆ → เริ่มเสียง
     }
+    // count > 0 แต่ไม่ใช่ order ใหม่ (dashboard poll ที่ยังเห็น order เดิม) → ไม่ restart
   }
 
-  void _ensureAlertRunning() {
+  /// เรียกเมื่อ merchant กด "รับออเดอร์" → หยุดเสียงทันที
+  void onOrderAccepted() {
+    _stop();
+    _prevCount = (_pendingCount - 1).clamp(0, _pendingCount);
+    _pendingCount = _prevCount;
+  }
+
+  void _startAlert() {
     _playOnce();
-    _timer ??= Timer.periodic(const Duration(seconds: _repeatSec), (_) {
-      if (_pendingCount > 0) {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: _repeatSec), (_) {
+      if (_pendingCount > 0 && _timer != null) {
         _playOnce();
       } else {
         _stop();
@@ -38,11 +53,11 @@ class OrderAlertService {
   }
 
   void _stop() {
-    _pendingCount = 0;
     _timer?.cancel();
-    _timer = null;
+    _timer    = null;
+    _pendingCount = 0;
     _player.stop();
-    _playing = false;
+    _playing  = false;
   }
 
   Future<void> _playOnce() async {

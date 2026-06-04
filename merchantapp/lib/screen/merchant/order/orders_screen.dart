@@ -316,8 +316,7 @@ class _ActionButtonState extends State<_ActionButton> {
     try {
       await ApiService.updateOrderStatus(widget.order.id, next);
       if (next == 'accepted') {
-        final cur = OrderAlertService.instance.pendingCount;
-        OrderAlertService.instance.syncWithPendingCount((cur - 1).clamp(0, cur));
+        OrderAlertService.instance.onOrderAccepted();
       }
       widget.onDone();
     } catch (_) {
