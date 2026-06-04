@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../app_settings.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
+import '../../services/rider_alert_service.dart';
 
 class AvailableOrdersScreen extends StatefulWidget {
   final String riderId;
@@ -54,6 +55,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
     final orders = await RiderService.getAvailableOrders();
     if (!mounted) return;
     setState(() { _orders = orders; _loading = false; });
+    RiderAlertService.instance.syncWithOrderCount(orders.length);
   }
 
   Future<void> _acceptOrder(Map<String, dynamic> order) async {
@@ -99,6 +101,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
     final success = await RiderService.acceptOrder(order['id'], widget.riderId);
     if (!mounted) return;
     if (success) {
+      RiderAlertService.instance.onOrderAccepted();
       widget.onOrderAccepted();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
