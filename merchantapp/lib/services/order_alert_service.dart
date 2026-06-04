@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
-import 'api_service.dart';
 
 class OrderAlertService {
   static final instance = OrderAlertService._();
   OrderAlertService._();
 
-  static String get _audioUrl => '${ApiService.serverBase}/public/audio/new_order.mp3';
   static const _repeatSec = 6;
 
   final _player = AudioPlayer();
@@ -64,7 +62,7 @@ class OrderAlertService {
     if (_playing) return;
     try {
       _playing = true;
-      await _player.play(UrlSource(_audioUrl));
+      await _player.play(AssetSource('audio/new_order.mp3'));
       _player.onPlayerComplete.first.then((_) => _playing = false);
     } catch (_) {
       _playing = false;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../main.dart';
 import 'order_tracking_screen.dart';
 
@@ -15,6 +16,7 @@ class _SuccessScreenState extends State<SuccessScreen>
   late AnimationController _ctrl;
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
+  final _player = AudioPlayer();
 
   @override
   void initState() {
@@ -24,11 +26,13 @@ class _SuccessScreenState extends State<SuccessScreen>
     _scaleAnim = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
     _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
+    _player.play(AssetSource('audio/sound-payment.mp3'));
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
+    _player.dispose();
     super.dispose();
   }
 
