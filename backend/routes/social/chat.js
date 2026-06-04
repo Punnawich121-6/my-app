@@ -26,6 +26,7 @@ async function ensureCols() {
   try { await db.query(`ALTER TABLE messages ADD COLUMN image_url LONGTEXT AFTER message`); } catch (_) {}
   try { await db.query(`ALTER TABLE messages MODIFY COLUMN image_url LONGTEXT`); } catch (_) {}
   try { await db.query(`ALTER TABLE messages ADD COLUMN chat_type ENUM('store','rider') NOT NULL DEFAULT 'store' AFTER image_url`); } catch (_) {}
+  try { await db.query(`ALTER TABLE messages MODIFY COLUMN chat_type ENUM('store','rider','store_rider') NOT NULL DEFAULT 'store'`); } catch (_) {}
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS chat_deletions (

@@ -28,6 +28,9 @@ class MerchantChatScreen extends StatefulWidget {
 class _MerchantChatScreenState extends State<MerchantChatScreen> {
   static String get _base => ApiService.chatBase;
 
+  // 'store' = ลูกค้า-ร้าน, 'rider' widget type → 'store_rider' DB channel
+  String get _apiChatType => widget.chatType == 'rider' ? 'store_rider' : 'store';
+
   // static: ไม่รีเซ็ตเมื่อ navigate กลับเข้ามา
   static final Map<String, Set<String>> _hiddenByOrder = {};
   Set<String> get _hiddenIds =>
@@ -64,7 +67,7 @@ class _MerchantChatScreenState extends State<MerchantChatScreen> {
   void _onSocketMessage(dynamic data) {
     if (!mounted) return;
     final msg = Map<String, dynamic>.from(data as Map);
-    if (msg['chat_type'] != widget.chatType) return;
+    if (msg['chat_type'] != _apiChatType) return;
     final id = msg['id']?.toString();
     if (id != null && _hiddenIds.contains(id)) return;
     if (id != null && _messages.any((m) => m['id']?.toString() == id)) return;
@@ -76,7 +79,7 @@ class _MerchantChatScreenState extends State<MerchantChatScreen> {
   Future<void> _loadAll() async {
     try {
       final res = await http.get(Uri.parse(
-        '$_base/${widget.orderId}?userId=${ApiService.storeId}&userRole=store&chatType=${widget.chatType}',
+        '$_base/${widget.orderId}?userId=${ApiService.storeId}&userRole=store&chatType=$_apiChatType',
       ));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
@@ -98,7 +101,7 @@ class _MerchantChatScreenState extends State<MerchantChatScreen> {
     if (!mounted) return;
     try {
       final res = await http.get(Uri.parse(
-        '$_base/${widget.orderId}?userId=${ApiService.storeId}&userRole=store&chatType=${widget.chatType}',
+        '$_base/${widget.orderId}?userId=${ApiService.storeId}&userRole=store&chatType=$_apiChatType',
       ));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
@@ -124,7 +127,7 @@ class _MerchantChatScreenState extends State<MerchantChatScreen> {
     setState(() => _sending = true);
     _ctrl.clear();
     try {
-      await ApiService.sendChatMessage(widget.orderId, text, chatType: widget.chatType);
+      await ApiService.sendChatMessage(widget.orderId, text, chatType: _apiChatType);
       await _appendNew(); // append-only หลังส่ง
     } catch (_) {}
     if (mounted) setState(() => _sending = false);
@@ -159,7 +162,7 @@ class _MerchantChatScreenState extends State<MerchantChatScreen> {
     try {
       final url = await ApiService.uploadChatImage(widget.orderId, File(picked.path));
       if (url != null) {
-        await ApiService.sendChatMessage(widget.orderId, '', chatType: widget.chatType, imageUrl: url);
+        await ApiService.sendChatMessage(widget.orderId, '', chatType: _apiChatType, imageUrl: url);
         await _appendNew();
       }
     } catch (_) {}

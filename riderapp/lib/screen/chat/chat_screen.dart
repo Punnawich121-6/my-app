@@ -30,6 +30,9 @@ class RiderChatScreen extends StatefulWidget {
 class _RiderChatScreenState extends State<RiderChatScreen> {
   static String get _base => '$kBackendUrl/api/chat';
 
+  // Map widget.chatType ('store'/'rider') → actual DB chat_type
+  String get _apiChatType => widget.chatType == 'store' ? 'store_rider' : 'rider';
+
   final _ctrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
@@ -58,7 +61,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
   void _onSocketMessage(dynamic data) {
     if (!mounted) return;
     final msg = Map<String, dynamic>.from(data as Map);
-    if (msg['chat_type'] != widget.chatType) return;
+    if (msg['chat_type'] != _apiChatType) return;
     final id = msg['id']?.toString();
     if (id != null && _messages.any((m) => m['id']?.toString() == id)) return;
     setState(() => _messages.add(msg));
@@ -69,7 +72,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
   Future<void> _loadMessages({bool initial = false}) async {
     try {
       final res = await http.get(Uri.parse(
-        '$_base/${widget.orderId}?userId=${widget.riderId}&userRole=rider&chatType=${widget.chatType}',
+        '$_base/${widget.orderId}?userId=${widget.riderId}&userRole=rider&chatType=$_apiChatType',
       ));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
@@ -102,7 +105,7 @@ class _RiderChatScreenState extends State<RiderChatScreen> {
           'userRole': 'rider',
           'senderName': widget.riderName,
           'message': text,
-          'chatType': widget.chatType,
+          'chatType': _apiChatType,
         }),
       );
       await _loadMessages();
