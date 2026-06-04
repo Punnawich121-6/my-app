@@ -10,6 +10,7 @@ import '../../../l10n.dart';
 import '../../../main.dart';
 import '../../../models/order_model.dart';
 import '../../../services/api_service.dart';
+import '../../../services/order_alert_service.dart';
 import '../chat/chat_screen.dart';
 import 'report_screen.dart';
 
@@ -376,6 +377,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _updateStatus(String status) async {
     try {
       await ApiService.updateOrderStatus(widget.orderId, status);
+      // ถ้ารับออเดอร์ (pending→accepted) ให้ลด pending count ทันที
+      if (status == 'accepted') {
+        final cur = OrderAlertService.instance.pendingCount;
+        OrderAlertService.instance.syncWithPendingCount((cur - 1).clamp(0, cur));
+      }
       await _load();
     } catch (_) {}
   }
