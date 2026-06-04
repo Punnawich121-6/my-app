@@ -24,12 +24,9 @@ class RiderAlertService {
     _prevCount  = count;
 
     if (isNew) {
-      _alertCount = count;
       _startAlert();
     } else if (count == 0) {
       _stopAlert();
-    } else {
-      _alertCount = count;
     }
   }
 
@@ -51,8 +48,7 @@ class RiderAlertService {
   }
 
   void _stopAlert() {
-    _alertCount = 0;
-    _alertOn    = false;
+    _alertOn = false;
     _orderPlayer.stop().catchError((_) {});
   }
 

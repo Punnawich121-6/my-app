@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show rootBundle;
 
 class OrderAlertService {
   static final instance = OrderAlertService._();
@@ -63,10 +64,12 @@ class OrderAlertService {
     if (_playing) return;
     _playing = true;
     try {
-      final src = kIsWeb
-          ? UrlSource('assets/assets/audio/new_order.mp3')
-          : AssetSource('audio/new_order.mp3');
-      await _player.play(src);
+      if (kIsWeb) {
+        final data = await rootBundle.load('assets/audio/new_order.mp3');
+        await _player.play(BytesSource(data.buffer.asUint8List()));
+      } else {
+        await _player.play(AssetSource('audio/new_order.mp3'));
+      }
     } catch (_) {
       // ignore
     } finally {
