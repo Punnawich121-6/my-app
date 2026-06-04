@@ -8,6 +8,7 @@ import '../../config.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 import '../auth/login_screen.dart';
+import '../chat/rider_support_chat_screen.dart';
 import 'wallet_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -353,6 +354,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: Icons.account_balance_wallet_rounded,
               label: rt('วอลเล็ต Pre-Paid', 'Pre-Paid Wallet'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WalletScreen(riderId: widget.riderId, riderName: widget.riderName))),
+            ),
+            Divider(height: 1, indent: 56, color: context.rDiv),
+            _ActionTile(
+              icon: Icons.support_agent_rounded,
+              label: rt('ติดต่อ Admin', 'Contact Admin'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => RiderSupportChatScreen(
+                  riderId: widget.riderId,
+                  riderName: widget.riderName,
+                ),
+              )),
             ),
             Divider(height: 1, indent: 56, color: context.rDiv),
             _ActionTile(icon: Icons.help_outline_rounded, label: rt('ความช่วยเหลือ', 'Help'), onTap: () {}),

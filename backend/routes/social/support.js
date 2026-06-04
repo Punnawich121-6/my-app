@@ -32,7 +32,7 @@ async function ensureTable() {
     await db.query(`ALTER TABLE support_messages MODIFY COLUMN image_url LONGTEXT`);
   } catch (_) {}
   try {
-    await db.query(`ALTER TABLE support_messages MODIFY COLUMN sender_role ENUM('store','admin','customer') NOT NULL DEFAULT 'store'`);
+    await db.query(`ALTER TABLE support_messages MODIFY COLUMN sender_role ENUM('store','admin','customer','rider') NOT NULL DEFAULT 'store'`);
   } catch (_) {}
   try {
     await db.query(`

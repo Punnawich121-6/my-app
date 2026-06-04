@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -372,6 +373,38 @@ class _MsgBubble extends StatelessWidget {
     required this.roleIcon,
   });
 
+  Widget _buildImage(String url) {
+    if (url.startsWith('data:')) {
+      try {
+        final bytes = base64Decode(url.split(',').last);
+        return Image.memory(
+          Uint8List.fromList(bytes),
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const SizedBox(
+            height: 80,
+            child: Center(child: Icon(Icons.broken_image_outlined, color: AppColors.muted)),
+          ),
+        );
+      } catch (_) {
+        return const SizedBox(height: 80, child: Center(child: Icon(Icons.broken_image_outlined, color: AppColors.muted)));
+      }
+    }
+    final fullUrl = url.startsWith('http') ? url : '${ApiService.serverBase}$url';
+    return Image.network(
+      fullUrl,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (_, child, progress) => progress == null
+          ? child
+          : const SizedBox(height: 120, child: Center(child: CircularProgressIndicator(color: AppColors.orange, strokeWidth: 2))),
+      errorBuilder: (_, _, _) => const SizedBox(
+        height: 80,
+        child: Center(child: Icon(Icons.broken_image_outlined, color: AppColors.muted)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -427,21 +460,7 @@ class _MsgBubble extends StatelessWidget {
                               bottomLeft: Radius.circular(message.isEmpty ? (isMe ? 18 : 4) : 0),
                               bottomRight: Radius.circular(message.isEmpty ? (isMe ? 4 : 18) : 0),
                             ),
-                            child: Image.network(
-                              '${ApiService.serverBase}$imageUrl',
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (_, child, progress) => progress == null
-                                  ? child
-                                  : const SizedBox(
-                                      height: 120,
-                                      child: Center(child: CircularProgressIndicator(color: AppColors.orange, strokeWidth: 2)),
-                                    ),
-                              errorBuilder: (_, e, s) => const SizedBox(
-                                height: 80,
-                                child: Center(child: Icon(Icons.broken_image_outlined, color: AppColors.muted)),
-                              ),
-                            ),
+                            child: _buildImage(imageUrl!),
                           ),
                         if (message.isNotEmpty)
                           Padding(

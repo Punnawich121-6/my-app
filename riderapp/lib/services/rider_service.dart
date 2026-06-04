@@ -426,4 +426,78 @@ class RiderService {
       return false;
     }
   }
+
+  // ─── Support Chat (Rider ↔ Admin) ─────────────────────────────────────────
+
+  static String _supportBase(String riderId) =>
+      '$kBackendUrl/api/support/rider_$riderId';
+
+  static Future<List<Map<String, dynamic>>> getSupportMessages(String riderId) async {
+    try {
+      final res = await http.get(Uri.parse(
+        '${_supportBase(riderId)}?userId=rider_$riderId&userRole=rider',
+      ));
+      if (res.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(
+          jsonDecode(utf8.decode(res.bodyBytes)),
+        );
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<bool> sendSupportMessage(
+    String riderId,
+    String riderName, {
+    required String message,
+    String? imageUrl,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse(_supportBase(riderId)),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'senderRole': 'rider',
+          'senderName': riderName,
+          'storeName': riderName,
+          'message': message,
+          if (imageUrl != null) 'imageUrl': imageUrl,
+        }),
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> clearSupportChat(String riderId) async {
+    try {
+      final res = await http.delete(Uri.parse(
+        '${_supportBase(riderId)}?userId=rider_$riderId&userRole=rider',
+      ));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<String?> uploadSupportImage(
+    String riderId,
+    Uint8List bytes,
+    String filename,
+  ) async {
+    try {
+      final req = http.MultipartRequest(
+        'POST',
+        Uri.parse('${_supportBase(riderId)}/upload'),
+      );
+      req.files.add(http.MultipartFile.fromBytes('image', bytes, filename: filename));
+      final streamed = await req.send();
+      final res = await http.Response.fromStream(streamed);
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body)['url'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
 }

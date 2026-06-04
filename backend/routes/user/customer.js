@@ -198,9 +198,13 @@ router.get('/orders/detail/:orderId', async (req, res) => {
       `SELECT o.id, o.orderNumber, o.status, o.totalAmount AS total_amount,
               o.notes, o.createdAt AS created_at,
               o.deliveryLatitude AS delivery_lat, o.deliveryLongitude AS delivery_lng,
-              r.name AS store_name, r.address AS store_address
+              o.restaurantId AS store_id, o.customerId AS customer_id, o.riderId AS rider_id,
+              r.name AS store_name, r.address AS store_address,
+              c.name AS customer_name,
+              EXISTS(SELECT 1 FROM reviews WHERE order_id = o.id) AS is_reviewed
        FROM \`order\` o
        LEFT JOIN restaurant r ON o.restaurantId = r.id
+       LEFT JOIN customer c ON o.customerId = c.id
        WHERE o.id = ?`,
       [req.params.orderId]
     );

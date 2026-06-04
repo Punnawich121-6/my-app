@@ -12,6 +12,7 @@ import '../../services/order_notification_service.dart';
 import '../../services/socket_service.dart';
 import '../chat/chat_screen.dart';
 import '../chat/call_screen.dart';
+import '../chat/review_screen.dart';
 import 'dispute_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
@@ -27,6 +28,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   bool _error = false;
   bool _cancelling = false;
   StreamSubscription<Map<String, dynamic>>? _orderSub;
+  String? _prevStatus;
+  bool _reviewAutoShown = false;
 
   static const _steps = [
     {'key': 'pending',    'label': 'สั่งแล้ว',    'icon': Icons.receipt_long_rounded},
@@ -84,14 +87,59 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       final data = await CustomerService.getOrderDetail(widget.orderId)
           .timeout(const Duration(seconds: 10));
       if (!mounted) return;
+      final newStatus = data?['status']?.toString();
+      final shouldPromptReview = newStatus == 'completed'
+          && _prevStatus != null
+          && _prevStatus != 'completed'
+          && !_reviewAutoShown;
       setState(() { _order = data; _loading = false; _error = data == null; });
       if (data != null) {
         OrderNotificationService.instance.syncFromTracking(widget.orderId, data);
       }
+      if (shouldPromptReview) {
+        final isReviewed = data?['is_reviewed'] == 1 || data?['is_reviewed'] == true;
+        if (!isReviewed) {
+          _reviewAutoShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openReviewModal();
+          });
+        }
+      }
+      _prevStatus = newStatus;
     } catch (_) {
       if (!mounted) return;
       setState(() { _loading = false; _error = true; });
     }
+  }
+
+  Future<void> _openReview() async {
+    if (_order == null) return;
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => ReviewScreen(
+        orderId: widget.orderId,
+        customerId: _order!['customer_id']?.toString() ?? '',
+        customerName: _order!['customer_name']?.toString() ?? 'ลูกค้า',
+        storeId: _order!['store_id']?.toString() ?? '',
+        storeName: _order!['store_name']?.toString() ?? 'ร้านอาหาร',
+        riderId: _order!['rider_id']?.toString(),
+      ),
+    ));
+    if (mounted) _load();
+  }
+
+  void _openReviewModal() {
+    if (_order == null) return;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _ReviewPromptSheet(
+        storeName: _order!['store_name']?.toString() ?? 'ร้านอาหาร',
+        onReview: () { Navigator.pop(context); _openReview(); },
+        onSkip: () => Navigator.pop(context),
+      ),
+    );
   }
 
   Future<void> _cancelOrder() async {
@@ -194,6 +242,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         ],
                         if (status == 'completed') ...[
                           const SizedBox(height: 16),
+                          _buildReviewButton(),
+                          const SizedBox(height: 12),
                           _buildDisputeButton(),
                         ],
                         if (status == 'picking_up') ...[
@@ -308,6 +358,42 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFFEBEE),
           foregroundColor: Colors.red,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewButton() {
+    final isReviewed = _order?['is_reviewed'] == 1 || _order?['is_reviewed'] == true;
+    if (isReviewed) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FFF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: CColors.green.withValues(alpha: 0.4)),
+        ),
+        child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.check_circle_rounded, color: CColors.green, size: 18),
+          SizedBox(width: 8),
+          Text('รีวิวแล้ว', style: TextStyle(color: CColors.green, fontWeight: FontWeight.w700, fontSize: 15)),
+        ]),
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _openReview,
+        icon: const Icon(Icons.star_rounded, size: 18),
+        label: const Text('รีวิวออเดอร์นี้',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: CColors.orange,
+          foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -582,6 +668,57 @@ class _RiderAvatar extends StatelessWidget {
           style: TextStyle(fontSize: size * 0.38, fontWeight: FontWeight.w700, color: CColors.orange)),
     ),
   );
+}
+
+// ─── Review Prompt Sheet ──────────────────────────────────────────────────────
+
+class _ReviewPromptSheet extends StatelessWidget {
+  final String storeName;
+  final VoidCallback onReview;
+  final VoidCallback onSkip;
+  const _ReviewPromptSheet({required this.storeName, required this.onReview, required this.onSkip});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 40, height: 4,
+          decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2)),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          width: 72, height: 72,
+          decoration: const BoxDecoration(color: CColors.orangeLight, shape: BoxShape.circle),
+          child: const Icon(Icons.star_rounded, color: CColors.orange, size: 38),
+        ),
+        const SizedBox(height: 16),
+        const Text('อาหารอร่อยไหม?',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: CColors.text)),
+        const SizedBox(height: 8),
+        Text('แชร์ประสบการณ์กับ $storeName\nเพื่อช่วยให้คนอื่นตัดสินใจได้',
+            style: const TextStyle(fontSize: 14, color: CColors.muted), textAlign: TextAlign.center),
+        const SizedBox(height: 28),
+        SizedBox(
+          width: double.infinity, height: 50,
+          child: ElevatedButton(
+            onPressed: onReview,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: CColors.orange, foregroundColor: Colors.white,
+              elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text('รีวิวเลย', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: onSkip,
+          child: const Text('ข้ามก่อน', style: TextStyle(color: CColors.muted, fontSize: 15)),
+        ),
+      ]),
+    );
+  }
 }
 
 // ─── Delivery Map Card ─────────────────────────────────────────────────────────
