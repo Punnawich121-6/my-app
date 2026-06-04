@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../../app_settings.dart';
 import '../../config.dart';
 import '../../main.dart';
+import '../../services/rider_alert_service.dart';
 import '../../services/rider_service.dart';
 import '../navigation_screen.dart';
 import '../chat/chat_screen.dart';
@@ -232,9 +232,7 @@ class _ActiveDeliveryScreenState extends State<ActiveDeliveryScreen> {
     setState(() => _completing = false);
 
     if (success) {
-      final p = AudioPlayer();
-      p.play(UrlSource('$kBackendUrl/public/audio/sound-payment.mp3'));
-      p.onPlayerComplete.first.then((_) => p.dispose());
+      RiderAlertService.instance.playPaymentSound();
       await _showEarningsSheet(order);
       if (mounted) widget.onDeliveryComplete();
     } else {
