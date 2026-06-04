@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:audioplayers/audioplayers.dart';
 import '../../main.dart';
 import 'order_tracking_screen.dart';
@@ -26,7 +27,10 @@ class _SuccessScreenState extends State<SuccessScreen>
     _scaleAnim = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
     _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
-    _player.play(AssetSource('audio/sound-payment.mp3'));
+    final src = kIsWeb
+        ? UrlSource('assets/assets/audio/sound-payment.mp3')
+        : AssetSource('audio/sound-payment.mp3');
+    _player.play(src).catchError((_) {});
   }
 
   @override
