@@ -262,7 +262,9 @@ class ApiService {
   // Support Chat (Merchant ↔ Admin)
   static Future<List<Map<String, dynamic>>> getSupportMessages() async {
     try {
-      final res = await http.get(Uri.parse('$_base/support/$storeId'));
+      final res = await http.get(
+        Uri.parse('$_base/support/$storeId?userId=$storeId&userRole=store'),
+      );
       if (res.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(utf8.decode(res.bodyBytes)));
       }
@@ -270,9 +272,13 @@ class ApiService {
     return [];
   }
 
+  // Soft-delete: marks a deletion timestamp for this store only.
+  // Admin and other parties still see all messages.
   static Future<bool> clearSupportChat() async {
     try {
-      final res = await http.delete(Uri.parse('$_base/support/$storeId'));
+      final res = await http.delete(
+        Uri.parse('$_base/support/$storeId?userId=$storeId&userRole=store'),
+      );
       return res.statusCode == 200;
     } catch (_) { return false; }
   }

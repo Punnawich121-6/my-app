@@ -14,9 +14,6 @@ class SupportChatScreen extends StatefulWidget {
 }
 
 class _SupportChatScreenState extends State<SupportChatScreen> {
-  // static: ไม่รีเซ็ตเมื่อ navigate กลับเข้ามา
-  static final Set<String> _hiddenIds = {};
-
   final _ctrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
@@ -53,19 +50,17 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     if (raw == null) return;
     final msg = Map<String, dynamic>.from(raw as Map);
     final id = msg['id']?.toString();
-    if (id != null && _hiddenIds.contains(id)) return;
     if (id != null && _messages.any((m) => m['id']?.toString() == id)) return;
     setState(() => _messages.add(msg));
     _scrollToBottom();
   }
 
-  // โหลดครั้งแรก — กรอง hidden
   Future<void> _loadAll() async {
     try {
       final msgs = await ApiService.getSupportMessages();
       if (!mounted) return;
       setState(() {
-        _messages..clear()..addAll(msgs.where((m) => !_hiddenIds.contains(m['id']?.toString())));
+        _messages..clear()..addAll(msgs);
         _loading = false;
       });
       _scrollToBottom();
@@ -74,7 +69,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     }
   }
 
-  // poll: append เฉพาะ id ใหม่ ไม่ clear list
+  // poll: append only new ids, never re-fetch deleted ones
+  // (backend already filters via soft-delete timestamp)
   Future<void> _appendNew() async {
     if (!mounted) return;
     try {
@@ -82,7 +78,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       final existing = _messages.map((m) => m['id']?.toString()).toSet();
       final newMsgs = msgs.where((m) {
         final id = m['id']?.toString();
-        return id != null && !existing.contains(id) && !_hiddenIds.contains(id);
+        return id != null && !existing.contains(id);
       }).toList();
       if (newMsgs.isNotEmpty && mounted) {
         setState(() => _messages.addAll(newMsgs));
@@ -107,21 +103,27 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('ล้างแชท'),
-        content: const Text('ต้องการลบข้อความทั้งหมดใช่ไหม?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('ลบแชท', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text(
+          'ข้อความจะหายไปจากหน้าจอของคุณเท่านั้น\nทีม Admin ยังคงเห็นข้อความเดิม',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('ยกเลิก')),
+            child: const Text('ยกเลิก'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.red),
-            child: const Text('ลบทั้งหมด')),
+            child: const Text('ลบ', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );
     if (confirm != true || !mounted) return;
-    setState(() => _messages.clear());
+    await ApiService.clearSupportChat();
+    if (mounted) setState(() => _messages.clear());
   }
 
   Future<void> _pickImage() async {
@@ -210,22 +212,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                       controller: _scrollCtrl,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                       itemCount: _messages.length,
-                      itemBuilder: (_, i) => Dismissible(
-                        key: ValueKey(_messages[i]['id'] ?? i),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          color: Colors.transparent,
-                          child: const Icon(Icons.delete_outline_rounded, color: AppColors.red, size: 24),
-                        ),
-                        onDismissed: (_) => setState(() {
-                          final id = _messages[i]['id']?.toString();
-                          if (id != null) _hiddenIds.add(id);
-                          _messages.removeAt(i);
-                        }),
-                        child: _buildBubble(_messages[i]),
-                      ),
+                      itemBuilder: (_, i) => _buildBubble(_messages[i]),
                     ),
         ),
 
