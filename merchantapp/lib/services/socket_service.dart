@@ -9,6 +9,7 @@ class SocketService {
   static const _url = 'https://backend-gqls.onrender.com';
 
   final Set<String> _orderRooms = {};
+  String? _storeRoom;
   String? _supportRoom;
 
   void connect() {
@@ -27,9 +28,8 @@ class SocketService {
       for (final id in _orderRooms) {
         _socket?.emit('join_order', id);
       }
-      if (_supportRoom != null) {
-        _socket?.emit('join_support', _supportRoom);
-      }
+      if (_storeRoom != null) _socket?.emit('join_store', _storeRoom);
+      if (_supportRoom != null) _socket?.emit('join_support', _supportRoom);
     });
     _socket!.connect();
   }
@@ -42,6 +42,11 @@ class SocketService {
   void leaveOrder(String orderId) {
     _orderRooms.remove(orderId);
     _socket?.emit('leave_order', orderId);
+  }
+
+  void joinStoreRoom(String storeId) {
+    _storeRoom = storeId;
+    if (_socket?.connected == true) _socket?.emit('join_store', storeId);
   }
 
   void joinSupportRoom(String storeId) {

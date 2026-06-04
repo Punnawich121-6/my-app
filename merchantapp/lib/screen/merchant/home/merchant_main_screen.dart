@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../main.dart';
 import '../../../services/api_service.dart';
+import '../../../services/socket_service.dart';
+import '../../../services/order_alert_service.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../order/orders_screen.dart';
 import '../menu/menu_screen.dart';
@@ -23,7 +25,10 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
   List<Widget> _screens = [];
 
   void setTab(int index) {
-    if (mounted) setState(() => _currentIndex = index);
+    if (!mounted) return;
+    // เมื่อเปิดหน้า orders → หยุดเสียงแจ้งเตือน
+    if (index == 1) OrderAlertService.instance.dismiss();
+    setState(() => _currentIndex = index);
   }
 
   void updatePendingBadge(int count) {
@@ -44,9 +49,31 @@ class _MerchantMainScreenState extends State<MerchantMainScreen> {
     _initialize();
   }
 
+  @override
+  void dispose() {
+    SocketService.instance.on('new_order', (_) {}); // clear handler
+    OrderAlertService.instance.dismiss();
+    super.dispose();
+  }
+
   Future<void> _initialize() async {
     await ApiService.init();
     if (!mounted) return;
+
+    // join store socket room & listen for new orders
+    SocketService.instance.connect();
+    SocketService.instance.joinStoreRoom(ApiService.storeId);
+    SocketService.instance.on('new_order', (data) async {
+      if (!mounted) return;
+      final storeId = data['store_id']?.toString();
+      if (storeId != ApiService.storeId) return; // กรอง event ของร้านตัวเอง
+      await OrderAlertService.instance.onNewOrder();
+      if (mounted) setState(() => _pendingOrders++);
+    });
+
+    // pre-fetch เสียงจาก Botnoi ล่วงหน้า
+    OrderAlertService.instance.prefetch();
+
     _screens = [
       DashboardScreen(
         onPendingChanged: updatePendingBadge,

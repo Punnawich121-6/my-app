@@ -171,13 +171,15 @@ router.post('/orders', async (req, res) => {
     const storeName = restaurant?.name || 'ร้านอาหาร';
 
     const io = req.app.get('io');
-    io?.to('admin').emit('new_order', {
+    const orderPayload = {
       order_id: orderId,
       orderNumber,
       store_id,
       customer_name: customer_name || 'Customer',
       total: total.toFixed(2),
-    });
+    };
+    io?.to('admin').emit('new_order', orderPayload);
+    io?.to(`store_${store_id}`).emit('new_order', orderPayload);
     if (customer_id) {
       io?.to(`customer_${customer_id}`).emit('order_updated', {
         order_id: orderId,
