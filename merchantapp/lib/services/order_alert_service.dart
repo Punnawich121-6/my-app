@@ -60,11 +60,12 @@ class OrderAlertService {
 
   Future<void> _playOnce() async {
     if (_playing) return;
+    _playing = true;
     try {
-      _playing = true;
       await _player.play(AssetSource('audio/new_order.mp3'));
-      _player.onPlayerComplete.first.then((_) => _playing = false);
     } catch (_) {
+      // ignore play errors (e.g. browser autoplay policy)
+    } finally {
       _playing = false;
     }
   }
