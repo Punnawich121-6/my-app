@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../app_settings.dart';
 import '../../config.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
@@ -29,22 +30,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    RiderSettings.instance.addListener(_onSettings);
     _loadActiveOrder();
     _loadRiderPhoto();
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _silentRefresh());
   }
+
+  void _onSettings() { if (mounted) setState(() {}); }
 
   Future<void> _loadRiderPhoto() async {
     final profile = await RiderService.getProfile(widget.riderId);
     if (!mounted) return;
     final photo = profile?['profile_photo']?.toString();
     if (photo != null && photo.isNotEmpty) {
-      setState(() => _riderPhotoUrl = '$kBackendUrl$photo');
+      final url = photo.startsWith('http') ? photo : '$kBackendUrl$photo';
+      setState(() => _riderPhotoUrl = url);
     }
   }
 
   @override
   void dispose() {
+    RiderSettings.instance.removeListener(_onSettings);
     _refreshTimer?.cancel();
     super.dispose();
   }
@@ -94,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RiderColors.bg,
+      backgroundColor: context.rBg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
@@ -153,14 +159,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNav() {
     return BottomAppBar(
-      color: Colors.white,
+      color: context.rCard,
       elevation: 0,
       padding: EdgeInsets.zero,
       child: Container(
         height: 62,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
+        decoration: BoxDecoration(
+          color: context.rCard,
+          border: Border(top: BorderSide(color: context.rDiv, width: 1)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,

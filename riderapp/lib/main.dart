@@ -97,12 +97,30 @@ abstract class RiderColors {
   static const blueLight = Color(0xFFFFEDE7);
   static const blueMid   = Color(0xFFFFB59D);
   static const bg        = Color(0xFFFFFFFF);
+  static const bgDark    = Color(0xFF0D0D0D);
+  static const card      = Color(0xFFFFFFFF);
+  static const cardDark  = Color(0xFF1C1C1C);
   static const text      = Color(0xFF1A1A1A);
+  static const textDark  = Color(0xFFF0F0F0);
   static const muted     = Color(0xFF333333);
+  static const mutedDark = Color(0xFFCCCCCC);
+  static const divider   = Color(0xFFEEEEEE);
+  static const dividerDark = Color(0xFF2D2D2D);
   static const green     = Color(0xFF43A047);
   static const greenLight= Color(0xFFE8F5E9);
   static const red       = Color(0xFFE53935);
   static const redLight  = Color(0xFFFFEBEE);
+}
+
+// ─── Dark-aware context extension ────────────────────────────────────────────
+
+extension RiderTheme on BuildContext {
+  bool get isDark => RiderSettings.instance.isDark;
+  Color get rBg   => isDark ? RiderColors.bgDark   : RiderColors.bg;
+  Color get rCard => isDark ? RiderColors.cardDark  : RiderColors.card;
+  Color get rFg   => isDark ? RiderColors.textDark  : RiderColors.text;
+  Color get rMuted=> isDark ? RiderColors.mutedDark : RiderColors.muted;
+  Color get rDiv  => isDark ? RiderColors.dividerDark: RiderColors.divider;
 }
 
 // ─── Text Styles ──────────────────────────────────────────────────────────────

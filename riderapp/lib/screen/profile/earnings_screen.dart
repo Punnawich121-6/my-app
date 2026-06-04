@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../app_settings.dart';
 import '../../main.dart';
 import '../../services/rider_service.dart';
 import '../orders/report_screen.dart';
@@ -29,13 +30,17 @@ class _EarningsScreenState extends State<EarningsScreen> {
   @override
   void initState() {
     super.initState();
+    RiderSettings.instance.addListener(_onSettings);
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
     _load();
   }
 
+  void _onSettings() { if (mounted) setState(() {}); }
+
   @override
   void dispose() {
+    RiderSettings.instance.removeListener(_onSettings);
     _targetCtrl.dispose();
     super.dispose();
   }
@@ -397,13 +402,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
               ),
             )
           else
-            ..._buildGroupedHistory(_filteredHistory, fmt),
+            ..._buildGroupedHistory(context, _filteredHistory, fmt),
         ],
       ),
     );
   }
 
-  List<Widget> _buildGroupedHistory(List<Map<String, dynamic>> history, NumberFormat fmt) {
+  List<Widget> _buildGroupedHistory(BuildContext context, List<Map<String, dynamic>> history, NumberFormat fmt) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -440,10 +445,10 @@ class _EarningsScreenState extends State<EarningsScreen> {
       widgets.add(Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.rCard,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFEEEEEE)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
+          border: Border.all(color: context.rDiv),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.05), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Column(
           children: List.generate(entry.value.length, (i) {

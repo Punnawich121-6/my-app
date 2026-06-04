@@ -31,11 +31,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    RiderSettings.instance.addListener(_onSettings);
     _loadProfile();
   }
 
+  void _onSettings() { if (mounted) setState(() {}); }
+
   @override
   void dispose() {
+    RiderSettings.instance.removeListener(_onSettings);
     _descCtrl.dispose();
     super.dispose();
   }
@@ -786,15 +790,18 @@ class _SettingsCard extends StatelessWidget {
   final List<Widget> children;
   const _SettingsCard({required this.children});
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFEEEEEE)),
-      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
-    ),
-    child: Column(children: children),
-  );
+  Widget build(BuildContext context) {
+    final isDark = RiderSettings.instance.isDark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1C) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFEEEEEE)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
+      child: Column(children: children),
+    );
+  }
 }
 
 class _SwitchTile extends StatelessWidget {
@@ -805,15 +812,19 @@ class _SwitchTile extends StatelessWidget {
   final ValueChanged<bool> onChanged;
   const _SwitchTile({required this.icon, required this.iconBg, required this.iconColor, required this.label, required this.labelEn, required this.value, required this.onChanged});
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    child: Row(children: [
-      Container(width: 36, height: 36, decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: iconColor, size: 20)),
-      const SizedBox(width: 12),
-      Expanded(child: Text(RiderSettings.instance.isEnglish ? labelEn : label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: RiderColors.text))),
-      Switch(value: value, onChanged: onChanged, activeThumbColor: RiderColors.blue, activeTrackColor: RiderColors.blueMid),
-    ]),
-  );
+  Widget build(BuildContext context) {
+    final isDark = RiderSettings.instance.isDark;
+    final fg = isDark ? const Color(0xFFF0F0F0) : RiderColors.text;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(children: [
+        Container(width: 36, height: 36, decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: iconColor, size: 20)),
+        const SizedBox(width: 12),
+        Expanded(child: Text(RiderSettings.instance.isEnglish ? labelEn : label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: fg))),
+        Switch(value: value, onChanged: onChanged, activeThumbColor: RiderColors.blue, activeTrackColor: RiderColors.blueMid),
+      ]),
+    );
+  }
 }
 
 class _ActionTile extends StatelessWidget {
