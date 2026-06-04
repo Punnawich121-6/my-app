@@ -226,6 +226,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (approved) await _loadSavedCard();
     if (!mounted) return;
     widget.onSuccess?.call();
+    if (approved) _playSuccessSound();
     nav.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => PaymentResultScreen(
