@@ -407,47 +407,81 @@ class _MsgBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const myBubble   = AppColors.orange;
+    const theirBubble = Color(0xFFFFF0E0);
+    const myText     = Colors.white;
+    const theirText  = Color(0xFF2D1A00);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 18),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isMe) ...[
+          // ── Avatar ซ้าย (ฝั่งคนอื่น) ──────────────────────────────────
+          if (!isMe)
             Container(
-              width: 32, height: 32,
-              margin: const EdgeInsets.only(right: 8),
+              width: 36, height: 36,
+              margin: const EdgeInsets.only(right: 8, bottom: 2),
               decoration: BoxDecoration(
-                color: roleColor.withValues(alpha: 0.15), shape: BoxShape.circle),
-              child: Icon(roleIcon, color: roleColor, size: 16),
+                color: AppColors.orange.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.orange.withValues(alpha: 0.35), width: 1.5),
+              ),
+              child: Icon(roleIcon, color: AppColors.orange, size: 18),
             ),
-          ],
+
+          // ── Bubble ────────────────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                if (!isMe)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 3, left: 2),
-                    child: Text(senderName,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: roleColor, fontWeight: FontWeight.w600)),
+                // ชื่อผู้ส่ง
+                Padding(
+                  padding: EdgeInsets.only(
+                    bottom: 4,
+                    left: isMe ? 0 : 4,
+                    right: isMe ? 4 : 0,
                   ),
+                  child: Text(
+                    isMe ? 'ร้านของฉัน' : senderName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isMe ? AppColors.orange : AppColors.orange.withValues(alpha: 0.75),
+                    ),
+                  ),
+                ),
+
+                // Bubble
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.68),
                   child: Container(
                     padding: imageUrl != null && message.isEmpty
                         ? EdgeInsets.zero
                         : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isMe ? AppColors.orange : Colors.white,
+                      color: isMe ? myBubble : theirBubble,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(18),
                         topRight: const Radius.circular(18),
                         bottomLeft: Radius.circular(isMe ? 18 : 4),
                         bottomRight: Radius.circular(isMe ? 4 : 18),
                       ),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4)],
+                      border: isMe
+                          ? null
+                          : Border.all(color: AppColors.orange.withValues(alpha: 0.2), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isMe
+                              ? AppColors.orange.withValues(alpha: 0.28)
+                              : Colors.black.withValues(alpha: 0.06),
+                          blurRadius: isMe ? 10 : 4,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,29 +501,47 @@ class _MsgBubble extends StatelessWidget {
                             padding: imageUrl != null
                                 ? const EdgeInsets.fromLTRB(14, 8, 14, 10)
                                 : EdgeInsets.zero,
-                            child: Text(message,
+                            child: Text(
+                              message,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isMe ? Colors.white : AppColors.text,
-                                height: 1.4)),
+                                color: isMe ? myText : theirText,
+                                height: 1.45,
+                              ),
+                            ),
                           ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(time, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+
+                // เวลา
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: 4,
+                    left: isMe ? 0 : 4,
+                    right: isMe ? 4 : 0,
+                  ),
+                  child: Text(
+                    time,
+                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
+                ),
               ],
             ),
           ),
-          if (isMe) ...[
+
+          // ── Avatar ขวา (ตัวเอง) ────────────────────────────────────────
+          if (isMe)
             Container(
-              width: 28, height: 28,
-              margin: const EdgeInsets.only(left: 8),
-              decoration: const BoxDecoration(color: AppColors.orange, shape: BoxShape.circle),
-              child: const Icon(Icons.store_rounded, color: Colors.white, size: 14),
+              width: 36, height: 36,
+              margin: const EdgeInsets.only(left: 8, bottom: 2),
+              decoration: const BoxDecoration(
+                color: AppColors.orange,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.store_rounded, color: Colors.white, size: 18),
             ),
-          ],
         ],
       ),
     );
