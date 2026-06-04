@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart' show rootBundle;
+import 'audio_web.dart';
 
 class OrderAlertService {
   static final instance = OrderAlertService._();
@@ -12,14 +12,11 @@ class OrderAlertService {
   final _player = AudioPlayer();
   Timer? _timer;
   int  _pendingCount = 0;
-  int  _prevCount    = -1; // -1 = ยังไม่เคย sync
+  int  _prevCount    = -1;
   bool _playing      = false;
 
   int get pendingCount => _pendingCount;
 
-  /// เรียกจาก dashboard poll และ socket
-  /// เสียงจะเริ่มเฉพาะตอน count เพิ่มขึ้น (order ใหม่เข้า)
-  /// เสียงจะหยุดเมื่อ count = 0 เท่านั้น
   void syncWithPendingCount(int count) {
     final isNewOrder = _prevCount >= 0 && count > _prevCount;
     _prevCount    = count;
@@ -28,12 +25,10 @@ class OrderAlertService {
     if (count == 0) {
       _stop();
     } else if (isNewOrder) {
-      _startAlert(); // มี order ใหม่จริงๆ → เริ่มเสียง
+      _startAlert();
     }
-    // count > 0 แต่ไม่ใช่ order ใหม่ (dashboard poll ที่ยังเห็น order เดิม) → ไม่ restart
   }
 
-  /// เรียกเมื่อ merchant กด "รับออเดอร์" → หยุดเสียงทันที
   void onOrderAccepted() {
     _stop();
     _prevCount = (_pendingCount - 1).clamp(0, _pendingCount);
@@ -54,10 +49,10 @@ class OrderAlertService {
 
   void _stop() {
     _timer?.cancel();
-    _timer    = null;
+    _timer        = null;
     _pendingCount = 0;
     _player.stop().catchError((_) {});
-    _playing  = false;
+    _playing      = false;
   }
 
   Future<void> _playOnce() async {
@@ -65,8 +60,7 @@ class OrderAlertService {
     _playing = true;
     try {
       if (kIsWeb) {
-        final data = await rootBundle.load('assets/audio/new_order.mp3');
-        await _player.play(BytesSource(data.buffer.asUint8List()));
+        await playWebAudio('assets/audio/new_order.mp3');
       } else {
         await _player.play(AssetSource('audio/new_order.mp3'));
       }

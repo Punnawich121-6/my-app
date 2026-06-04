@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:audioplayers/audioplayers.dart';
+import '../../services/audio_web.dart';
 import '../../main.dart';
 import 'order_tracking_screen.dart';
 
@@ -34,8 +34,7 @@ class _SuccessScreenState extends State<SuccessScreen>
   Future<void> _playSound() async {
     try {
       if (kIsWeb) {
-        final data = await rootBundle.load('assets/audio/sound-payment.mp3');
-        await _player.play(BytesSource(data.buffer.asUint8List()));
+        await playWebAudio('assets/audio/sound-payment.mp3');
       } else {
         await _player.play(AssetSource('audio/sound-payment.mp3'));
       }
