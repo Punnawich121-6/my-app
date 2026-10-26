@@ -3,6 +3,14 @@ const router = express.Router();
 const db = require('../../db');
 const crypto = require('crypto');
 const { uploadBase64 } = require('../../services/cloudinary');
+const { OAuth2Client } = require('google-auth-library');
+
+// OAuth client IDs of project-digit-3cea5 (web = Android serverClientId, iOS)
+const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS ||
+  '157517455877-j8j6h1163170jnl8m5rr98ktnn4ha6e0.apps.googleusercontent.com,' +
+  '157517455877-6t8vl8hhaj1uhntt7nll2opme3epj03j.apps.googleusercontent.com'
+).split(',').map(s => s.trim()).filter(Boolean);
+const googleClient = new OAuth2Client();
 
 async function saveImage(base64Data) {
   return uploadBase64(base64Data, 'digio/stores');
@@ -21,6 +29,35 @@ router.get('/by-phone/:phone', async (req, res) => {
       [req.params.phone]
     );
     res.json(store || null);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── POST login with Google ID token ─────────────────────────────────────────
+// Verifies the token signature with Google, then finds the store by owner email.
+router.post('/google-login', async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) return res.status(400).json({ error: 'idToken is required' });
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_IDS });
+    payload = ticket.getPayload();
+  } catch (e) {
+    return res.status(401).json({ error: 'Google token ไม่ถูกต้องหรือหมดอายุ' });
+  }
+  if (!payload?.email || !payload.email_verified) {
+    return res.status(401).json({ error: 'อีเมล Google นี้ยังไม่ได้ยืนยัน' });
+  }
+
+  try {
+    const [[store]] = await db.query(
+      `SELECT id, name, category, address, status, imageUrl, phone, email
+       FROM restaurant WHERE LOWER(email) = LOWER(?) LIMIT 1`,
+      [payload.email]
+    );
+    res.json({ email: payload.email, name: payload.name || null, store: store || null });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

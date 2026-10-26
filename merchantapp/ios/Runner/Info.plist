@@ -6,6 +6,19 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.157517455877-6t8vl8hhaj1uhntt7nll2opme3epj03j</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>157517455877-6t8vl8hhaj1uhntt7nll2opme3epj03j.apps.googleusercontent.com</string>
 	<key>CFBundleDisplayName</key>
 	<string>Myapp</string>
 	<key>CFBundleExecutable</key>

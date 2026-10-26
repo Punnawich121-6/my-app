@@ -1,11 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../app_settings.dart';
 import '../../l10n.dart';
 import '../../main.dart';
+import '../../services/api_service.dart';
+import '../merchant/home/merchant_main_screen.dart';
 import 'otp_screen.dart';
 import 'register_screen.dart';
+
+// OAuth clients from google-services.json / GoogleService-Info.plist (project-digit-3cea5)
+const _googleWebClientId = '157517455877-j8j6h1163170jnl8m5rr98ktnn4ha6e0.apps.googleusercontent.com';
+const _googleIosClientId = '157517455877-6t8vl8hhaj1uhntt7nll2opme3epj03j.apps.googleusercontent.com';
+
+Future<void>? _googleInit;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +25,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   bool _loading = false;
+  bool _googleLoading = false;
   PhoneAuthCredential? _autoCredential;
 
   @override
@@ -88,6 +98,89 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.orange,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Future<void> _signOutGoogle() async {
+    try {
+      if (!kIsWeb) await GoogleSignIn.instance.signOut();
+      await FirebaseAuth.instance.signOut();
+    } catch (_) {}
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_loading || _googleLoading) return;
+    setState(() => _googleLoading = true);
+    try {
+      String? idToken;
+      if (kIsWeb) {
+        final cred = await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
+        idToken = (cred.credential as OAuthCredential?)?.idToken;
+      } else {
+        _googleInit ??= GoogleSignIn.instance.initialize(
+          clientId: defaultTargetPlatform == TargetPlatform.iOS ? _googleIosClientId : null,
+          serverClientId: _googleWebClientId,
+        );
+        await _googleInit;
+        final account = await GoogleSignIn.instance.authenticate();
+        idToken = account.authentication.idToken;
+        if (idToken != null) {
+          await FirebaseAuth.instance.signInWithCredential(GoogleAuthProvider.credential(idToken: idToken));
+        }
+      }
+      if (idToken == null) {
+        throw Exception(t('ไม่ได้รับ token จาก Google', 'No token received from Google'));
+      }
+
+      final result = await ApiService.googleLogin(idToken);
+      if (!mounted) return;
+      final store = result['store'] as Map<String, dynamic>?;
+
+      if (store == null) {
+        await _signOutGoogle();
+        if (!mounted) return;
+        _showError(t(
+          'ไม่พบร้านค้าที่ใช้อีเมล ${result['email']} กรุณาเข้าสู่ระบบด้วยเบอร์โทร หรือสมัครโดยใช้อีเมลนี้',
+          'No store uses ${result['email']}. Sign in with your phone, or register with this email.',
+        ));
+        return;
+      }
+
+      final status = (store['status'] as String? ?? '').toLowerCase();
+      if (status != 'active') {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => RegisterScreen(phone: store['phone']?.toString() ?? ''),
+        ));
+        return;
+      }
+      ApiService.storeId   = store['id'].toString();
+      ApiService.storeName = store['name']?.toString() ?? 'ร้านค้า';
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MerchantMainScreen()),
+        (route) => false,
+      );
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) return;
+      if (mounted) _showError(e.description ?? t('เข้าสู่ระบบด้วย Google ไม่สำเร็จ', 'Google sign-in failed'));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user' || e.code == 'cancelled-popup-request') return;
+      if (mounted) _showError(e.message ?? t('เข้าสู่ระบบด้วย Google ไม่สำเร็จ', 'Google sign-in failed'));
+    } catch (e) {
+      if (mounted) _showError(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,7 +197,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: _FormSheet(
                 phoneController: _phoneController,
                 onRequestOtp: _requestOtp,
+                onGoogleSignIn: _signInWithGoogle,
                 loading: _loading,
+                googleLoading: _googleLoading,
               ),
             ),
           ),
@@ -220,8 +315,16 @@ class _OrangeBg extends StatelessWidget {
 class _FormSheet extends StatelessWidget {
   final TextEditingController phoneController;
   final VoidCallback onRequestOtp;
+  final VoidCallback onGoogleSignIn;
   final bool loading;
-  const _FormSheet({required this.phoneController, required this.onRequestOtp, this.loading = false});
+  final bool googleLoading;
+  const _FormSheet({
+    required this.phoneController,
+    required this.onRequestOtp,
+    required this.onGoogleSignIn,
+    this.loading = false,
+    this.googleLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +343,8 @@ class _FormSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -305,7 +409,7 @@ class _FormSheet extends StatelessWidget {
             width: double.infinity,
             height: isSmall ? 48 : 52,
             child: ElevatedButton(
-              onPressed: loading ? null : onRequestOtp,
+              onPressed: (loading || googleLoading) ? null : onRequestOtp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.orange,
                 disabledBackgroundColor: AppColors.orangeMid,
@@ -319,6 +423,45 @@ class _FormSheet extends StatelessWidget {
                   : Text(
                       t('รับ OTP', 'Get OTP'),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                    ),
+            ),
+          ),
+          SizedBox(height: isSmall ? 12 : 16),
+          Row(
+            children: [
+              const Expanded(child: Divider(color: Color(0xFFE8E8E8))),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(t('หรือ', 'or'), style: const TextStyle(fontSize: 13, color: Color(0xFFBDBDBD))),
+              ),
+              const Expanded(child: Divider(color: Color(0xFFE8E8E8))),
+            ],
+          ),
+          SizedBox(height: isSmall ? 12 : 16),
+          // Google Button
+          SizedBox(
+            width: double.infinity,
+            height: isSmall ? 48 : 52,
+            child: OutlinedButton(
+              onPressed: (loading || googleLoading) ? null : onGoogleSignIn,
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF1A1A1A),
+                side: const BorderSide(color: Color(0xFFE0E0E0)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: googleLoading
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: AppColors.orange, strokeWidth: 2))
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('G', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF4285F4))),
+                        const SizedBox(width: 10),
+                        Text(
+                          t('เข้าสู่ระบบด้วย Google', 'Continue with Google'),
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
             ),
           ),
@@ -359,6 +502,7 @@ class _FormSheet extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

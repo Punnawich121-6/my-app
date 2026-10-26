@@ -331,6 +331,11 @@ class ApiService {
     } catch (_) { return null; }
   }
 
+  // Returns { email, name, store } — store is null when no restaurant uses this Google email
+  static Future<Map<String, dynamic>> googleLogin(String idToken) async {
+    return _post('/store/google-login', {'idToken': idToken});
+  }
+
   static Future<String> registerStore(Map<String, dynamic> body) async {
     final data = await _post('/store/register', body);
     return data['store_id']?.toString() ?? '';
